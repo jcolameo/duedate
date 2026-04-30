@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview",
+  "deploy": "npm run build && gh-pages -d dist"
+},
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
     "ic": "^0.0.1",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.6",
+    "gh-pages": "^6.3.0",
     "vite": "^8.0.10"
   }
 }
