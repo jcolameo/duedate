@@ -23,6 +23,29 @@ const { exportMessage, exportError, exportToICS } = useICSExport(enrichedTasks)
 <p class="mt-2 text-slate-400">CSV rein → Kalender raus. Kein Tippen.</p>
     </header>
 
+    <!-- Anleitung für BBNet-User -->
+<div class="max-w-2xl mx-auto mb-8 p-5 bg-slate-800/60 border border-slate-700 rounded-xl">
+  <details class="group">
+    <summary class="flex items-center justify-between cursor-pointer list-none">
+      <span class="font-semibold text-slate-200">
+        📖 So funktioniert's <span class="text-slate-500 text-sm font-normal">(für BBNet-User)</span>
+      </span>
+      <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+    </summary>
+    <ol class="mt-4 space-y-2 text-sm text-slate-300 list-decimal list-inside">
+      <li>Im <span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded">BBNet</span> → <span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded">Hausaufgabe</span> öffnen</li>
+      <li>Oben rechts neben <span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded">«Neuer Antrag»</span> auf die <span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded">⋯</span> klicken</li>
+      <li><span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded">«Gesamte Liste exportieren»</span> wählen → CSV wird heruntergeladen</li>
+      <li>CSV-Datei unten in die Box ziehen ⬇️</li>
+      <li>Auf <span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded">«In Kalender exportieren»</span> klicken</li>
+      <li>Heruntergeladene <span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded">.ics</span>-Datei öffnen → alle Termine landen im Kalender ✨</li>
+    </ol>
+    <p class="mt-4 text-xs text-slate-500 border-t border-slate-700 pt-3">
+      🔒 Alles läuft lokal in deinem Browser. Keine Daten werden hochgeladen.
+    </p>
+  </details>
+</div>
+
     <!-- Drop Zone -->
     <div class="max-w-2xl mx-auto">
       <label
