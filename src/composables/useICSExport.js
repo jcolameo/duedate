@@ -3,7 +3,8 @@ import { createEvents } from 'ics'
 
 /**
  * Composable für .ics-Kalender-Export.
- * @param {ComputedRef<Array>} enrichedTasks
+ * Nutzt normalisierte Felder (_title, _category, etc.) aus useTaskEnrichment
+ * → funktioniert mit jeder CSV-Spaltenbenennung dank Mapping.
  */
 export function useICSExport(enrichedTasks) {
   const exportMessage = ref('')
@@ -21,17 +22,22 @@ export function useICSExport(enrichedTasks) {
 
     const events = validTasks.map((task) => {
       const d = task._deadlineDate
-      const subject = task['Fach'] || ''
-      const title = task['Titel'] || 'Aufgabe'
-      const grade = task._isGraded ? ' ⭐' : ''
-      const description = task['Beschreibung'] || ''
+      const category    = task._category || ''
+      const title       = task._title || 'Aufgabe'
+      const description = task._description || ''
+      const grade       = task._isGraded ? ' ⭐' : ''
+
+      // Title-Format: "📚 Fach: Titel ⭐"  oder  "📚 Titel ⭐" wenn keine Kategorie
+      const eventTitle = category
+        ? `📚 ${category}: ${title}${grade}`
+        : `📚 ${title}${grade}`
 
       return {
-        title: `📚 ${subject}: ${title}${grade}`,
-        description: description.slice(0, 500),
+        title: eventTitle,
+        description: String(description).slice(0, 500),
         start: [d.getFullYear(), d.getMonth() + 1, d.getDate()],
         duration: { days: 1 },
-        categories: ['Hausaufgaben', subject].filter(Boolean),
+        categories: ['Hausaufgaben', category].filter(Boolean),
         status: 'CONFIRMED',
         busyStatus: 'BUSY',
       }

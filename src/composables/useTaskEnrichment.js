@@ -18,21 +18,56 @@ function computeStatus(days) {
 }
 
 /**
+ * Sicheres Lesen via Mapping mit Legacy-Fallback
+ * Wenn kein Mapping da → fallback auf alte hardcoded Spalten-Namen
+ * Damit bricht nichts, falls Mapping leer ist
+ */
+function readField(task, mapping, role, fallbacks = []) {
+  if (mapping && mapping[role] && task[mapping[role]] !== undefined) {
+    return task[mapping[role]]
+  }
+  for (const f of fallbacks) {
+    if (task[f] !== undefined) return task[f]
+  }
+  return ''
+}
+
+/**
  * Composable: nimmt rohe Tasks und reichert sie an.
  * @param {Ref<Array>} tasks - reaktive Liste roher CSV-Zeilen
+ * @param {Ref<Object>} userMapping - reaktives Spalten-Mapping (optional)
  */
-export function useTaskEnrichment(tasks) {
+export function useTaskEnrichment(tasks, userMapping = null) {
   const enrichedTasks = computed(() => {
+    const mapping = userMapping?.value || {}
+
     return tasks.value
       .map((task) => {
-        const deadlineRaw = task['Abgabe'] || task['Deadline'] || task['Due'] || ''
+        // Felder via Mapping lesen (mit Fallback für Legacy)
+        const title       = readField(task, mapping, 'title',       ['Titel', 'Title', 'Aufgabe'])
+        const deadlineRaw = readField(task, mapping, 'deadline',    ['Abgabe', 'Deadline', 'Due', 'Fällig'])
+        const startRaw    = readField(task, mapping, 'start',       ['Start', 'Beginn'])
+        const category    = readField(task, mapping, 'category',    ['Fach', 'Category', 'Kategorie'])
+        const description = readField(task, mapping, 'description', ['Beschreibung', 'Description'])
+        const gradedRaw   = readField(task, mapping, 'graded',      ['Benotet?', 'Benotet', 'Graded'])
+        const filesRaw    = readField(task, mapping, 'files',       ['Datei(en) zur Aufgabe', 'Datei', 'Files'])
+
         const deadlineDate = parseGermanDate(deadlineRaw)
-        const days = daysUntil(deadlineDate)
+        const days   = daysUntil(deadlineDate)
         const status = computeStatus(days)
-        const isGraded = (task['Benotet?'] || task['Benotet'] || '')
-          .toString().toLowerCase().startsWith('j')
+        const isGraded = String(gradedRaw || '').toLowerCase().startsWith('j') ||
+                         String(gradedRaw || '').toLowerCase() === 'yes' ||
+                         String(gradedRaw || '').toLowerCase() === 'true'
+
         return {
           ...task,
+          // Normalisierte Felder (intern, mit Underscore)
+          _title: title,
+          _deadline: deadlineRaw,
+          _start: startRaw,
+          _category: category,
+          _description: description,
+          _files: filesRaw,
           _deadlineDate: deadlineDate,
           _days: days,
           _status: status,
