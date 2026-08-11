@@ -1,5 +1,4 @@
 <script setup>
-import { watch } from 'vue'
 import { useCSVImport } from '../composables/useCSVImport.js'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useICSExport } from '../composables/useICSExport.js'
@@ -13,11 +12,12 @@ const {
   handleDragOver, handleDragLeave, handleDrop, handleFileSelect,
 } = useCSVImport()
 
-// Column-Mapping: Detection + State + Persistence
+// Column-Mapping: Detection (runs automatically when the shared task list
+// changes, see useColumnMapping.js) + State + Persistence
 const {
-  detectedMapping, userMapping, suggestions, missingRequired,
+  userMapping, suggestions, missingRequired,
   availableColumns, isConfirmed, hasRequiredFields, needsConfirmation,
-  analyzeNewCSV, updateMapping, confirmMapping, resetMapping,
+  updateMapping, confirmMapping, resetMapping,
 } = useColumnMapping()
 
 // Anreicherung: Status, Tage, Sortierung
@@ -26,29 +26,12 @@ const { enrichedTasks, exportableCount, STATUS_STYLES } = useTaskEnrichment(task
 // ICS-Export
 const { exportMessage, exportError, exportToICS } = useICSExport(enrichedTasks)
 
-// Wenn neue CSV geparsed wurde → Detection ausführen
-watch(tasks, (newTasks) => {
-  if (newTasks && newTasks.length > 0) {
-    const headers = Object.keys(newTasks[0])
-    analyzeNewCSV(headers, newTasks)
-
-    // 🧪 Debug-Log (entfernen wir später)
-    console.log('🎯 Mapping State:', {
-      detected: detectedMapping.value,
-      user: userMapping.value,
-      needsConfirmation: needsConfirmation.value,
-      hasRequired: hasRequiredFields.value,
-    })
-  }
-})
-
 function onMappingUpdate({ role, column }) {
   updateMapping(role, column)
 }
 
 function onMappingConfirm() {
   confirmMapping()
-  console.log('✅ Mapping confirmed:', userMapping.value)
 }
 </script>
 

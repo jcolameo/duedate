@@ -251,6 +251,15 @@ The exact current implementation is the codebase, not this document. Inspect fil
 - `src/views/SettingsView.vue` (new) — minimal Settings page, Appearance section only (theme switch), matching the confirmed Phase C scope
 - verified live: theme persists across a hard reload, both themes checked against the full CSV import/mapping/export flow
 
+### Phase D — Real Home Screen
+
+- `useCSVImport.js` and `useColumnMapping.js` converted from per-component-instance state to shared module-level singletons (same pattern as `useTheme.js`), so imported tasks and the resolved column mapping are visible from any view, not just whichever one triggered the CSV upload
+- imported tasks now persisted to `localStorage` (`duedate.tasks.v1`) alongside the existing mapping persistence, so Home shows real data even on a fresh page load with no prior visit to Deadlines this session — this is the explicit "persistence beyond mapping preferences" case anticipated in §10
+- the CSV-parsed-headers → column-detection trigger moved from an inline `watch` in `DeadlinesView.vue` into `useColumnMapping.js` itself (module-level `watch` with `immediate: true`), so detection runs regardless of which view is mounted, including at app boot if tasks were restored from storage
+- `src/views/HomeView.vue` rewritten: stat tiles (overdue / urgent / tracked total), a "Focus" callout naming the single most urgent task, and an "Upcoming" list — all computed from the real shared `enrichedTasks`, not fabricated content; empty state (no CSV imported yet) shown when there's nothing to display
+- deliberately excluded: XP/streak/quests/gamification content from the Figma prototype's Home screen — that's gated behind §16 and not part of this phase
+- verified live: empty state, real stats/focus/upcoming after import, correct values cross-checked against the Deadlines table, persistence across a hard reload landing directly on Home, and the full Deadlines CSV/mapping/export flow re-verified unaffected by the composable refactor
+
 ### Known verification item
 
 The deployed GitHub Pages site previously appeared to show an older UI version without the mapping-reset button. Before new feature work, verify:
