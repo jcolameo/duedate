@@ -271,6 +271,16 @@ Scoped deliberately to data model + basic input UI only, per §18's roadmap (ste
 - `Stundenplan` moved from a disabled "coming soon" sidebar entry to a live route (`/stundenplan`)
 - verified live: effort/priority controls update and persist across a hard reload, availability add/remove works and persists, default priority correctly derives from `_isGraded`, Deadlines and Home both re-confirmed unaffected by the `_id` addition
 
+### Phase F — Weekly Plan Generation
+
+Deterministic, local-only scheduling — no AI, no network. Same inputs always produce the same plan.
+
+- `src/utils/scheduler.js` (new) — pure function `generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, today)`. Builds the current Mon–Sun week, sorts eligible tasks (valid deadline) by urgency then priority per §11's ranking rule, and greedily places each into the first free 08:00–21:00 slot before its deadline (overdue tasks get scheduled ASAP with no deadline cutoff), working around availability blocks and previously-placed sessions. Tasks without an effort estimate fall back to a 1h assumption for scheduling only — their stored planning data isn't overwritten.
+- `src/composables/usePlanExport.js` (new) — ICS export of the generated plan's sessions, same `ics` package and pattern as the existing Deadlines export, downloads `stundenplan.ics`
+- `StundenplanView.vue` extended with a "Weekly plan" section: "Generate plan" button, a real CSS-Grid weekly/hourly preview (30-min rows, availability blocks shown alongside placed sessions), a plain-language summary line ("Scheduled N of M tasks... K couldn't fit — consider reducing scope or extending availability" — transparent reasoning, not an opaque score, per §11), and "Export to .ics"
+- deliberately not built yet: persisting the generated plan (it's a regeneratable preview per §10, not stored source of truth — regenerating is instant since it's deterministic), and drag-to-adjust/lock-individual-sessions (real UI complexity better validated as a follow-up once the basic generate/export loop is proven)
+- verified live: scheduler correctly respects availability blocks (confirmed by adding a block that visibly pushed a session's start time later), urgency/priority sort order confirmed against a 5-task test set spanning overdue through next-week deadlines, ICS export produces a valid calendar file with correct local-to-UTC time conversion, light/dark mode both checked, Deadlines and Home re-confirmed unaffected
+
 ### Known verification item
 
 The deployed GitHub Pages site previously appeared to show an older UI version without the mapping-reset button. Before new feature work, verify:
