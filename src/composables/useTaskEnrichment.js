@@ -2,11 +2,11 @@ import { computed } from 'vue'
 import { parseGermanDate, daysUntil } from '../utils/dateParser.js'
 
 const STATUS_STYLES = {
-  red:     'bg-red-500/20 text-red-300 border-red-500/40',
-  orange:  'bg-orange-500/20 text-orange-300 border-orange-500/40',
-  yellow:  'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
-  emerald: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-  slate:   'bg-slate-500/20 text-slate-300 border-slate-500/40',
+  red:     'bg-red-500/20 text-red-300 light:text-red-700 border-red-500/40',
+  orange:  'bg-orange-500/20 text-orange-300 light:text-orange-700 border-orange-500/40',
+  yellow:  'bg-yellow-500/20 text-yellow-300 light:text-yellow-700 border-yellow-500/40',
+  emerald: 'bg-emerald-500/20 text-emerald-300 light:text-emerald-700 border-emerald-500/40',
+  slate:   'bg-slate-500/20 text-slate-300 light:text-slate-600 border-slate-500/40',
 }
 
 function computeStatus(days) {

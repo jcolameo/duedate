@@ -235,6 +235,21 @@ The exact current implementation is the codebase, not this document. Inspect fil
 - placeholder `Home` route
 - other future modules (Stundenplan, My Week, Projects, Life Planner, Capture, Freelance, Jobs) shown in navigation as visually disabled "coming soon" entries, not yet routed
 - product renamed: the umbrella app is **DueDate**; the CSV-import module is **Deadlines** (previously the module itself was informally called "DueDate")
+- deployed to GitHub Pages and verified live: deep-linking to `#/deadlines` with a hard refresh, and a full CSV import/mapping/export cycle, both confirmed working on the production URL
+
+### Phase B — Visual System Pass
+
+- restyled the shell and Deadlines screen using the Figma prototype's spacing/color/depth language: base surface deepened (`slate-900` → `slate-950`), cards sit one layer lighter for depth, more generous spacing throughout, status badges are pill-shaped, consistent `rounded-2xl`/`rounded-xl` radius scale
+- dark mode only at this point; no logic or markup-structure changes, Tailwind classes only
+
+### Phase C — Theme Toggle & Settings
+
+- Tailwind `light` custom variant added (`@custom-variant light (&:where(.light, .light *));` in `style.css`); default/no-class stays the existing dark palette untouched, `.light` class on `<html>` activates light overrides
+- `src/composables/useTheme.js` — theme state (`dark`/`light`), persisted to `localStorage` (`duedate.theme.v1`), same pattern as the existing column-mapping preference
+- light-mode classes added across the shell, Deadlines, mapping-confirm panel, and status badges
+- sidebar footer now has a live theme-toggle button and a live `Settings` nav entry (previously these were deliberately omitted rather than shipped as non-functional placeholders)
+- `src/views/SettingsView.vue` (new) — minimal Settings page, Appearance section only (theme switch), matching the confirmed Phase C scope
+- verified live: theme persists across a hard reload, both themes checked against the full CSV import/mapping/export flow
 
 ### Known verification item
 
