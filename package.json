@@ -1,7 +1,7 @@
 {
-  "name": "adhd-app",
+  "name": "duedate",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,22 +17,23 @@
     "ics": "^3.12.0",
     "papaparse": "^5.5.3",
     "tailwindcss": "^4.2.4",
-    "vue": "^3.5.32"
+    "vue": "^3.5.32",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.6",
-    "gh-pages": "^6.3.0",
-    "vite": "^8.0.10",
-    "storybook": "^10.3.6",
-    "@storybook/vue3-vite": "^10.3.6",
     "@chromatic-com/storybook": "^5.1.2",
-    "@storybook/addon-vitest": "^10.3.6",
     "@storybook/addon-a11y": "^10.3.6",
     "@storybook/addon-docs": "^10.3.6",
     "@storybook/addon-onboarding": "^10.3.6",
-    "vitest": "^4.1.5",
-    "playwright": "^1.59.1",
+    "@storybook/addon-vitest": "^10.3.6",
+    "@storybook/vue3-vite": "^10.3.6",
+    "@vitejs/plugin-vue": "^6.0.6",
     "@vitest/browser-playwright": "^4.1.5",
-    "@vitest/coverage-v8": "^4.1.5"
+    "@vitest/coverage-v8": "^4.1.5",
+    "gh-pages": "^6.3.0",
+    "playwright": "^1.59.1",
+    "storybook": "^10.3.6",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
   }
 }
