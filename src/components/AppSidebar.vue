@@ -9,10 +9,10 @@ const { theme, toggleTheme } = useTheme()
 const NAV_ITEMS = [
   { path: '/', label: 'Home', icon: '🏠' },
   { path: '/deadlines', label: 'Deadlines', icon: '📅' },
+  { path: '/stundenplan', label: 'Stundenplan', icon: '📊' },
 ]
 
 const COMING_SOON_ITEMS = [
-  { label: 'Stundenplan', icon: '📊' },
   { label: 'My Week', icon: '🗓️' },
   { label: 'Projects', icon: '📁' },
   { label: 'Life Planner', icon: '❤️' },

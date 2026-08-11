@@ -260,6 +260,17 @@ The exact current implementation is the codebase, not this document. Inspect fil
 - deliberately excluded: XP/streak/quests/gamification content from the Figma prototype's Home screen — that's gated behind §16 and not part of this phase
 - verified live: empty state, real stats/focus/upcoming after import, correct values cross-checked against the Deadlines table, persistence across a hard reload landing directly on Home, and the full Deadlines CSV/mapping/export flow re-verified unaffected by the composable refactor
 
+### Phase E — Stundenplan Groundwork
+
+Scoped deliberately to data model + basic input UI only, per §18's roadmap (steps 1–3 of the "next likely functional phase" list). Plan generation, the weekly calendar-grid preview, and ICS export for planned blocks are explicitly deferred to the next phase, once this foundational data exists to schedule against.
+
+- `src/utils/taskId.js` (new) — deterministic ID derived from title + deadline, added as `_id` on enriched tasks (additive-only change to `useTaskEnrichment.js`, nothing existing altered). Needed because a task otherwise has no stable identity across re-renders/re-imports to attach per-task settings to.
+- `src/composables/useTaskPlanning.js` (new) — per-task effort estimate (`30m`/`1h`/`2h`/`3h+`) and priority (`high`/`medium`/`low`, defaulting from `_isGraded`) overrides, keyed by `_id`, persisted to `localStorage` (`duedate.taskPlanning.v1`); same singleton pattern as the other stores. User can override the automatic priority default, per §11's "user must be able to override automated rankings."
+- `src/composables/useAvailability.js` (new) — simple recurring weekly availability blocks (label, day, start/end time), persisted to `localStorage` (`duedate.availability.v1`)
+- `src/views/StundenplanView.vue` (new) — "Tasks to schedule" list (real Deadlines data, reused via the shared composables) with effort/priority controls per task; an "Availability" section with an add form and a removable block list; empty state linking to Deadlines when nothing's imported yet
+- `Stundenplan` moved from a disabled "coming soon" sidebar entry to a live route (`/stundenplan`)
+- verified live: effort/priority controls update and persist across a hard reload, availability add/remove works and persists, default priority correctly derives from `_isGraded`, Deadlines and Home both re-confirmed unaffected by the `_id` addition
+
 ### Known verification item
 
 The deployed GitHub Pages site previously appeared to show an older UI version without the mapping-reset button. Before new feature work, verify:

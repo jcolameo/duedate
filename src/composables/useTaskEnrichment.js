@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { parseGermanDate, daysUntil } from '../utils/dateParser.js'
+import { taskId } from '../utils/taskId.js'
 
 const STATUS_STYLES = {
   red:     'bg-red-500/20 text-red-300 light:text-red-700 border-red-500/40',
@@ -62,6 +63,7 @@ export function useTaskEnrichment(tasks, userMapping = null) {
         return {
           ...task,
           // Normalisierte Felder (intern, mit Underscore)
+          _id: taskId(title, deadlineRaw),
           _title: title,
           _deadline: deadlineRaw,
           _start: startRaw,
