@@ -6,7 +6,8 @@ import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useTaskPlanning, EFFORT_OPTIONS, PRIORITY_OPTIONS } from '../composables/useTaskPlanning.js'
 import { useAvailability, WEEKDAYS } from '../composables/useAvailability.js'
 import { usePlanExport } from '../composables/usePlanExport.js'
-import { generatePlan, WORK_DAYS, DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
+import { usePlanState } from '../composables/usePlanState.js'
+import { WORK_DAYS, DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
 
 const { tasks } = useCSVImport()
 const { userMapping } = useColumnMapping()
@@ -14,6 +15,7 @@ const { enrichedTasks } = useTaskEnrichment(tasks, userMapping)
 const { getPlanningFor, setEffort, setPriority } = useTaskPlanning()
 const { blocks, addBlock, removeBlock } = useAvailability()
 const { exportMessage: planExportMessage, exportError: planExportError, exportPlanToICS } = usePlanExport()
+const { plan, generate: handleGeneratePlan } = usePlanState()
 
 const priorityLabel = { high: 'High', medium: 'Medium', low: 'Low' }
 
@@ -23,14 +25,6 @@ function handleAddBlock() {
   if (!newBlock.value.label.trim()) return
   addBlock({ ...newBlock.value })
   newBlock.value = { label: '', day: 'Mon', startTime: '09:00', endTime: '10:00' }
-}
-
-// Weekly plan preview (deliberately not persisted — a regeneratable
-// preview, not stored source of truth; generating is instant and free)
-const plan = ref(null)
-
-function handleGeneratePlan() {
-  plan.value = generatePlan(enrichedTasks.value, getPlanningFor, blocks.value, new Date())
 }
 
 function handleExportPlan() {

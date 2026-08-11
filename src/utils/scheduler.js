@@ -29,6 +29,19 @@ function toTimeLabel(minutes) {
 }
 
 /**
+ * The current Mon–Sun week as [{label, date}], independent of plan
+ * generation — used to render the week's grid structure and deadline
+ * markers even before a plan has been generated.
+ */
+export function getWeekDays(today = new Date()) {
+  const todayStart = startOfDay(today)
+  const jsDay = todayStart.getDay()
+  const mondayOffset = jsDay === 0 ? -6 : 1 - jsDay
+  const monday = addDays(todayStart, mondayOffset)
+  return WORK_DAYS.map((label, i) => ({ label, date: addDays(monday, i) }))
+}
+
+/**
  * Finds the first free slot of `durationMin` within the working day,
  * given a list of already-busy [start, end] intervals (minutes from midnight).
  */
@@ -61,11 +74,7 @@ function findFreeSlot(durationMin, busyIntervals) {
  */
 export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, today = new Date()) {
   const todayStart = startOfDay(today)
-  const jsDay = todayStart.getDay() // 0=Sun..6=Sat
-  const mondayOffset = jsDay === 0 ? -6 : 1 - jsDay
-  const monday = addDays(todayStart, mondayOffset)
-
-  const days = WORK_DAYS.map((label, i) => ({ label, date: addDays(monday, i) }))
+  const days = getWeekDays(today)
 
   const busyByDay = {}
   for (const day of days) busyByDay[day.label] = []

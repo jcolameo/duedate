@@ -281,6 +281,17 @@ Deterministic, local-only scheduling — no AI, no network. Same inputs always p
 - deliberately not built yet: persisting the generated plan (it's a regeneratable preview per §10, not stored source of truth — regenerating is instant since it's deterministic), and drag-to-adjust/lock-individual-sessions (real UI complexity better validated as a follow-up once the basic generate/export loop is proven)
 - verified live: scheduler correctly respects availability blocks (confirmed by adding a block that visibly pushed a session's start time later), urgency/priority sort order confirmed against a 5-task test set spanning overdue through next-week deadlines, ICS export produces a valid calendar file with correct local-to-UTC time conversion, light/dark mode both checked, Deadlines and Home re-confirmed unaffected
 
+### Phase G — My Week
+
+The calm command-centre calendar view from §12, scoped to what real data actually supports: hard deadlines, the generated work-session plan, and availability blocks. Personal/hobby/recovery blocks and daily focus quests from §12's full description are not built — they depend on Life Planner and gamification (§16), neither of which exist yet; not fabricated here.
+
+- `src/composables/usePlanState.js` (new) — lifts the generated plan from `StundenplanView.vue`'s local component state to a shared module-level singleton (same pattern as tasks/mapping/theme), so My Week and Stundenplan see the same plan without regenerating it independently. Still deliberately NOT persisted to `localStorage` — a page reload clears it by design, same as before; it now additionally survives navigation *between views* within a session, which it didn't before.
+- `src/utils/scheduler.js` — added exported `getWeekDays(today)`, factored out of `generatePlan()`, so the week's Mon–Sun structure is available for rendering (deadline markers, grid headers) even before a plan has been generated
+- `src/composables/useCombinedExport.js` (new) — combines deadline events (all-day, same format as the Deadlines export) and work-session events (timed, same format as the Stundenplan export) into one `.ics` file (`my-week.ics`)
+- `src/views/MyWeekView.vue` (new) — legend + weekly grid: deadline markers (red, all-day banner row, only for deadlines falling within the current week) above an hourly grid showing work sessions (green) and availability (muted), matching §12's suggested visual language as far as real categories exist (school/work and deadlines only — no personal/creative categories without Life Planner)
+- `My Week` moved from a disabled "coming soon" sidebar entry to a live route (`/my-week`)
+- verified live: plan generated on Stundenplan correctly appears on My Week without regenerating; deadline markers correctly show only for in-week deadlines (confirmed against a 5-task spread — overdue and next-week deadlines correctly excluded); combined export produces a valid `.ics` with both event types; a page reload correctly clears the shared plan (by design) while deadline markers and availability remain since those don't depend on generation; Deadlines, Home, and Stundenplan all re-confirmed unaffected
+
 ### Known verification item
 
 The deployed GitHub Pages site previously appeared to show an older UI version without the mapping-reset button. Before new feature work, verify:
