@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import { useAvailability } from '../composables/useAvailability.js'
 import { usePlanState } from '../composables/usePlanState.js'
 import { useCombinedExport } from '../composables/useCombinedExport.js'
+import { useLocale } from '../composables/useLocale.js'
 import { WORK_DAYS, DAY_START_MIN, DAY_END_MIN, getWeekDays } from '../utils/scheduler.js'
 
 const { blocks } = useAvailability()
 const { plan, generate: handleGeneratePlan, enrichedTasks } = usePlanState()
 const { exportMessage, exportError, exportWeekToICS } = useCombinedExport()
+const { t } = useLocale()
 
 const weekDays = computed(() => plan.value?.days || getWeekDays(new Date()))
 
@@ -71,19 +73,19 @@ const availabilityForGrid = computed(() =>
     <div class="max-w-5xl mx-auto">
       <header class="mb-8 flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 class="text-3xl font-bold text-emerald-400 light:text-emerald-600">🗓️ My Week</h1>
+          <h1 class="text-3xl font-bold text-emerald-400 light:text-emerald-600">{{ t('myWeek.title') }}</h1>
           <p class="mt-2 text-slate-400 light:text-slate-500">
-            Deadlines, work sessions, and availability — everything for this week, in one place.
+            {{ t('myWeek.subtitle') }}
           </p>
         </div>
         <div class="flex items-center gap-3">
           <button type="button" @click="handleGeneratePlan"
             class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded-xl transition">
-            ⚡ Generate plan
+            {{ t('myWeek.generatePlan') }}
           </button>
           <button type="button" @click="handleExportWeek"
             class="px-5 py-2 bg-slate-800 light:bg-slate-100 hover:bg-slate-700 light:hover:bg-slate-200 text-slate-200 light:text-slate-700 font-bold rounded-xl transition border border-slate-700 light:border-slate-300">
-            📅 Export week to .ics
+            {{ t('myWeek.exportWeek') }}
           </button>
         </div>
       </header>
@@ -91,19 +93,18 @@ const availabilityForGrid = computed(() =>
       <!-- Legend -->
       <div class="flex items-center gap-5 mb-4 text-xs text-slate-400 light:text-slate-500 flex-wrap">
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-red-500/70"></span>
-          Deadline</span>
+          {{ t('myWeek.legendDeadline') }}</span>
         <span class="flex items-center gap-1.5"><span
-            class="w-2.5 h-2.5 rounded-sm bg-emerald-500/60 border border-emerald-500"></span> Work session</span>
+            class="w-2.5 h-2.5 rounded-sm bg-emerald-500/60 border border-emerald-500"></span> {{ t('myWeek.legendSession') }}</span>
         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-slate-700"></span>
-          Availability</span>
+          {{ t('myWeek.legendAvailability') }}</span>
       </div>
 
       <div v-if="exportMessage" class="text-sm text-emerald-400 light:text-emerald-600 mb-2">{{ exportMessage }}</div>
       <div v-if="exportError" class="text-sm text-red-400 light:text-red-600 mb-2">{{ exportError }}</div>
 
       <div v-if="!plan" class="text-sm text-slate-500 mb-3">
-        No plan generated yet — deadlines and availability are shown below; click "Generate plan" to add work
-        sessions.
+        {{ t('myWeek.noPlanYet') }}
       </div>
 
       <div class="overflow-x-auto">
@@ -112,7 +113,7 @@ const availabilityForGrid = computed(() =>
           <div class="grid mb-1" style="grid-template-columns: 3rem repeat(7, 1fr);">
             <div></div>
             <div v-for="day in weekDays" :key="day.label" class="text-center pb-1">
-              <div class="text-xs font-semibold text-slate-400 light:text-slate-500">{{ day.label }}</div>
+              <div class="text-xs font-semibold text-slate-400 light:text-slate-500">{{ t('common.days.' + day.label) }}</div>
             </div>
           </div>
 
@@ -123,7 +124,7 @@ const availabilityForGrid = computed(() =>
               <div v-for="task in deadlinesByDay[day.label]" :key="task._id"
                 class="bg-red-500/20 border border-red-500/50 text-red-300 light:text-red-700 rounded px-1 py-0.5 text-[10px] leading-tight mb-0.5 truncate"
                 :title="task._title">
-                🚩 {{ task._title || '—' }}
+                🚩 {{ task._title || t('common.dash') }}
               </div>
             </div>
           </div>

@@ -1,5 +1,8 @@
 import { ref } from 'vue'
 import Papa from 'papaparse'
+import { useLocale } from './useLocale.js'
+
+const { t } = useLocale()
 
 const STORAGE_KEY = 'duedate.tasks.v1'
 
@@ -42,7 +45,7 @@ function parseCSV(file) {
     skipEmptyLines: true,
     complete: (results) => {
       if (results.errors.length > 0) {
-        errorMessage.value = `Parse-Fehler: ${results.errors[0].message}`
+        errorMessage.value = t('errors.parseError', { message: results.errors[0].message })
         return
       }
       tasks.value = results.data
@@ -50,7 +53,7 @@ function parseCSV(file) {
       saveTasks(file.name, results.data)
     },
     error: (err) => {
-      errorMessage.value = `Datei konnte nicht gelesen werden: ${err.message}`
+      errorMessage.value = t('errors.fileReadError', { message: err.message })
     },
   })
 }

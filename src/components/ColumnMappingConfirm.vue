@@ -1,4 +1,7 @@
 <script setup>
+import { computed } from 'vue'
+import { useLocale } from '../composables/useLocale.js'
+
 defineProps({
   userMapping: { type: Object, required: true },
   availableColumns: { type: Array, required: true },
@@ -9,22 +12,18 @@ defineProps({
 
 const emit = defineEmits(['update', 'confirm'])
 
-// Felder die wir abfragen — Reihenfolge ist UI-Order
-const FIELDS = [
-  { role: 'title', label: 'Titel', icon: '📝', required: true },
-  { role: 'deadline', label: 'Abgabe', icon: '📅', required: true },
-  { role: 'start', label: 'Start', icon: '🟢', required: false },
-  { role: 'category', label: 'Fach / Kategorie', icon: '🏷️', required: false },
-  { role: 'description', label: 'Beschreibung', icon: '📄', required: false },
-  { role: 'graded', label: 'Benotet', icon: '⭐', required: false },
-  { role: 'files', label: 'Dateien', icon: '📎', required: false },
-]
+const { t } = useLocale()
 
-// Helper: Confidence einer Spalte holen
-function getConfidence(columnName) {
-  const s = window // Dummy zum Vermeiden von Linter — wir lesen via prop
-  return null
-}
+// Felder die wir abfragen — Reihenfolge ist UI-Order
+const FIELDS = computed(() => [
+  { role: 'title', label: t('mapping.fieldTitle'), icon: '📝', required: true },
+  { role: 'deadline', label: t('mapping.fieldDeadline'), icon: '📅', required: true },
+  { role: 'start', label: t('mapping.fieldStart'), icon: '🟢', required: false },
+  { role: 'category', label: t('mapping.fieldCategory'), icon: '🏷️', required: false },
+  { role: 'description', label: t('mapping.fieldDescription'), icon: '📄', required: false },
+  { role: 'graded', label: t('mapping.fieldGraded'), icon: '⭐', required: false },
+  { role: 'files', label: t('mapping.fieldFiles'), icon: '📎', required: false },
+])
 
 function handleChange(role, event) {
   const value = event.target.value || null
@@ -42,16 +41,16 @@ function handleConfirm() {
     <div class="flex items-start gap-3 mb-5">
       <span class="text-3xl">🤖</span>
       <div>
-        <h3 class="text-lg font-bold text-emerald-300 light:text-emerald-600">Spalten erkannt</h3>
+        <h3 class="text-lg font-bold text-emerald-300 light:text-emerald-600">{{ t('mapping.title') }}</h3>
         <p class="text-sm text-slate-400 light:text-slate-500">
-          Bitte kurz prüfen — du kannst auch korrigieren, falls was falsch ist.
+          {{ t('mapping.subtitle') }}
         </p>
       </div>
     </div>
 
     <!-- Warning bei Missing Required -->
     <div v-if="missingRequired.length > 0" class="mb-4 p-4 bg-amber-900/30 light:bg-amber-50 border border-amber-500/40 light:border-amber-300 rounded-xl text-amber-200 light:text-amber-800 text-sm">
-      ⚠️ <strong>Pflichtfelder fehlen:</strong> {{ missingRequired.join(', ') }} — bitte unten zuweisen.
+      ⚠️ <strong>{{ t('mapping.missingRequired') }}</strong> {{ missingRequired.join(', ') }} {{ t('mapping.missingRequiredSuffix') }}
     </div>
 
     <!-- Mapping Rows -->
@@ -80,7 +79,7 @@ function handleConfirm() {
           class="flex-1 px-3 py-2.5 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-xl text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none"
           :class="field.required && !userMapping[field.role] ? 'border-amber-500' : ''"
         >
-          <option value="">— nicht zuweisen —</option>
+          <option value="">{{ t('mapping.dontAssign') }}</option>
           <option
             v-for="col in availableColumns"
             :key="col"
@@ -102,7 +101,7 @@ function handleConfirm() {
     <!-- Confirm Button -->
     <div class="mt-6 flex items-center justify-between gap-4">
       <p class="text-xs text-slate-500">
-        💡 Wird gespeichert für deine nächste CSV
+        {{ t('mapping.savedNote') }}
       </p>
       <button
         @click="handleConfirm"
@@ -114,7 +113,7 @@ function handleConfirm() {
             : 'bg-slate-700 light:bg-slate-200 text-slate-500 light:text-slate-400 cursor-not-allowed'
         ]"
       >
-        ✅ Passt so — weiter
+        {{ t('mapping.confirm') }}
       </button>
     </div>
   </div>

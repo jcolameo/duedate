@@ -128,7 +128,9 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
       unscheduled.push({
         taskId: task._id,
         title: task._title || 'Aufgabe',
-        reason: planning.effort ? 'no free slot before deadline' : 'no free slot before deadline (using 1h default estimate)',
+        // Reason code, not prose — the UI layer translates it (scheduler.js
+        // stays locale-agnostic/pure)
+        reason: planning.effort ? 'noFreeSlot' : 'noFreeSlotDefaultEffort',
       })
     }
   }

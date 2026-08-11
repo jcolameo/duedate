@@ -3,6 +3,7 @@ import { useCSVImport } from '../composables/useCSVImport.js'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useICSExport } from '../composables/useICSExport.js'
 import { useColumnMapping } from '../composables/useColumnMapping.js'
+import { useLocale } from '../composables/useLocale.js'
 
 import ColumnMappingConfirm from '../components/ColumnMappingConfirm.vue'
 
@@ -26,6 +27,8 @@ const { enrichedTasks, exportableCount, STATUS_STYLES } = useTaskEnrichment(task
 // ICS-Export
 const { exportMessage, exportError, exportToICS } = useICSExport(enrichedTasks)
 
+const { locale, t } = useLocale()
+
 function onMappingUpdate({ role, column }) {
   updateMapping(role, column)
 }
@@ -38,8 +41,8 @@ function onMappingConfirm() {
 <template>
   <div class="min-h-screen bg-slate-950 light:bg-slate-50 text-slate-100 light:text-slate-900 p-10">
     <header class="max-w-6xl mx-auto mb-14 text-center">
-      <h1 class="text-4xl font-bold text-emerald-400 light:text-emerald-600">📅 Deadlines</h1>
-      <p class="mt-2 text-slate-400 light:text-slate-500">CSV rein → Kalender raus. Kein Tippen.</p>
+      <h1 class="text-4xl font-bold text-emerald-400 light:text-emerald-600">{{ t('deadlines.title') }}</h1>
+      <p class="mt-2 text-slate-400 light:text-slate-500">{{ t('deadlines.subtitle') }}</p>
     </header>
 
     <!-- Anleitung für BBNet-User -->
@@ -47,11 +50,14 @@ function onMappingConfirm() {
       <details class="group">
         <summary class="flex items-center justify-between cursor-pointer list-none">
           <span class="font-semibold text-slate-200 light:text-slate-800">
-            📖 So funktioniert's <span class="text-slate-500 text-sm font-normal">(für BBNet-User)</span>
+            📖 {{ t('deadlines.howItWorks') }}
+            <span class="text-slate-500 text-sm font-normal">{{ t('deadlines.forBBNetUsers') }}</span>
           </span>
           <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <ol class="mt-4 space-y-2 text-sm text-slate-300 light:text-slate-600 list-decimal list-inside">
+        <!-- BBNet's own UI labels (in quotes) are kept in German regardless
+             of app language — that's literally what BBNet displays. -->
+        <ol v-if="locale === 'de'" class="mt-4 space-y-2 text-sm text-slate-300 light:text-slate-600 list-decimal list-inside">
           <li>Im <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">BBNet</span> → <span
               class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">Hausaufgabe</span> öffnen</li>
           <li>Oben rechts neben <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«Neuer Antrag»</span> auf die
@@ -65,8 +71,23 @@ function onMappingConfirm() {
           <li>Heruntergeladene <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">.ics</span>-Datei öffnen →
             alle Termine landen im Kalender ✨</li>
         </ol>
+        <ol v-else class="mt-4 space-y-2 text-sm text-slate-300 light:text-slate-600 list-decimal list-inside">
+          <li>In <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">BBNet</span>, open
+            <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">Hausaufgabe</span> (Homework)</li>
+          <li>Click the <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">⋯</span> next to
+            <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«Neuer Antrag»</span> (New Request) in the top right
+          </li>
+          <li>Choose <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«Gesamte Liste exportieren»</span>
+            (Export entire list) → the CSV downloads</li>
+          <li>Drag the CSV file into the box below ⬇️</li>
+          <li>Click <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«In Kalender exportieren»</span> (Export to
+            calendar) below
+          </li>
+          <li>Open the downloaded <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">.ics</span> file → all
+            deadlines land in your calendar ✨</li>
+        </ol>
         <p class="mt-4 text-xs text-slate-500 border-t border-slate-800 light:border-slate-200 pt-3">
-          🔒 Alles läuft lokal in deinem Browser. Keine Daten werden hochgeladen.
+          {{ t('deadlines.localNotice') }}
         </p>
       </details>
     </div>
@@ -81,15 +102,15 @@ function onMappingConfirm() {
       ]">
         <input type="file" accept=".csv" class="hidden" @change="handleFileSelect" />
         <div class="text-6xl mb-4">📂</div>
-        <p class="text-xl font-semibold mb-2">CSV hier reinziehen</p>
-        <p class="text-slate-400 light:text-slate-500 text-sm">oder klicken zum Auswählen</p>
+        <p class="text-xl font-semibold mb-2">{{ t('deadlines.dropCsv') }}</p>
+        <p class="text-slate-400 light:text-slate-500 text-sm">{{ t('deadlines.orClickToSelect') }}</p>
       </label>
 
       <div v-if="uploadedFile"
         class="mt-6 p-5 bg-slate-900 light:bg-white border border-emerald-400/30 light:border-emerald-500/40 rounded-2xl">
         <p class="text-emerald-400 light:text-emerald-600 font-semibold">✅ {{ uploadedFile.name }}</p>
         <p class="text-slate-400 light:text-slate-500 text-sm mt-1">
-          {{ enrichedTasks.length }} Aufgaben · {{ exportableCount }} mit Datum exportierbar
+          {{ t('deadlines.uploadSummary', { count: enrichedTasks.length, exportable: exportableCount }) }}
         </p>
       </div>
 
@@ -112,16 +133,16 @@ function onMappingConfirm() {
     <!-- Action Bar + Table -->
     <div v-if="enrichedTasks.length > 0" class="max-w-6xl mx-auto mt-14">
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h2 class="text-2xl font-bold text-slate-100 light:text-slate-900">📋 Deine Aufgaben</h2>
+        <h2 class="text-2xl font-bold text-slate-100 light:text-slate-900">{{ t('deadlines.yourTasks') }}</h2>
         <div class="flex items-center gap-3">
           <button v-if="isConfirmed" @click="resetMapping"
             class="px-4 py-2.5 text-sm bg-slate-800 light:bg-slate-100 hover:bg-slate-700 light:hover:bg-slate-200 text-slate-200 light:text-slate-700 rounded-xl transition border border-slate-700 light:border-slate-300"
-            title="Spalten-Zuordnung anpassen">
-            ⚙️ Mapping ändern
+            :title="t('deadlines.changeMappingTitle')">
+            {{ t('deadlines.changeMapping') }}
           </button>
           <button @click="exportToICS" :disabled="exportableCount === 0"
             class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 light:disabled:bg-slate-200 disabled:text-slate-500 light:disabled:text-slate-400 disabled:cursor-not-allowed text-slate-900 font-bold rounded-xl transition shadow-lg shadow-emerald-500/20">
-            📅 In Kalender exportieren ({{ exportableCount }})
+            {{ t('deadlines.exportButton', { count: exportableCount }) }}
           </button>
         </div>
       </div>
@@ -130,12 +151,12 @@ function onMappingConfirm() {
         <table class="w-full text-left">
           <thead class="bg-slate-900 light:bg-slate-100 text-slate-400 light:text-slate-500 text-xs uppercase tracking-wide">
             <tr>
-              <th class="px-5 py-4 font-semibold">Status</th>
-              <th class="px-5 py-4 font-semibold">Tage</th>
-              <th class="px-5 py-4 font-semibold">{{ userMapping.category || 'Fach' }}</th>
-              <th class="px-5 py-4 font-semibold">{{ userMapping.title || 'Titel' }}</th>
-              <th class="px-5 py-4 font-semibold">{{ userMapping.deadline || 'Abgabe' }}</th>
-              <th class="px-5 py-4 font-semibold">{{ userMapping.graded || 'Benotet' }}</th>
+              <th class="px-5 py-4 font-semibold">{{ t('deadlines.colStatus') }}</th>
+              <th class="px-5 py-4 font-semibold">{{ t('deadlines.colDays') }}</th>
+              <th class="px-5 py-4 font-semibold">{{ userMapping.category || t('deadlines.colSubject') }}</th>
+              <th class="px-5 py-4 font-semibold">{{ userMapping.title || t('deadlines.colTitle') }}</th>
+              <th class="px-5 py-4 font-semibold">{{ userMapping.deadline || t('deadlines.colDue') }}</th>
+              <th class="px-5 py-4 font-semibold">{{ userMapping.graded || t('deadlines.colGraded') }}</th>
             </tr>
           </thead>
           <tbody class="bg-slate-950/40 light:bg-white">
@@ -148,19 +169,19 @@ function onMappingConfirm() {
                 </span>
               </td>
               <td class="px-5 py-4 text-sm align-top">
-                <span v-if="task._days === null" class="text-slate-500">—</span>
+                <span v-if="task._days === null" class="text-slate-500">{{ t('common.dash') }}</span>
                 <span v-else-if="task._days < 0" class="text-red-400 light:text-red-600 font-mono">
-                  {{ Math.abs(task._days) }}d überfällig
+                  {{ t('deadlines.daysOverdue', { days: Math.abs(task._days) }) }}
                 </span>
-                <span v-else class="text-slate-300 light:text-slate-600 font-mono">in {{ task._days }}d</span>
+                <span v-else class="text-slate-300 light:text-slate-600 font-mono">{{ t('deadlines.dueInDays', { days: task._days }) }}</span>
               </td>
-              <td class="px-5 py-4 text-sm text-slate-300 light:text-slate-600 align-top">{{ task._category || '—' }}</td>
-              <td class="px-5 py-4 text-sm text-slate-200 light:text-slate-800 align-top font-medium max-w-xs">{{ task._title || '—' }}
+              <td class="px-5 py-4 text-sm text-slate-300 light:text-slate-600 align-top">{{ task._category || t('common.dash') }}</td>
+              <td class="px-5 py-4 text-sm text-slate-200 light:text-slate-800 align-top font-medium max-w-xs">{{ task._title || t('common.dash') }}
               </td>
-              <td class="px-5 py-4 text-sm text-slate-400 light:text-slate-500 align-top whitespace-nowrap">{{ task._deadline || '—' }}</td>
+              <td class="px-5 py-4 text-sm text-slate-400 light:text-slate-500 align-top whitespace-nowrap">{{ task._deadline || t('common.dash') }}</td>
               <td class="px-5 py-4 text-sm align-top">
-                <span v-if="task._isGraded" class="text-amber-300 light:text-amber-600">⭐ Ja</span>
-                <span v-else class="text-slate-500">Nein</span>
+                <span v-if="task._isGraded" class="text-amber-300 light:text-amber-600">{{ t('deadlines.gradedYes') }}</span>
+                <span v-else class="text-slate-500">{{ t('deadlines.gradedNo') }}</span>
               </td>
             </tr>
           </tbody>

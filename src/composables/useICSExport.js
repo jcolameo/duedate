@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { createEvents } from 'ics'
+import { useLocale } from './useLocale.js'
 
 /**
  * Composable für .ics-Kalender-Export.
@@ -7,6 +8,7 @@ import { createEvents } from 'ics'
  * → funktioniert mit jeder CSV-Spaltenbenennung dank Mapping.
  */
 export function useICSExport(enrichedTasks) {
+  const { t } = useLocale()
   const exportMessage = ref('')
   const exportError = ref('')
 
@@ -14,16 +16,16 @@ export function useICSExport(enrichedTasks) {
     exportMessage.value = ''
     exportError.value = ''
 
-    const validTasks = enrichedTasks.value.filter(t => t._deadlineDate)
+    const validTasks = enrichedTasks.value.filter(task => task._deadlineDate)
     if (validTasks.length === 0) {
-      exportError.value = 'Keine Aufgaben mit gültigem Datum gefunden.'
+      exportError.value = t('errors.noValidTasks')
       return
     }
 
     const events = validTasks.map((task) => {
       const d = task._deadlineDate
       const category    = task._category || ''
-      const title       = task._title || 'Aufgabe'
+      const title       = task._title || t('common.untitled')
       const description = task._description || ''
       const grade       = task._isGraded ? ' ⭐' : ''
 
@@ -45,7 +47,7 @@ export function useICSExport(enrichedTasks) {
 
     createEvents(events, (error, value) => {
       if (error) {
-        exportError.value = `ICS-Export-Fehler: ${error.message}`
+        exportError.value = t('errors.icsExportError', { message: error.message })
         return
       }
       const blob = new Blob([value], { type: 'text/calendar;charset=utf-8' })
@@ -58,7 +60,7 @@ export function useICSExport(enrichedTasks) {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      exportMessage.value = `✅ ${events.length} Termine exportiert → deadlines.ics`
+      exportMessage.value = t('export.deadlinesExported', { count: events.length })
     })
   }
 

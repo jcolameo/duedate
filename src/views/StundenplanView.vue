@@ -7,6 +7,7 @@ import { useTaskPlanning, EFFORT_OPTIONS, PRIORITY_OPTIONS } from '../composable
 import { useAvailability, WEEKDAYS } from '../composables/useAvailability.js'
 import { usePlanExport } from '../composables/usePlanExport.js'
 import { usePlanState } from '../composables/usePlanState.js'
+import { useLocale } from '../composables/useLocale.js'
 import { WORK_DAYS, DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
 
 const { tasks } = useCSVImport()
@@ -16,8 +17,15 @@ const { getPlanningFor, setEffort, setPriority } = useTaskPlanning()
 const { blocks, addBlock, removeBlock } = useAvailability()
 const { exportMessage: planExportMessage, exportError: planExportError, exportPlanToICS } = usePlanExport()
 const { plan, generate: handleGeneratePlan } = usePlanState()
+const { t } = useLocale()
 
-const priorityLabel = { high: 'High', medium: 'Medium', low: 'Low' }
+const priorityLabel = computed(() => ({
+  high: t('stundenplan.priorityHigh'),
+  medium: t('stundenplan.priorityMedium'),
+  low: t('stundenplan.priorityLow'),
+}))
+
+const reasonLabel = { noFreeSlot: 'stundenplan.reasonNoFreeSlot', noFreeSlotDefaultEffort: 'stundenplan.reasonNoFreeSlotDefaultEffort' }
 
 const newBlock = ref({ label: '', day: 'Mon', startTime: '09:00', endTime: '10:00' })
 
@@ -71,22 +79,22 @@ const availabilityForGrid = computed(() =>
   <div class="min-h-screen bg-slate-950 light:bg-slate-50 text-slate-100 light:text-slate-900 p-10">
     <div class="max-w-4xl mx-auto">
       <header class="mb-10">
-        <h1 class="text-3xl font-bold text-emerald-400 light:text-emerald-600">📊 Stundenplan</h1>
+        <h1 class="text-3xl font-bold text-emerald-400 light:text-emerald-600">{{ t('stundenplan.title') }}</h1>
         <p class="mt-2 text-slate-400 light:text-slate-500">
-          Set effort estimates and availability, then generate a realistic plan for this week.
+          {{ t('stundenplan.subtitle') }}
         </p>
       </header>
 
       <!-- Tasks to schedule -->
       <section class="mb-10">
-        <h2 class="text-lg font-bold text-slate-100 light:text-slate-900 mb-4">Tasks to schedule</h2>
+        <h2 class="text-lg font-bold text-slate-100 light:text-slate-900 mb-4">{{ t('stundenplan.tasksToSchedule') }}</h2>
 
         <div v-if="enrichedTasks.length === 0"
           class="p-8 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl text-center">
-          <p class="text-slate-300 light:text-slate-600 mb-4">No deadlines imported yet.</p>
+          <p class="text-slate-300 light:text-slate-600 mb-4">{{ t('stundenplan.emptyState') }}</p>
           <RouterLink to="/deadlines"
             class="inline-block px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded-xl transition">
-            📅 Import your CSV
+            {{ t('stundenplan.importCta') }}
           </RouterLink>
         </div>
 
@@ -95,8 +103,8 @@ const availabilityForGrid = computed(() =>
             class="p-4 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl">
             <div class="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <p class="text-sm font-medium text-slate-200 light:text-slate-800">{{ task._title || '—' }}</p>
-                <p class="text-xs text-slate-500">{{ task._category || '—' }} · {{ task._deadline || '—' }}</p>
+                <p class="text-sm font-medium text-slate-200 light:text-slate-800">{{ task._title || t('common.dash') }}</p>
+                <p class="text-xs text-slate-500">{{ task._category || t('common.dash') }} · {{ task._deadline || t('common.dash') }}</p>
               </div>
 
               <div class="flex items-center gap-4 flex-wrap">
@@ -132,52 +140,52 @@ const availabilityForGrid = computed(() =>
 
       <!-- Availability -->
       <section>
-        <h2 class="text-lg font-bold text-slate-100 light:text-slate-900 mb-4">Availability</h2>
+        <h2 class="text-lg font-bold text-slate-100 light:text-slate-900 mb-4">{{ t('stundenplan.availability') }}</h2>
 
         <div class="p-5 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl mb-4">
           <div class="flex items-end gap-3 flex-wrap">
             <div class="flex-1 min-w-[10rem]">
-              <label class="block text-xs text-slate-500 mb-1">Label</label>
-              <input v-model="newBlock.label" type="text" placeholder="Gym, Class, ..."
+              <label class="block text-xs text-slate-500 mb-1">{{ t('stundenplan.labelField') }}</label>
+              <input v-model="newBlock.label" type="text" :placeholder="t('stundenplan.labelPlaceholder')"
                 class="w-full px-3 py-2 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-lg text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none" />
             </div>
             <div>
-              <label class="block text-xs text-slate-500 mb-1">Day</label>
+              <label class="block text-xs text-slate-500 mb-1">{{ t('stundenplan.dayField') }}</label>
               <select v-model="newBlock.day"
                 class="px-3 py-2 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-lg text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none">
-                <option v-for="d in WEEKDAYS" :key="d" :value="d">{{ d }}</option>
+                <option v-for="d in WEEKDAYS" :key="d" :value="d">{{ t('common.days.' + d) }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs text-slate-500 mb-1">Start</label>
+              <label class="block text-xs text-slate-500 mb-1">{{ t('stundenplan.startField') }}</label>
               <input v-model="newBlock.startTime" type="time"
                 class="px-3 py-2 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-lg text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none" />
             </div>
             <div>
-              <label class="block text-xs text-slate-500 mb-1">End</label>
+              <label class="block text-xs text-slate-500 mb-1">{{ t('stundenplan.endField') }}</label>
               <input v-model="newBlock.endTime" type="time"
                 class="px-3 py-2 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-lg text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none" />
             </div>
             <button type="button" @click="handleAddBlock"
               class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded-lg transition">
-              + Add
+              {{ t('stundenplan.addBlock') }}
             </button>
           </div>
         </div>
 
         <div v-if="blocks.length === 0" class="text-sm text-slate-500 px-1">
-          No availability blocks yet.
+          {{ t('stundenplan.noBlocksYet') }}
         </div>
         <div v-else class="space-y-2">
           <div v-for="block in blocks" :key="block.id"
             class="flex items-center justify-between p-4 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 rounded-xl">
             <div>
               <p class="text-sm font-medium text-slate-200 light:text-slate-800">{{ block.label }}</p>
-              <p class="text-xs text-slate-500">{{ block.day }} · {{ block.startTime }}–{{ block.endTime }}</p>
+              <p class="text-xs text-slate-500">{{ t('common.days.' + block.day) }} · {{ block.startTime }}–{{ block.endTime }}</p>
             </div>
             <button type="button" @click="removeBlock(block.id)"
               class="text-slate-500 hover:text-red-400 light:hover:text-red-600 text-sm transition">
-              Remove
+              {{ t('stundenplan.remove') }}
             </button>
           </div>
         </div>
@@ -186,30 +194,28 @@ const availabilityForGrid = computed(() =>
       <!-- Weekly Plan -->
       <section class="mt-10">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <h2 class="text-lg font-bold text-slate-100 light:text-slate-900">Weekly plan</h2>
+          <h2 class="text-lg font-bold text-slate-100 light:text-slate-900">{{ t('stundenplan.weeklyPlan') }}</h2>
           <div class="flex items-center gap-3">
             <button type="button" @click="handleGeneratePlan" :disabled="enrichedTasks.length === 0"
               class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 light:disabled:bg-slate-200 disabled:text-slate-500 light:disabled:text-slate-400 disabled:cursor-not-allowed text-slate-900 font-bold rounded-xl transition">
-              ⚡ Generate plan
+              {{ t('stundenplan.generatePlan') }}
             </button>
             <button type="button" @click="handleExportPlan" :disabled="!plan || plan.sessions.length === 0"
               class="px-5 py-2 bg-slate-800 light:bg-slate-100 hover:bg-slate-700 light:hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 light:text-slate-700 font-bold rounded-xl transition border border-slate-700 light:border-slate-300">
-              📅 Export to .ics
+              {{ t('stundenplan.exportIcs') }}
             </button>
           </div>
         </div>
 
         <div v-if="!plan" class="text-sm text-slate-500 px-1">
-          Click "Generate plan" to propose work sessions for this week's deadlines.
+          {{ t('stundenplan.clickGenerate') }}
         </div>
 
         <template v-else>
           <p class="text-sm text-slate-300 light:text-slate-600 mb-2">
-            Scheduled <strong>{{ plan.sessions.length }}</strong> of
-            <strong>{{ plan.sessions.length + plan.unscheduled.length }}</strong> tasks this week.
+            {{ t('stundenplan.scheduledSummary', { scheduled: plan.sessions.length, total: plan.sessions.length + plan.unscheduled.length }) }}
             <span v-if="plan.unscheduled.length > 0">
-              {{ plan.unscheduled.length }} couldn't fit before their deadline — consider reducing scope,
-              shortening estimates, or extending availability.
+              {{ t('stundenplan.unscheduledSummary', { count: plan.unscheduled.length }) }}
             </span>
           </p>
 
@@ -227,7 +233,7 @@ const availabilityForGrid = computed(() =>
                 <div></div>
                 <div v-for="day in plan.days" :key="day.label"
                   class="text-center text-xs font-semibold text-slate-400 light:text-slate-500 pb-1">
-                  {{ day.label }}
+                  {{ t('common.days.' + day.label) }}
                 </div>
               </div>
 
@@ -265,7 +271,7 @@ const availabilityForGrid = computed(() =>
 
           <div v-if="plan.unscheduled.length > 0" class="mt-4 space-y-1">
             <p v-for="u in plan.unscheduled" :key="u.taskId" class="text-xs text-slate-500">
-              ⚠️ {{ u.title }} — {{ u.reason }}
+              ⚠️ {{ u.title }} — {{ t(reasonLabel[u.reason]) }}
             </p>
           </div>
         </template>

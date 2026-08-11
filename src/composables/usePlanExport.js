@@ -1,11 +1,13 @@
 import { ref } from 'vue'
 import { createEvents } from 'ics'
+import { useLocale } from './useLocale.js'
 
 /**
  * Composable für .ics-Export des generierten Wochenplans.
  * Nutzt die von generatePlan() erzeugten Sessions (Titel, Tag, Start/Ende).
  */
 export function usePlanExport() {
+  const { t } = useLocale()
   const exportMessage = ref('')
   const exportError = ref('')
 
@@ -14,7 +16,7 @@ export function usePlanExport() {
     exportError.value = ''
 
     if (!sessions || sessions.length === 0) {
-      exportError.value = 'Kein Plan zum Exportieren vorhanden.'
+      exportError.value = t('errors.noPlanToExport')
       return
     }
 
@@ -36,7 +38,7 @@ export function usePlanExport() {
 
     createEvents(events, (error, value) => {
       if (error) {
-        exportError.value = `ICS-Export-Fehler: ${error.message}`
+        exportError.value = t('errors.icsExportError', { message: error.message })
         return
       }
       const blob = new Blob([value], { type: 'text/calendar;charset=utf-8' })
@@ -49,7 +51,7 @@ export function usePlanExport() {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      exportMessage.value = `✅ ${events.length} Sessions exportiert → stundenplan.ics`
+      exportMessage.value = t('export.sessionsExported', { count: events.length })
     })
   }
 

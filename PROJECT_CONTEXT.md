@@ -292,6 +292,18 @@ The calm command-centre calendar view from §12, scoped to what real data actual
 - `My Week` moved from a disabled "coming soon" sidebar entry to a live route (`/my-week`)
 - verified live: plan generated on Stundenplan correctly appears on My Week without regenerating; deadline markers correctly show only for in-week deadlines (confirmed against a 5-task spread — overdue and next-week deadlines correctly excluded); combined export produces a valid `.ics` with both event types; a page reload correctly clears the shared plan (by design) while deadline markers and availability remain since those don't depend on generation; Deadlines, Home, and Stundenplan all re-confirmed unaffected
 
+### Sidequest — Internationalization (German / English)
+
+The app had drifted into an inconsistent mix of German and English copy across phases. Fixed with a small hand-rolled i18n layer — no new dependency (`vue-i18n` was considered and deliberately skipped; a flat-dictionary `t()` lookup covers this app's needs without the extra bundle weight/API surface).
+
+- `src/composables/useLocale.js` (new) — `locale` ref (`de`/`en`), persisted to `localStorage` (`duedate.locale.v1`), `t(key, params)` with `{placeholder}` interpolation and fallback-to-German on a missing key. Defaults to **German** — matches the founder's context and most of the app's original copy.
+- `src/locales/de.js` / `en.js` (new) — flat dictionaries covering every user-facing string across all views, the mapping-confirm component, and the export/error composables
+- `src/views/SettingsView.vue` — added a Language section (🇩🇪/🇬🇧 segmented control), same pattern as the existing Dark/Light control
+- BBNet's own quoted UI labels (e.g. `«Neuer Antrag»`) are kept in German in **both** locales — that's literally what BBNet's interface displays regardless of DueDate's language, so translating them would make the instructions wrong; only the surrounding instructional prose is branched per locale directly in `DeadlinesView.vue`'s template
+- day-of-week codes (`Mon`..`Sun`) stay as the stable internal value everywhere they're stored or matched (availability blocks, the scheduler); only their *displayed* label is translated via `t('common.days.' + code)`
+- **Bug caught and fixed during this pass, before it shipped**: `HomeView.vue`'s overdue/urgent stat tiles filtered on `task._status.label === 'OVERDUE'` — a literal English string. Once labels became translated, that comparison would have silently returned 0 under the German default. Fixed by giving `computeStatus()` in `useTaskEnrichment.js` a locale-independent `code` field (`overdue`/`urgent`/`soon`/`ok`/`unknown`) separate from the translated `label`, and switching the filters to use `code`. Same fix applied preemptively to `scheduler.js`'s unscheduled-reason strings (now reason *codes*, translated by the component) so the same class of bug couldn't recur there.
+- verified live in both languages: full CSV import → mapping → table → export flow, Stundenplan (effort/priority/availability/generate/export), My Week (legend/grid/combined export), Settings switcher itself, language persists across a hard reload, switching is instant with no page reload, no console errors
+
 ### Known verification item
 
 The deployed GitHub Pages site previously appeared to show an older UI version without the mapping-reset button. Before new feature work, verify:

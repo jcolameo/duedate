@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { parseGermanDate, daysUntil } from '../utils/dateParser.js'
 import { taskId } from '../utils/taskId.js'
+import { useLocale } from './useLocale.js'
 
 const STATUS_STYLES = {
   red:     'bg-red-500/20 text-red-300 light:text-red-700 border-red-500/40',
@@ -10,12 +11,15 @@ const STATUS_STYLES = {
   slate:   'bg-slate-500/20 text-slate-300 light:text-slate-600 border-slate-500/40',
 }
 
-function computeStatus(days) {
-  if (days === null) return { label: '?', color: 'slate' }
-  if (days < 0) return { label: 'OVERDUE', color: 'red' }
-  if (days < 3) return { label: 'URGENT', color: 'orange' }
-  if (days < 7) return { label: 'SOON', color: 'yellow' }
-  return { label: 'OK', color: 'emerald' }
+// `code` is locale-independent (safe for logic/comparisons); `label` is the
+// translated display text. Never compare against `label` in code — it
+// changes with the active language.
+function computeStatus(days, t) {
+  if (days === null) return { code: 'unknown', label: t('status.unknown'), color: 'slate' }
+  if (days < 0) return { code: 'overdue', label: t('status.overdue'), color: 'red' }
+  if (days < 3) return { code: 'urgent', label: t('status.urgent'), color: 'orange' }
+  if (days < 7) return { code: 'soon', label: t('status.soon'), color: 'yellow' }
+  return { code: 'ok', label: t('status.ok'), color: 'emerald' }
 }
 
 /**
@@ -39,6 +43,8 @@ function readField(task, mapping, role, fallbacks = []) {
  * @param {Ref<Object>} userMapping - reaktives Spalten-Mapping (optional)
  */
 export function useTaskEnrichment(tasks, userMapping = null) {
+  const { t } = useLocale()
+
   const enrichedTasks = computed(() => {
     const mapping = userMapping?.value || {}
 
@@ -55,7 +61,7 @@ export function useTaskEnrichment(tasks, userMapping = null) {
 
         const deadlineDate = parseGermanDate(deadlineRaw)
         const days   = daysUntil(deadlineDate)
-        const status = computeStatus(days)
+        const status = computeStatus(days, t)
         const isGraded = String(gradedRaw || '').toLowerCase().startsWith('j') ||
                          String(gradedRaw || '').toLowerCase() === 'yes' ||
                          String(gradedRaw || '').toLowerCase() === 'true'
