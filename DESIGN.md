@@ -50,10 +50,10 @@ Pastels (`*-soft` background / `*-ink` text):
 
 | Name | Light | Dark |
 |---|---|---|
-| red | `#FDEBEC` / `#9F2F2D` | `rgba(253,235,236,0.10)` / `#F2A7A5` |
-| blue | `#E1F3FE` / `#1F6C9F` | `rgba(225,243,254,0.10)` / `#8CC4EA` |
-| green | `#EDF3EC` / `#346538` | `rgba(237,243,236,0.10)` / `#9BC59E` |
-| yellow | `#FBF3DB` / `#8A5C00` ¹ | `rgba(251,243,219,0.10)` / `#E2C06B` |
+| red | `#FDEBEC` / `#9F2F2D` | `rgba(253,235,236,0.16)` / `#F2A7A5` |
+| blue | `#E1F3FE` / `#1F6C9F` | `rgba(225,243,254,0.16)` / `#8CC4EA` |
+| green | `#EDF3EC` / `#346538` | `rgba(237,243,236,0.16)` / `#9BC59E` |
+| yellow | `#FBF3DB` / `#8A5C00` ¹ | `rgba(251,243,219,0.16)` / `#E2C06B` |
 
 ¹ Darker than `SKILL.md` (`#787774`, `#956400`), which fail 4.5:1 on the canvas / tag background.
 

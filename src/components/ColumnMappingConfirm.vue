@@ -1,8 +1,13 @@
 <script setup>
 import { computed } from 'vue'
+import { PhCheck } from '@phosphor-icons/vue'
 import { useLocale } from '../composables/useLocale.js'
+import BaseCard from './ui/BaseCard.vue'
+import BaseSelect from './ui/BaseSelect.vue'
+import BaseButton from './ui/BaseButton.vue'
+import InlineNotice from './ui/InlineNotice.vue'
 
-defineProps({
+const props = defineProps({
   userMapping: { type: Object, required: true },
   availableColumns: { type: Array, required: true },
   suggestions: { type: Array, required: true },
@@ -11,110 +16,57 @@ defineProps({
 })
 
 const emit = defineEmits(['update', 'confirm'])
-
 const { t } = useLocale()
 
-// Felder die wir abfragen — Reihenfolge ist UI-Order
+// Order = UI order; required fields first
 const FIELDS = computed(() => [
-  { role: 'title', label: t('mapping.fieldTitle'), icon: '📝', required: true },
-  { role: 'deadline', label: t('mapping.fieldDeadline'), icon: '📅', required: true },
-  { role: 'start', label: t('mapping.fieldStart'), icon: '🟢', required: false },
-  { role: 'category', label: t('mapping.fieldCategory'), icon: '🏷️', required: false },
-  { role: 'description', label: t('mapping.fieldDescription'), icon: '📄', required: false },
-  { role: 'graded', label: t('mapping.fieldGraded'), icon: '⭐', required: false },
-  { role: 'files', label: t('mapping.fieldFiles'), icon: '📎', required: false },
+  { role: 'title', label: t('mapping.fieldTitle'), required: true },
+  { role: 'deadline', label: t('mapping.fieldDeadline'), required: true },
+  { role: 'category', label: t('mapping.fieldCategory') },
+  { role: 'start', label: t('mapping.fieldStart') },
+  { role: 'description', label: t('mapping.fieldDescription') },
+  { role: 'graded', label: t('mapping.fieldGraded') },
+  { role: 'files', label: t('mapping.fieldFiles') },
 ])
 
-function handleChange(role, event) {
-  const value = event.target.value || null
-  emit('update', { role, column: value })
-}
+const columnOptions = computed(() => props.availableColumns.map(c => ({ value: c, label: c })))
 
-function handleConfirm() {
-  emit('confirm')
+const missingLabels = computed(() =>
+  props.missingRequired.map(role => FIELDS.value.find(f => f.role === role)?.label || role).join(', '),
+)
+
+function onChange(role, value) {
+  emit('update', { role, column: value || null })
 }
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto mt-6 p-6 bg-slate-900/80 light:bg-white border border-emerald-500/30 rounded-2xl shadow-lg">
-    <!-- Header -->
-    <div class="flex items-start gap-3 mb-5">
-      <span class="text-3xl">🤖</span>
-      <div>
-        <h3 class="text-lg font-bold text-emerald-300 light:text-emerald-600">{{ t('mapping.title') }}</h3>
-        <p class="text-sm text-slate-400 light:text-slate-500">
-          {{ t('mapping.subtitle') }}
-        </p>
-      </div>
-    </div>
+  <BaseCard as="section" padding="lg" aria-labelledby="h-mapping">
+    <h2 id="h-mapping" class="font-display text-[22px] font-bold tracking-[-0.01em]">{{ t('mapping.title') }}</h2>
+    <p class="mt-1 max-w-xl text-sm text-ink-muted">{{ t('mapping.subtitle') }}</p>
 
-    <!-- Warning bei Missing Required -->
-    <div v-if="missingRequired.length > 0" class="mb-4 p-4 bg-amber-900/30 light:bg-amber-50 border border-amber-500/40 light:border-amber-300 rounded-xl text-amber-200 light:text-amber-800 text-sm">
-      ⚠️ <strong>{{ t('mapping.missingRequired') }}</strong> {{ missingRequired.join(', ') }} {{ t('mapping.missingRequiredSuffix') }}
-    </div>
+    <InlineNotice v-if="missingRequired.length > 0" tone="warning" class="mt-5">
+      <strong class="font-medium">{{ t('mapping.missingRequired') }}</strong> {{ missingLabels }}. {{ t('mapping.missingRequiredSuffix') }}
+    </InlineNotice>
 
-    <!-- Mapping Rows -->
-    <div class="space-y-3">
-      <div
+    <div class="mt-6 grid gap-x-6 gap-y-5 sm:grid-cols-2">
+      <BaseSelect
         v-for="field in FIELDS"
         :key="field.role"
-        class="flex items-center gap-3"
-      >
-        <!-- Label -->
-        <div class="flex items-center gap-2 w-44 shrink-0">
-          <span class="text-lg">{{ field.icon }}</span>
-          <span class="text-sm text-slate-200 light:text-slate-700 font-medium">
-            {{ field.label }}
-            <span v-if="field.required" class="text-red-400">*</span>
-          </span>
-        </div>
-
-        <!-- Arrow -->
-        <span class="text-slate-500">→</span>
-
-        <!-- Dropdown -->
-        <select
-          :value="userMapping[field.role] || ''"
-          @change="handleChange(field.role, $event)"
-          class="flex-1 px-3 py-2.5 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-xl text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none"
-          :class="field.required && !userMapping[field.role] ? 'border-amber-500' : ''"
-        >
-          <option value="">{{ t('mapping.dontAssign') }}</option>
-          <option
-            v-for="col in availableColumns"
-            :key="col"
-            :value="col"
-          >
-            {{ col }}
-          </option>
-        </select>
-
-        <!-- Status Indicator -->
-        <span class="w-6 text-right text-sm">
-          <span v-if="userMapping[field.role]" class="text-emerald-400">✓</span>
-          <span v-else-if="field.required" class="text-red-400">!</span>
-          <span v-else class="text-slate-600">·</span>
-        </span>
-      </div>
+        :label="field.required ? `${field.label} · ${t('mapping.required')}` : field.label"
+        :model-value="userMapping[field.role] || ''"
+        :options="columnOptions"
+        :placeholder="t('mapping.dontAssign')"
+        :aria-invalid="field.required && !userMapping[field.role] ? 'true' : undefined"
+        @update:model-value="onChange(field.role, $event)"
+      />
     </div>
 
-    <!-- Confirm Button -->
-    <div class="mt-6 flex items-center justify-between gap-4">
-      <p class="text-xs text-slate-500">
-        {{ t('mapping.savedNote') }}
-      </p>
-      <button
-        @click="handleConfirm"
-        :disabled="!hasRequiredFields"
-        :class="[
-          'px-6 py-2.5 font-bold rounded-xl transition shadow-lg',
-          hasRequiredFields
-            ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900 shadow-emerald-500/20 cursor-pointer'
-            : 'bg-slate-700 light:bg-slate-200 text-slate-500 light:text-slate-400 cursor-not-allowed'
-        ]"
-      >
+    <div class="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
+      <p class="text-[13px] text-ink-muted">{{ t('mapping.savedNote') }}</p>
+      <BaseButton variant="primary" :icon="PhCheck" :disabled="!hasRequiredFields" @click="emit('confirm')">
         {{ t('mapping.confirm') }}
-      </button>
+      </BaseButton>
     </div>
-  </div>
+  </BaseCard>
 </template>

@@ -3,23 +3,15 @@ import { parseGermanDate, daysUntil } from '../utils/dateParser.js'
 import { taskId } from '../utils/taskId.js'
 import { useLocale } from './useLocale.js'
 
-const STATUS_STYLES = {
-  red:     'bg-red-500/20 text-red-300 light:text-red-700 border-red-500/40',
-  orange:  'bg-orange-500/20 text-orange-300 light:text-orange-700 border-orange-500/40',
-  yellow:  'bg-yellow-500/20 text-yellow-300 light:text-yellow-700 border-yellow-500/40',
-  emerald: 'bg-emerald-500/20 text-emerald-300 light:text-emerald-700 border-emerald-500/40',
-  slate:   'bg-slate-500/20 text-slate-300 light:text-slate-600 border-slate-500/40',
-}
-
 // `code` is locale-independent (safe for logic/comparisons); `label` is the
-// translated display text. Never compare against `label` in code — it
+// translated display text. Visual styling lives in components/ui/DueBadge.vue. Never compare against `label` in code — it
 // changes with the active language.
 function computeStatus(days, t) {
-  if (days === null) return { code: 'unknown', label: t('status.unknown'), color: 'slate' }
-  if (days < 0) return { code: 'overdue', label: t('status.overdue'), color: 'red' }
-  if (days < 3) return { code: 'urgent', label: t('status.urgent'), color: 'orange' }
-  if (days < 7) return { code: 'soon', label: t('status.soon'), color: 'yellow' }
-  return { code: 'ok', label: t('status.ok'), color: 'emerald' }
+  if (days === null) return { code: 'unknown', label: t('status.unknown') }
+  if (days < 0) return { code: 'overdue', label: t('status.overdue') }
+  if (days < 3) return { code: 'urgent', label: t('status.urgent') }
+  if (days < 7) return { code: 'soon', label: t('status.soon') }
+  return { code: 'ok', label: t('status.ok') }
 }
 
 /**
@@ -96,6 +88,5 @@ export function useTaskEnrichment(tasks, userMapping = null) {
   return {
     enrichedTasks,
     exportableCount,
-    STATUS_STYLES,
   }
 }

@@ -21,13 +21,13 @@
   --dd-accent-hover: #ffffff;
   --dd-focus: #8cc4ea;
 
-  --dd-red-soft: rgba(253, 235, 236, 0.1);
+  --dd-red-soft: rgba(253, 235, 236, 0.16);
   --dd-red-ink: #f2a7a5;
-  --dd-blue-soft: rgba(225, 243, 254, 0.1);
+  --dd-blue-soft: rgba(225, 243, 254, 0.16);
   --dd-blue-ink: #8cc4ea;
-  --dd-green-soft: rgba(237, 243, 236, 0.1);
+  --dd-green-soft: rgba(237, 243, 236, 0.16);
   --dd-green-ink: #9bc59e;
-  --dd-yellow-soft: rgba(251, 243, 219, 0.1);
+  --dd-yellow-soft: rgba(251, 243, 219, 0.16);
   --dd-yellow-ink: #e2c06b;
 }
 
