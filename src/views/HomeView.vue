@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { PhTray, PhArrowRight, PhUploadSimple } from '@phosphor-icons/vue'
+import { PhTray, PhArrowRight, PhUploadSimple, PhCheck, PhCheckCircle } from '@phosphor-icons/vue'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useLocale } from '../composables/useLocale.js'
 import { usePageEyebrow } from '../composables/usePageEyebrow.js'
@@ -10,15 +10,18 @@ import BaseCard from '../components/ui/BaseCard.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import DueBadge from '../components/ui/DueBadge.vue'
+import TaskCheckbox from '../components/ui/TaskCheckbox.vue'
+import { useTaskActions } from '../composables/useTaskActions.js'
 
-const { enrichedTasks } = useTaskEnrichment()
+const { enrichedTasks, openTasks, doneTasks } = useTaskEnrichment()
+const { complete, toggleDone } = useTaskActions()
 const { t } = useLocale()
 const eyebrow = usePageEyebrow()
 
-const overdueCount = computed(() => enrichedTasks.value.filter(x => x._status.code === 'overdue').length)
-const urgentCount = computed(() => enrichedTasks.value.filter(x => x._status.code === 'urgent').length)
-const focusTask = computed(() => enrichedTasks.value.find(x => x._days !== null) || null)
-const upcoming = computed(() => enrichedTasks.value.filter(x => x !== focusTask.value).slice(0, 5))
+const overdueCount = computed(() => openTasks.value.filter(x => x._status.code === 'overdue').length)
+const urgentCount = computed(() => openTasks.value.filter(x => x._status.code === 'urgent').length)
+const focusTask = computed(() => openTasks.value.find(x => x._days !== null) || null)
+const upcoming = computed(() => openTasks.value.filter(x => x._id !== focusTask.value?._id).slice(0, 5))
 
 const summary = computed(() =>
   overdueCount.value + urgentCount.value === 0
@@ -33,7 +36,7 @@ const summary = computed(() =>
       :eyebrow="eyebrow"
       :title="t('home.title')"
       accent="?"
-      :description="enrichedTasks.length ? summary : t('home.subtitle')"
+      :description="openTasks.length ? summary : t('home.subtitle')"
     />
 
     <div class="mt-10">
@@ -42,6 +45,8 @@ const summary = computed(() =>
       </EmptyState>
 
       <template v-else>
+        <EmptyState v-if="openTasks.length === 0" class="mb-6" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
+
         <!-- Focus: the single next action -->
         <BaseCard v-if="focusTask" padding="lg" class="mb-6">
           <p class="font-mono text-[12px] uppercase tracking-[0.06em] text-ink-muted">{{ t('home.focus') }}</p>
@@ -55,7 +60,10 @@ const summary = computed(() =>
                 <DueBadge :code="focusTask._status.code" :days="focusTask._days" />
               </div>
             </div>
-            <BaseButton :as="RouterLink" to="/deadlines" variant="primary" :icon="PhArrowRight">{{ t('home.goToDeadlines') }}</BaseButton>
+            <div class="flex flex-wrap gap-2">
+              <BaseButton :as="RouterLink" to="/deadlines" variant="ghost" :icon="PhArrowRight">{{ t('home.goToDeadlines') }}</BaseButton>
+              <BaseButton variant="primary" :icon="PhCheck" @click="complete(focusTask)">{{ t('tasks.markDone') }}</BaseButton>
+            </div>
           </div>
         </BaseCard>
 
@@ -71,7 +79,7 @@ const summary = computed(() =>
           </BaseCard>
           <BaseCard>
             <dt class="text-[13px] text-ink-muted">{{ t('home.trackedTotal') }}</dt>
-            <dd class="mt-1 font-mono text-[32px] leading-none">{{ enrichedTasks.length }}</dd>
+            <dd :class="['mt-1 font-mono text-[32px] leading-none', doneTasks.length ? 'text-green-ink' : 'text-ink']">{{ doneTasks.length }}</dd>
           </BaseCard>
         </dl>
 
@@ -85,7 +93,8 @@ const summary = computed(() =>
           </div>
           <BaseCard padding="none">
             <ul class="divide-y divide-line">
-              <li v-for="task in upcoming" :key="task._id" class="flex items-center gap-4 px-5 py-3">
+              <li v-for="task in upcoming" :key="task._id" class="flex items-center gap-3 px-4 py-2.5">
+                <TaskCheckbox :done="task._isDone" :title="task._title || t('common.untitled')" @toggle="toggleDone(task)" />
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-sm font-medium">{{ task._title || t('common.untitled') }}</p>
                   <p v-if="task._category" class="truncate text-[13px] text-ink-muted">{{ task._category }}</p>

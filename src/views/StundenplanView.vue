@@ -21,7 +21,7 @@ import InlineNotice from '../components/ui/InlineNotice.vue'
 import WeekGrid from '../components/WeekGrid.vue'
 import DayPicker from '../components/ui/DayPicker.vue'
 
-const { enrichedTasks } = useTaskEnrichment()
+const { openTasks: enrichedTasks } = useTaskEnrichment()
 const { getPlanningFor, setEffort, setPriority } = useTaskPlanning()
 const { blocks, addBlock, removeBlock, restoreBlock } = useAvailability()
 const { exportMessage, exportError, exportPlanToICS } = usePlanExport()

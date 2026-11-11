@@ -23,7 +23,15 @@ export function useTaskEnrichment() {
       .sort(compareByDue),
   )
 
-  const exportableCount = computed(() => enrichedTasks.value.filter(task => task._deadlineDate).length)
+  // Most views only care about what is still to do
+  const openTasks = computed(() => enrichedTasks.value.filter(task => !task._isDone))
+  const doneTasks = computed(() =>
+    enrichedTasks.value
+      .filter(task => task._isDone)
+      .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt))),
+  )
+  // Calendar export only includes open tasks with a valid date
+  const exportableCount = computed(() => openTasks.value.filter(task => task._deadlineDate).length)
 
-  return { enrichedTasks, exportableCount }
+  return { enrichedTasks, openTasks, doneTasks, exportableCount }
 }

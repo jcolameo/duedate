@@ -1,6 +1,6 @@
 <script setup>
-import { watch } from 'vue'
-import { PhUploadSimple, PhCalendarBlank, PhSlidersHorizontal, PhCaretDown, PhStar, PhLock, PhFileCsv } from '@phosphor-icons/vue'
+import { ref, computed, watch } from 'vue'
+import { PhUploadSimple, PhCalendarBlank, PhSlidersHorizontal, PhCaretDown, PhStar, PhLock, PhFileCsv, PhEye, PhEyeSlash, PhCheckCircle } from '@phosphor-icons/vue'
 import { useCSVImport } from '../composables/useCSVImport.js'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useICSExport } from '../composables/useICSExport.js'
@@ -13,6 +13,9 @@ import BaseButton from '../components/ui/BaseButton.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
 import DueBadge from '../components/ui/DueBadge.vue'
 import InlineNotice from '../components/ui/InlineNotice.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
+import TaskCheckbox from '../components/ui/TaskCheckbox.vue'
+import { useTaskActions } from '../composables/useTaskActions.js'
 
 // CSV import: drag & drop, parsing, file state
 const {
@@ -27,7 +30,12 @@ const {
   updateMapping, confirmMapping, resetMapping,
 } = useColumnMapping()
 
-const { enrichedTasks, exportableCount } = useTaskEnrichment()
+const { enrichedTasks, openTasks, doneTasks, exportableCount } = useTaskEnrichment()
+const { toggleDone } = useTaskActions()
+
+// Completed tasks are hidden by default; open ones first, then done (newest first)
+const showDone = ref(false)
+const visibleTasks = computed(() => (showDone.value ? [...openTasks.value, ...doneTasks.value] : openTasks.value))
 const { exportMessage, exportError, exportToICS } = useICSExport(enrichedTasks)
 const { locale, t } = useLocale()
 const toast = useToast()
@@ -128,36 +136,64 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
 
     <!-- Task table -->
     <section v-if="enrichedTasks.length > 0 && !needsConfirmation" class="mt-12" aria-labelledby="h-tasks">
-      <h2 id="h-tasks" class="mb-3 font-display text-[22px] font-bold tracking-[-0.01em]">
-        {{ t('deadlines.yourTasks') }} <span class="font-mono text-[15px] font-normal text-ink-muted">{{ enrichedTasks.length }}</span>
-      </h2>
-      <BaseCard padding="none" class="overflow-x-auto">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+        <h2 id="h-tasks" class="font-display text-[22px] font-bold tracking-[-0.01em]">
+          {{ t('deadlines.yourTasks') }} <span class="font-mono text-[15px] font-normal text-ink-muted">{{ openTasks.length }}</span>
+        </h2>
+        <BaseButton v-if="doneTasks.length" variant="ghost" size="sm" :icon="showDone ? PhEyeSlash : PhEye" :aria-pressed="showDone" @click="showDone = !showDone">
+          {{ showDone ? t('tasks.hideDone') : t('tasks.showDone', { count: doneTasks.length }) }}
+        </BaseButton>
+      </div>
+
+      <EmptyState v-if="visibleTasks.length === 0" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
+
+      <BaseCard v-else padding="none" class="overflow-x-auto">
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="border-b border-line font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">
-              <th scope="col" class="px-5 py-3 font-normal">{{ t('deadlines.colDays') }}</th>
-              <th scope="col" class="px-5 py-3 font-normal">{{ userMapping.title || t('deadlines.colTitle') }}</th>
-              <th scope="col" class="px-5 py-3 font-normal">{{ userMapping.category || t('deadlines.colSubject') }}</th>
-              <th scope="col" class="px-5 py-3 font-normal">{{ userMapping.deadline || t('deadlines.colDue') }}</th>
-              <th scope="col" class="px-5 py-3 font-normal">{{ userMapping.graded || t('deadlines.colGraded') }}</th>
+              <th scope="col" class="w-12 py-3 pl-4 pr-0 font-normal"><span class="sr-only">{{ t('tasks.markDone') }}</span></th>
+              <th scope="col" class="px-4 py-3 font-normal">{{ t('deadlines.colDays') }}</th>
+              <th scope="col" class="px-4 py-3 font-normal">{{ userMapping.title || t('deadlines.colTitle') }}</th>
+              <th scope="col" class="px-4 py-3 font-normal">{{ userMapping.category || t('deadlines.colSubject') }}</th>
+              <th scope="col" class="px-4 py-3 font-normal">{{ userMapping.deadline || t('deadlines.colDue') }}</th>
+              <th scope="col" class="px-4 py-3 font-normal">{{ userMapping.graded || t('deadlines.colGraded') }}</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-line">
-            <tr v-for="(task, index) in enrichedTasks" :key="index" class="transition-colors duration-150 hover:bg-surface-muted/50">
-              <td class="whitespace-nowrap px-5 py-3 align-top"><DueBadge :code="task._status.code" :days="task._days" /></td>
-              <td class="max-w-xs px-5 py-3 align-top font-medium text-ink">{{ task._title || t('common.dash') }}</td>
-              <td class="px-5 py-3 align-top text-ink-muted">{{ task._category || t('common.dash') }}</td>
-              <td class="whitespace-nowrap px-5 py-3 align-top font-mono text-[13px] text-ink-muted">{{ task._deadline || t('common.dash') }}</td>
-              <td class="px-5 py-3 align-top">
-                <span v-if="task._isGraded" class="inline-flex items-center gap-1.5 text-yellow-ink">
+          <TransitionGroup tag="tbody" name="dd-row" class="divide-y divide-line">
+            <tr
+              v-for="task in visibleTasks"
+              :key="task._id"
+              :class="['transition-colors duration-150 hover:bg-surface-muted/50', task._isDone && 'text-ink-muted']"
+            >
+              <td class="py-2.5 pl-4 pr-0 align-middle">
+                <TaskCheckbox :done="task._isDone" :title="task._title || t('common.untitled')" @toggle="toggleDone(task)" />
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 align-middle">
+                <span v-if="task._isDone" class="font-mono text-[13px] text-ink-muted">{{ t('tasks.markDone') }}</span>
+                <DueBadge v-else :code="task._status.code" :days="task._days" />
+              </td>
+              <td :class="['max-w-xs px-4 py-3 align-middle font-medium', task._isDone ? 'text-ink-muted line-through decoration-line-strong' : 'text-ink']">{{ task._title || t('common.dash') }}</td>
+              <td class="px-4 py-3 align-middle text-ink-muted">{{ task._category || t('common.dash') }}</td>
+              <td class="whitespace-nowrap px-4 py-3 align-middle font-mono text-[13px] text-ink-muted">{{ task._deadline || t('common.dash') }}</td>
+              <td class="px-4 py-3 align-middle">
+                <span v-if="task._isGraded" :class="['inline-flex items-center gap-1.5', task._isDone ? 'text-ink-muted' : 'text-yellow-ink']">
                   <PhStar weight="fill" class="size-3.5" aria-hidden="true" />{{ t('deadlines.gradedYes') }}
                 </span>
                 <span v-else class="text-ink-muted">{{ t('deadlines.gradedNo') }}</span>
               </td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </BaseCard>
     </section>
   </div>
 </template>
+
+<style scoped>
+.dd-row-leave-active {
+  transition: opacity 200ms var(--ease-out-soft);
+}
+.dd-row-leave-to {
+  opacity: 0;
+}
+</style>

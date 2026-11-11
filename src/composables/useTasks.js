@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import { detectColumns } from '../utils/columnDetector.js'
 import { isSavedMappingUsable } from '../utils/mapping.js'
-import { migrateLegacy, mergeImport, rowsToTasks } from '../utils/taskModel.js'
+import { migrateLegacy, mergeImport, rowsToTasks, withStatus } from '../utils/taskModel.js'
 
 /**
  * The task store (since B1): every task is its own object, persisted in
@@ -81,10 +81,16 @@ function updateTask(id, patch) {
   tasks.value = tasks.value.map(t => (t.id === id ? { ...t, ...patch, updatedAt: now } : t))
 }
 
+/** Marks a task done or open again (completedAt is maintained). */
+function setStatus(id, status) {
+  const now = new Date()
+  tasks.value = tasks.value.map(t => (t.id === id ? withStatus(t, status, now) : t))
+}
+
 function getTask(id) {
   return tasks.value.find(t => t.id === id) || null
 }
 
 export function useTasks() {
-  return { tasks, applyCsvImport, updateTask, getTask }
+  return { tasks, applyCsvImport, updateTask, setStatus, getTask }
 }

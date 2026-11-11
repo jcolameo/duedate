@@ -127,5 +127,12 @@ describe('generatePlan', () => {
       expect(s.startMin).toBeGreaterThanOrEqual(17 * 60)
     }
   })
+
+  it('never plans completed tasks (B2)', () => {
+    const tasks = [task('Done', new Date(2026, 10, 13), 2, { status: 'done' }), task('Open', new Date(2026, 10, 13), 2)]
+    const plan = generatePlan(tasks, planning(), [], NOW)
+    expect(plan.sessions.map(s => s.taskId)).toEqual(['Open'])
+    expect(plan.unscheduled).toEqual([])
+  })
 })
 

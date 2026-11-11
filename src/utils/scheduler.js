@@ -98,6 +98,7 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
 
   const eligible = enrichedTasks
     .filter(t => t._deadlineDate)
+    .filter(t => t.status !== 'done')
     .filter(t => t._days === null || t._days <= PLANNING_HORIZON_DAYS)
     .map(t => ({ task: t, planning: getPlanningFor(t) }))
     .sort((a, b) => {

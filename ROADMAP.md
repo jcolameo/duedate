@@ -85,7 +85,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | # | Status | Schritt |
 |---|---|---|
 | B1 | ✅ | `feat:` Aufgaben-Store + Datenmigration |
-| B2 | ⬜ | `feat:` Erledigt-Status mit Rückgängig |
+| B2 | ✅ | `feat:` Erledigt-Status mit Rückgängig |
 | B3 | ⬜ | `feat:` Bereiche Studium / Freelance / Privat |
 | B4 | ⬜ | `feat:` Schnellerfassung (< 5 s) |
 | B5 | ⬜ | `feat:` Aufgabe bearbeiten (Detail-Panel) |

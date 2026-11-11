@@ -202,7 +202,20 @@ export function enrichTask(task) {
     _deadlineDate: deadlineDate,
     _days: days,
     _statusCode: code,
+    _isDone: task.status === 'done',
   }
+}
+
+/** True for tasks that still need doing. Works on plain and enriched tasks. */
+export function isOpen(task) {
+  return task.status !== 'done'
+}
+
+/** Returns the task with a new status; completedAt is set or cleared. */
+export function withStatus(task, status, now = new Date()) {
+  if (!TASK_STATUS.includes(status)) throw new Error(`Unknown status: ${status}`)
+  const ts = now.toISOString()
+  return { ...task, status, completedAt: status === 'done' ? ts : null, updatedAt: ts }
 }
 
 /** Sort: by due date, tasks without a date last. */

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   toISODate, fromISODate, rowToFields, rowsToTasks, createTask, isTouched,
-  mergeImport, migrateLegacy, enrichTask, compareByDue,
+  mergeImport, migrateLegacy, enrichTask, compareByDue, withStatus, isOpen,
 } from '../taskModel.js'
 import { taskId } from '../taskId.js'
 
@@ -162,3 +162,36 @@ describe('enrichTask', () => {
     expect(list.map(x => x._days)).toEqual([-1, 5, null])
   })
 })
+
+describe('done state (B2)', () => {
+  const task = createTask({ id: 'a', title: 'Plakat' }, NOW)
+  const later = new Date('2026-11-12T10:00:00Z')
+
+  it('withStatus done sets completedAt, open clears it', () => {
+    const done = withStatus(task, 'done', later)
+    expect(done).toMatchObject({ status: 'done', completedAt: later.toISOString(), updatedAt: later.toISOString() })
+    expect(withStatus(done, 'open', later)).toMatchObject({ status: 'open', completedAt: null })
+  })
+
+  it('does not mutate the original task', () => {
+    withStatus(task, 'done', later)
+    expect(task.status).toBe('open')
+  })
+
+  it('rejects unknown status values', () => {
+    expect(() => withStatus(task, 'archived', later)).toThrow()
+  })
+
+  it('isOpen and _isDone agree', () => {
+    const done = withStatus(task, 'done', later)
+    expect([isOpen(task), isOpen(done)]).toEqual([true, false])
+    expect([enrichTask(task)._isDone, enrichTask(done)._isDone]).toEqual([false, true])
+  })
+
+  it('a done task survives re-import as done (user change)', () => {
+    const done = withStatus({ ...task, source: 'csv', sourceKey: 'a' }, 'done', later)
+    const incoming = [{ ...createTask({ id: 'a', title: 'Plakat', source: 'csv', sourceKey: 'a' }, NOW) }]
+    expect(mergeImport([done], incoming, later)[0].status).toBe('done')
+  })
+})
+

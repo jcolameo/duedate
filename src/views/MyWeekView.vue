@@ -39,7 +39,7 @@ const deadlinesByDay = computed(() => {
   const map = {}
   for (const day of weekDays.value) map[day.label] = []
   for (const task of enrichedTasks.value) {
-    if (!task._deadlineDate) continue
+    if (!task._deadlineDate || task._isDone) continue
     const day = weekDays.value.find(d => sameDay(d.date, task._deadlineDate))
     if (day) map[day.label].push(task)
   }
