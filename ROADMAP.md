@@ -36,6 +36,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | A4 | ✅ | `fix:` Kalender-Export + Planer korrigieren |
 | A5a | ✅ | `feat:` Design-Basis: Tokens + Basis-Komponenten (`#/design`) |
 | A5b | ✅ | `refactor:` Bestehende Seiten + Sidebar auf Design-Basis umstellen |
+| A6 | 🔄 | `feat:` Belegte Zeiten an mehreren Tagen (Quickfix, Ausbau in B8) |
 
 **A1 — Aufräumen**
 - Ziel: Unnötige/riskante Teile entfernen.
@@ -70,6 +71,13 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Akzeptanz: Ganze App per Tab bedienbar mit sichtbarem Fokus; Kontrast WCAG AA in Dark + Light.
 - Test: Storybook-a11y-Addon (bereits installiert) für die Basis-Komponenten.
 
+**A6 — Belegte Zeiten an mehreren Tagen** (Quickfix aus Nutzer-Feedback)
+- Ziel: Ein Eintrag gilt für mehrere Wochentage („Arbeit, Mo–Do, 08–17“, „Training, Mo + Mi“).
+- Dateien: `useAvailability.js`, neu `utils/availability.js`, `scheduler.js`, `WeekGrid.vue`, `StundenplanView.vue`, Locales.
+- Datenmodell: Block `{ day }` → `{ days: [] }`; alte Einträge werden beim Laden migriert (ein Tag → Liste mit einem Tag).
+- Akzeptanz: Tage per Toggle wählen; Anzeige „Mo–Do“ bzw. „Mo, Mi“; Planer und Wochenraster berücksichtigen alle Tage; „Bis“ muss nach „Von“ liegen.
+- Test: Unit für Migration, Tagesformat und Planer mit Mehrtages-Block.
+
 ---
 
 ## Phase B — Aufgaben-Kern (→ MVP)
@@ -83,6 +91,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B5 | ⬜ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
 | B6 | ⬜ | `feat:` Heute-Ansicht |
 | B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
+| B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -130,7 +139,16 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Akzeptanz: Export aller Daten als `duedate-backup-JJJJ-MM-TT.json`; Import prüft Schema/Version, zeigt Vorschau („42 Aufgaben, 3 Kunden …“), ersetzt erst nach Bestätigung; „Alle Daten löschen“ mit Bestätigung.
 - Test: Unit: Export → Import ergibt identischen Zustand; kaputte Datei → verständliche Fehlermeldung.
 
-### ✅ MVP erreicht nach B7
+**B8 — Planer v2** (aus Nutzer-Feedback; baut auf A6 auf, braucht B1/B2)
+- Ziel: Kein Abgabestress mehr. Grosse Aufgaben werden früh und verteilt eingeplant statt als ein Block am letzten Tag.
+- Aufwand als **Gesamtstunden** pro Aufgabe (Schnellwahl 2/4/8/16 h + freie Eingabe) statt 30m/1h/2h/3h+; Migration der alten Werte.
+- Regeln (deterministisch, ohne KI): Puffer = fertig 1 Tag vor Abgabe (einstellbar) · Sessions max. 90 min · max. ~3 h pro Aufgabe und Tag · gleichmässig auf freie Tage bis zum Ziel verteilen · Dringendes zuerst · rollend: Woche zeigt ihren Anteil, Erledigtes/gearbeitete Zeit wird abgezogen · ehrliche Meldung, wenn die Zeit nicht reicht („Für X fehlen 4 h vor dem 10.12.“).
+- Planungshorizont über die aktuelle Woche hinaus (ersetzt die 14-Tage-Grenze aus A4); Woche vor/zurück blättern (zusammen mit C6).
+- Akzeptanz: Aufgabe 12 h, Abgabe in 4 Wochen → mehrere Sessions verteilt über die Wochen, letzte Session ≥ 1 Tag vor Abgabe.
+- Test: Unit-Tests für Aufteilung, Puffer, Überbuchung, Rundung; Vergleich mehrerer Wochen.
+- Optional B8b: Planer-Einstellungen (Arbeitszeitfenster, Puffer-Tage, max. Stunden pro Tag).
+
+### ✅ MVP erreicht nach B7 (B8 direkt danach)
 
 ---
 
@@ -140,12 +158,15 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 |---|---|---|
 | C1 | ⬜ | `feat:` Mikroschritte |
 | C2 | ⬜ | `feat:` Fokus-Timer |
+| C2b | ⬜ | `feat:` Aufwandsschätzung lernt aus erfasster Zeit |
 | C3 | ⬜ | `feat:` Wiedervorlage („wieder zeigen am“) |
 | C4 | ⬜ | `feat:` Wiederkehrende Aufgaben (Training) |
 | C5 | ⬜ | `feat:` Wochenrückblick |
 | C6 | ⬜ | `feat:` Erinnerungen via Kalender + Woche blättern |
 
 **C1 — Mikroschritte**: Checkliste pro Aufgabe (manuell, 10–20-Min.-Schritte); Heute-Ansicht zeigt nur den *nächsten* Schritt. Dateien: `TaskDetail.vue`, `useTasks.js`, `HomeView.vue`. Akzeptanz: Schritte hinzufügen/abhaken/sortieren per Tastatur. Test: Unit für Fortschritt; manuell.
+
+**C2b — Schätzung lernt mit** (ohne KI): Vergleich Schätzung vs. erfasste Zeit pro Bereich/Fach → Vorschlag „Du brauchst im Schnitt 1.6× so lange wie geschätzt: 19 h statt 12 h?“. Nur Vorschlag, nie automatisch überschreiben. Braucht C2 (und später D3).
 
 **C2 — Fokus-Timer**: 25/5 (einstellbar), an eine Aufgabe gekoppelt, zeitstempelbasiert (läuft korrekt im Hintergrund-Tab und übersteht Reload), Restzeit im Tab-Titel, Fokusminuten pro Aufgabe gespeichert. Dateien: neu `composables/useFocusTimer.js`, `components/FocusTimer.vue`. Akzeptanz: Timer starten → Tab wechseln 10 Min. → Zeit stimmt. Test: Unit mit gefälschter Uhr.
 
@@ -215,6 +236,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 | Idee | Voraussetzung / Bemerkung |
 |---|---|
+| KI: Aufwand schätzen | Aus Beschreibung/PDF einer Aufgabe; erst nach C2b sinnvoll (eigene Daten zuerst) |
 | KI: Aufgaben zerlegen | Kleiner Server für den API-Key (z. B. Cloudflare Worker) mit Zugangsschutz; Fallback = manuelle Mikroschritte (C1) |
 | KI: Kunden-Briefing → Scope, Rückfragen, Kalkulationsentwurf | Wie oben; Ergebnis landet in Kalkulation (D4) |
 | MCP: Claude verbinden | Variante A (JSON-Backup) ab B7 nutzbar. Lokaler MCP-Server (Mac) oder Remote-MCP erst nach Entscheid über Sync |
