@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
     "deploy": "npm run build && gh-pages -d dist",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

@@ -14,6 +14,14 @@ export default defineConfig({
   plugins: [vue(), tailwindcss()],
   test: {
     projects: [{
+      // Fast unit tests for pure logic (src/utils etc.), no browser needed
+      extends: true,
+      test: {
+        name: 'unit',
+        environment: 'node',
+        include: ['src/**/*.test.js'],
+      },
+    }, {
       extends: true,
       plugins: [
       // The plugin will run tests for the stories defined in your Storybook config

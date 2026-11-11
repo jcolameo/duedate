@@ -31,7 +31,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | # | Status | Schritt |
 |---|---|---|
 | A1 | ✅ | `chore:` Aufräumen |
-| A2 | ⬜ | `test:` Unit-Tests einrichten |
+| A2 | ✅ | `test:` Unit-Tests einrichten |
 | A3 | ⬜ | `fix:` CSV-Import robust machen |
 | A4 | ⬜ | `fix:` Kalender-Export + Planer korrigieren |
 | A5 | ⬜ | `refactor:` Design-Basis (Basis-Komponenten, Fokus, ARIA) |
