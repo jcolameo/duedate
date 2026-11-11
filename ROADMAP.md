@@ -36,7 +36,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | A4 | ✅ | `fix:` Kalender-Export + Planer korrigieren |
 | A5a | ✅ | `feat:` Design-Basis: Tokens + Basis-Komponenten (`#/design`) |
 | A5b | ✅ | `refactor:` Bestehende Seiten + Sidebar auf Design-Basis umstellen |
-| A6 | 🔄 | `feat:` Belegte Zeiten an mehreren Tagen (Quickfix, Ausbau in B8) |
+| A6 | ✅ | `feat:` Belegte Zeiten an mehreren Tagen (Quickfix, Ausbau in B8) |
 
 **A1 — Aufräumen**
 - Ziel: Unnötige/riskante Teile entfernen.

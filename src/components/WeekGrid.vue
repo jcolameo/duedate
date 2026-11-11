@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { PhFlag } from '@phosphor-icons/vue'
 import { useLocale } from '../composables/useLocale.js'
 import { WORK_DAYS, DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
+import { expandBlocksByDay } from '../utils/availability.js'
 
 /**
  * Weekly time grid shared by Stundenplan and My Week (was duplicated before).
@@ -13,7 +14,7 @@ const props = defineProps({
   days: { type: Array, required: true },
   /** Planned sessions from generatePlan() */
   sessions: { type: Array, default: () => [] },
-  /** Busy blocks: [{ label, day, startTime, endTime }] */
+  /** Busy blocks: [{ label, days: [], startTime, endTime }] — one per day is drawn */
   blocks: { type: Array, default: () => [] },
   /** Optional { [dayLabel]: enrichedTask[] } — shows an all-day deadline row */
   deadlinesByDay: { type: Object, default: null },
@@ -44,7 +45,7 @@ function place(dayLabel, startMin, endMin) {
 }
 
 const visibleBlocks = computed(() =>
-  props.blocks
+  expandBlocksByDay(props.blocks)
     .map(b => ({ ...b, start: Math.max(DAY_START_MIN, toMinutes(b.startTime)), end: Math.min(DAY_END_MIN, toMinutes(b.endTime)) }))
     .filter(b => b.end > b.start),
 )

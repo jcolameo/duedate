@@ -1,6 +1,7 @@
 export const de = {
   common: {
     days: { Mon: 'Mo', Tue: 'Di', Wed: 'Mi', Thu: 'Do', Fri: 'Fr', Sat: 'Sa', Sun: 'So' },
+    daysLong: { Mon: 'Montag', Tue: 'Dienstag', Wed: 'Mittwoch', Thu: 'Donnerstag', Fri: 'Freitag', Sat: 'Samstag', Sun: 'Sonntag' },
     untitled: 'Aufgabe',
     dash: '—',
     week: 'KW {week}',
@@ -112,6 +113,10 @@ export const de = {
     labelField: 'Bezeichnung',
     labelPlaceholder: 'z. B. Training, Kurs, Job',
     dayField: 'Tag',
+    daysField: 'Tage',
+    errorNoDays: 'Mindestens einen Tag wählen.',
+    errorTimeRange: '„Bis“ muss nach „Von“ liegen.',
+    blockRemoved: '„{label}“ entfernt',
     startField: 'Von',
     endField: 'Bis',
     addBlock: 'Hinzufügen',
@@ -152,6 +157,7 @@ export const de = {
     english: 'English',
   },
   ui: {
+    undo: 'Rückgängig',
     close: 'Schliessen',
     dismissToast: 'Meldung schliessen',
   },

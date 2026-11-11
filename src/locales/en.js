@@ -1,6 +1,7 @@
 export const en = {
   common: {
     days: { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun' },
+    daysLong: { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' },
     untitled: 'Task',
     dash: '—',
     week: 'Week {week}',
@@ -112,6 +113,10 @@ export const en = {
     labelField: 'Label',
     labelPlaceholder: 'e.g. training, class, job',
     dayField: 'Day',
+    daysField: 'Days',
+    errorNoDays: 'Choose at least one day.',
+    errorTimeRange: '“To” must be after “From”.',
+    blockRemoved: '“{label}” removed',
     startField: 'From',
     endField: 'To',
     addBlock: 'Add',
@@ -152,6 +157,7 @@ export const en = {
     english: 'English',
   },
   ui: {
+    undo: 'Undo',
     close: 'Close',
     dismissToast: 'Dismiss message',
   },
