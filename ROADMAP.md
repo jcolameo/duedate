@@ -145,7 +145,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Ziel: Kein Abgabestress mehr. Grosse Aufgaben werden früh und verteilt eingeplant statt als ein Block am letzten Tag.
 - Aufwand als **Gesamtstunden** pro Aufgabe (Schnellwahl 2/4/8/16 h + freie Eingabe) statt 30m/1h/2h/3h+; Migration der alten Werte.
 - Regeln (deterministisch, ohne KI): Puffer = fertig 1 Tag vor Abgabe (einstellbar) · Sessions max. 90 min · max. ~3 h pro Aufgabe und Tag · gleichmässig auf freie Tage bis zum Ziel verteilen · Dringendes zuerst · rollend: Woche zeigt ihren Anteil, Erledigtes/gearbeitete Zeit wird abgezogen · ehrliche Meldung, wenn die Zeit nicht reicht („Für X fehlen 4 h vor dem 10.12.“).
-- Planungshorizont über die aktuelle Woche hinaus (ersetzt die 14-Tage-Grenze aus A4); Woche vor/zurück blättern (zusammen mit C6).
+- Planungshorizont über die aktuelle Woche hinaus (ersetzt die 14-Tage-Grenze aus A4); Woche blättern und Monat/Jahr folgen in B9/B10.
 - Akzeptanz: Aufgabe 12 h, Abgabe in 4 Wochen → mehrere Sessions verteilt über die Wochen, letzte Session ≥ 1 Tag vor Abgabe.
 - Test: Unit-Tests für Aufteilung, Puffer, Überbuchung, Rundung; Vergleich mehrerer Wochen.
 - Optional B8b: Planer-Einstellungen (Arbeitszeitfenster, Puffer-Tage, max. Stunden pro Tag).
