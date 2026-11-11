@@ -90,15 +90,32 @@ describe('generatePlan', () => {
     expect(generatePlan(tasks, planning(), [], NOW)).toEqual(generatePlan(tasks, planning(), [], NOW))
   })
 
-  // --- Known issues from the Phase 1 audit, fixed in roadmap step A4 ---
+  // --- Added in roadmap step A4 ---
 
-  it.fails('[A4] does not schedule today before the current time', () => {
+  it('does not schedule today before the current time', () => {
     const plan = generatePlan([task('A', new Date(2026, 10, 13), 2)], planning(), [], NOW)
     expect(plan.sessions[0].startMin).toBeGreaterThanOrEqual(10 * 60)
   })
 
-  it.fails('[A4] does not pull far-away deadlines (> 14 days) into this week', () => {
+  it('does not pull far-away deadlines (> 14 days) into this week', () => {
     const plan = generatePlan([task('Far', new Date(2027, 0, 20), 70)], planning(), [], NOW)
     expect(plan.sessions).toEqual([])
+  })
+
+  it('rounds the current time up to the next half hour', () => {
+    const at1007 = new Date(2026, 10, 11, 10, 7)
+    const plan = generatePlan([task('A', new Date(2026, 10, 13), 2)], planning(), [], at1007)
+    expect(plan.sessions[0].startTime).toBe('10:30')
+  })
+
+  it('moves to tomorrow when today is already over', () => {
+    const lateEvening = new Date(2026, 10, 11, 20, 45)
+    const plan = generatePlan([task('A', new Date(2026, 10, 13), 2)], planning(), [], lateEvening)
+    expect(plan.sessions[0]).toMatchObject({ day: 'Thu', startTime: '08:00' })
+  })
+
+  it('still includes a deadline exactly at the horizon (14 days)', () => {
+    const plan = generatePlan([task('Edge', new Date(2026, 10, 25), 14)], planning(), [], NOW)
+    expect(plan.sessions).toHaveLength(1)
   })
 })
