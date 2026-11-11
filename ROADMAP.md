@@ -63,7 +63,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Test: Unit-Test: gleiche Aufgabe → gleiche UID; Planer-Test mit fixem „jetzt“ = 20:00.
 
 **A5 — Design-Basis**
-- Ziel: Wiederverwendbare, zugängliche Bausteine, bevor neue Screens entstehen.
+- Ziel: Wiederverwendbare, zugängliche Bausteine, bevor neue Screens entstehen. Gestaltung nach `DESIGN.md` + Skill `minimalist-ui` (gilt ab hier für jeden neuen Screen und Phase E). Emojis im UI werden durch Icons ersetzt.
 - Dateien: `src/style.css` (Design-Tokens als CSS-Variablen), `src/components/ui/` (`BaseButton`, `BaseCard`, `BaseInput`, `BaseDialog`, `AppToast`), bestehende Views schrittweise umstellen.
 - Inhalt: Sichtbarer Fokus (`focus-visible`), Emojis `aria-hidden`, `prefers-reduced-motion`, Toast-System für Erfolg/Fehler/Undo. Alle neuen Komponenten responsive gebaut (Grundlage für Phase E).
 - Akzeptanz: Ganze App per Tab bedienbar mit sichtbarem Fokus; Kontrast WCAG AA in Dark + Light.
