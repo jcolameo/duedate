@@ -2,8 +2,6 @@
 import { ref, computed, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { PhTray, PhUploadSimple, PhPlus, PhTrash, PhCalendarPlus, PhDownloadSimple, PhWarning } from '@phosphor-icons/vue'
-import { useCSVImport } from '../composables/useCSVImport.js'
-import { useColumnMapping } from '../composables/useColumnMapping.js'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useTaskPlanning, EFFORT_OPTIONS, PRIORITY_OPTIONS } from '../composables/useTaskPlanning.js'
 import { useAvailability } from '../composables/useAvailability.js'
@@ -23,9 +21,7 @@ import InlineNotice from '../components/ui/InlineNotice.vue'
 import WeekGrid from '../components/WeekGrid.vue'
 import DayPicker from '../components/ui/DayPicker.vue'
 
-const { tasks } = useCSVImport()
-const { userMapping } = useColumnMapping()
-const { enrichedTasks } = useTaskEnrichment(tasks, userMapping)
+const { enrichedTasks } = useTaskEnrichment()
 const { getPlanningFor, setEffort, setPriority } = useTaskPlanning()
 const { blocks, addBlock, removeBlock, restoreBlock } = useAvailability()
 const { exportMessage, exportError, exportPlanToICS } = usePlanExport()

@@ -16,7 +16,7 @@ import InlineNotice from '../components/ui/InlineNotice.vue'
 
 // CSV import: drag & drop, parsing, file state
 const {
-  uploadedFile, isDragging, tasks, errorMessage, importWarning,
+  uploadedFile, isDragging, errorMessage, importWarning,
   handleDragOver, handleDragLeave, handleDrop, handleFileSelect,
 } = useCSVImport()
 
@@ -27,7 +27,7 @@ const {
   updateMapping, confirmMapping, resetMapping,
 } = useColumnMapping()
 
-const { enrichedTasks, exportableCount } = useTaskEnrichment(tasks, userMapping)
+const { enrichedTasks, exportableCount } = useTaskEnrichment()
 const { exportMessage, exportError, exportToICS } = useICSExport(enrichedTasks)
 const { locale, t } = useLocale()
 const toast = useToast()

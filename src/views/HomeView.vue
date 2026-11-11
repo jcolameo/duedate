@@ -2,8 +2,6 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { PhTray, PhArrowRight, PhUploadSimple } from '@phosphor-icons/vue'
-import { useCSVImport } from '../composables/useCSVImport.js'
-import { useColumnMapping } from '../composables/useColumnMapping.js'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useLocale } from '../composables/useLocale.js'
 import { usePageEyebrow } from '../composables/usePageEyebrow.js'
@@ -13,9 +11,7 @@ import BaseButton from '../components/ui/BaseButton.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import DueBadge from '../components/ui/DueBadge.vue'
 
-const { tasks } = useCSVImport()
-const { userMapping } = useColumnMapping()
-const { enrichedTasks } = useTaskEnrichment(tasks, userMapping)
+const { enrichedTasks } = useTaskEnrichment()
 const { t } = useLocale()
 const eyebrow = usePageEyebrow()
 
