@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { detectColumns } from '../utils/columnDetector.js'
 import { useCSVImport } from './useCSVImport.js'
+import { withRole, isSavedMappingUsable } from '../utils/mapping.js'
 
 const STORAGE_KEY = 'duedate.columnMapping.v1'
 
@@ -62,8 +63,9 @@ function analyzeNewCSV(headers, rows) {
 
   // 2. Gespeichertes Mapping laden — nur wenn Spalten passen
   const saved = loadSavedMapping()
-  if (saved && areColumnsCompatible(saved, headers)) {
-    userMapping.value = { ...saved }
+  if (isSavedMappingUsable(saved, headers)) {
+    // Drop empty values that older versions may have saved
+    userMapping.value = Object.fromEntries(Object.entries(saved).filter(([, col]) => col))
     isConfirmed.value = true  // Auto-confirm wenn alles bekannt
     console.info('[ColumnMapping] Saved mapping reused')
   } else {
@@ -73,18 +75,11 @@ function analyzeNewCSV(headers, rows) {
 }
 
 /**
- * Prüft ob gespeichertes Mapping zu aktuellen CSV-Spalten passt
- */
-function areColumnsCompatible(savedMapping, currentHeaders) {
-  const headerSet = new Set(currentHeaders)
-  return Object.values(savedMapping).every(col => headerSet.has(col))
-}
-
-/**
- * User ändert ein Mapping (z.B. Dropdown)
+ * User changes one role (dropdown). An empty choice removes the role
+ * instead of storing null — see utils/mapping.js.
  */
 function updateMapping(role, column) {
-  userMapping.value = { ...userMapping.value, [role]: column }
+  userMapping.value = withRole(userMapping.value, role, column)
 }
 
 /**

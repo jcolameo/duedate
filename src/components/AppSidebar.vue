@@ -1,77 +1,85 @@
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import {
+  PhHouse, PhCalendarCheck, PhClock, PhCalendarDots, PhFolders, PhHeartbeat, PhTray,
+  PhBriefcase, PhIdentificationCard, PhSun, PhMoon, PhGear,
+} from '@phosphor-icons/vue'
 import { useTheme } from '../composables/useTheme.js'
 import { useLocale } from '../composables/useLocale.js'
 
-const route = useRoute()
 const { theme, toggleTheme } = useTheme()
 const { t } = useLocale()
 
 const NAV_ITEMS = computed(() => [
-  { path: '/', label: t('nav.home'), icon: '🏠' },
-  { path: '/deadlines', label: t('nav.deadlines'), icon: '📅' },
-  { path: '/stundenplan', label: t('nav.stundenplan'), icon: '📊' },
-  { path: '/my-week', label: t('nav.myWeek'), icon: '🗓️' },
+  { path: '/', label: t('nav.home'), icon: PhHouse },
+  { path: '/deadlines', label: t('nav.deadlines'), icon: PhCalendarCheck },
+  { path: '/stundenplan', label: t('nav.stundenplan'), icon: PhClock },
+  { path: '/my-week', label: t('nav.myWeek'), icon: PhCalendarDots },
 ])
 
-const COMING_SOON_ITEMS = computed(() => [
-  { label: t('nav.projects'), icon: '📁' },
-  { label: t('nav.lifePlanner'), icon: '❤️' },
-  { label: t('nav.capture'), icon: '📥' },
-  { label: t('nav.freelance'), icon: '💼' },
-  { label: t('nav.jobs'), icon: '🔍' },
+// Future modules: shown quietly so the roadmap is visible, but not interactive
+const PLANNED_ITEMS = computed(() => [
+  { label: t('nav.projects'), icon: PhFolders },
+  { label: t('nav.freelance'), icon: PhBriefcase },
+  { label: t('nav.jobs'), icon: PhIdentificationCard },
+  { label: t('nav.capture'), icon: PhTray },
+  { label: t('nav.lifePlanner'), icon: PhHeartbeat },
 ])
 
-function isActive(path) {
-  return route.path === path
-}
+const itemClass = 'flex items-center gap-3 rounded-md px-3 h-9 text-sm transition-colors duration-150'
+// Active must look clearly different from hover: filled + bold + accent icon vs. faint tint
+const activeClass = 'bg-surface-muted text-ink font-semibold [&>svg]:text-blue-ink'
+const idleClass = 'text-ink-muted hover:bg-surface-muted/50 hover:text-ink'
 
-const themeToggleLabel = computed(() => (theme.value === 'dark' ? t('nav.lightMode') : t('nav.darkMode')))
+const themeLabel = computed(() => (theme.value === 'dark' ? t('nav.lightMode') : t('nav.darkMode')))
 </script>
 
 <template>
-  <aside
-    class="w-60 shrink-0 border-r border-slate-800/60 light:border-slate-200 bg-slate-950 light:bg-slate-50 p-5 flex flex-col">
-    <div class="mb-8 px-2">
-      <p class="text-base font-bold text-emerald-400 light:text-emerald-600">📅 DueDate</p>
-      <p class="text-xs text-slate-500 mt-0.5">{{ t('nav.subtitle') }}</p>
-    </div>
+  <aside class="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-line bg-canvas px-3 py-6">
+    <!-- Logo links home but is not a nav item, so no aria-current here -->
+    <RouterLink to="/" custom v-slot="{ href, navigate }">
+      <a :href="href" class="mb-8 block rounded-md px-3" @click="navigate">
+        <span class="font-display text-[22px] font-extrabold leading-none tracking-[-0.03em] text-ink">DueDate<span class="text-blue-ink">.</span></span>
+        <span class="mt-1.5 block font-mono text-[11px] text-ink-muted">{{ t('nav.subtitle') }}</span>
+      </a>
+    </RouterLink>
 
-    <nav class="space-y-1">
-      <RouterLink v-for="item in NAV_ITEMS" :key="item.path" :to="item.path" :class="[
-        'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition',
-        isActive(item.path)
-          ? 'bg-emerald-500/10 text-emerald-400 light:text-emerald-600 font-semibold'
-          : 'text-slate-300 light:text-slate-600 hover:bg-slate-900 light:hover:bg-slate-100',
-      ]">
-        <span>{{ item.icon }}</span>
-        <span>{{ item.label }}</span>
-      </RouterLink>
+    <nav :aria-label="t('nav.main')" class="flex flex-1 flex-col">
+      <ul class="space-y-0.5">
+        <li v-for="item in NAV_ITEMS" :key="item.path">
+          <RouterLink :to="item.path" custom v-slot="{ isExactActive, href, navigate }">
+            <a :href="href" :class="[itemClass, isExactActive ? activeClass : idleClass]" :aria-current="isExactActive ? 'page' : undefined" @click="navigate">
+              <component :is="item.icon" class="size-[18px] shrink-0" aria-hidden="true" />
+              {{ item.label }}
+            </a>
+          </RouterLink>
+        </li>
+      </ul>
 
-      <div v-for="item in COMING_SOON_ITEMS" :key="item.label"
-        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-600 light:text-slate-400"
-        :title="t('nav.soon')">
-        <span class="opacity-50">{{ item.icon }}</span>
-        <span class="opacity-50">{{ item.label }}</span>
-        <span class="ml-auto text-[10px] uppercase tracking-wide text-slate-700 light:text-slate-400">{{ t('nav.soon') }}</span>
-      </div>
+      <p class="mt-8 px-3 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('nav.planned') }}</p>
+      <ul class="mt-2 space-y-0.5" :aria-label="t('nav.planned')">
+        <li
+          v-for="item in PLANNED_ITEMS"
+          :key="item.label"
+          class="flex h-8 items-center gap-3 px-3 text-[13px] text-ink-muted"
+          aria-disabled="true"
+        >
+          <component :is="item.icon" class="size-4 shrink-0" aria-hidden="true" />
+          {{ item.label }}
+        </li>
+      </ul>
     </nav>
 
-    <div class="mt-auto pt-4 space-y-1 border-t border-slate-800/60 light:border-slate-200">
-      <button type="button" @click="toggleTheme"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 light:text-slate-600 hover:bg-slate-900 light:hover:bg-slate-100 transition text-left">
-        <span>{{ themeToggleLabel }}</span>
+    <div class="mt-6 space-y-0.5 border-t border-line pt-4">
+      <button type="button" :class="[itemClass, idleClass, 'w-full text-left']" @click="toggleTheme">
+        <component :is="theme === 'dark' ? PhSun : PhMoon" class="size-[18px] shrink-0" aria-hidden="true" />
+        {{ themeLabel }}
       </button>
-
-      <RouterLink to="/settings" :class="[
-        'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition',
-        isActive('/settings')
-          ? 'bg-emerald-500/10 text-emerald-400 light:text-emerald-600 font-semibold'
-          : 'text-slate-300 light:text-slate-600 hover:bg-slate-900 light:hover:bg-slate-100',
-      ]">
-        <span>⚙️</span>
-        <span>{{ t('nav.settings') }}</span>
+      <RouterLink to="/settings" custom v-slot="{ isExactActive, href, navigate }">
+        <a :href="href" :class="[itemClass, isExactActive ? activeClass : idleClass]" :aria-current="isExactActive ? 'page' : undefined" @click="navigate">
+          <PhGear class="size-[18px] shrink-0" aria-hidden="true" />
+          {{ t('nav.settings') }}
+        </a>
       </RouterLink>
     </div>
   </aside>

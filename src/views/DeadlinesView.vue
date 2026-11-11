@@ -1,192 +1,163 @@
 <script setup>
+import { watch } from 'vue'
+import { PhUploadSimple, PhCalendarBlank, PhSlidersHorizontal, PhCaretDown, PhStar, PhLock, PhFileCsv } from '@phosphor-icons/vue'
 import { useCSVImport } from '../composables/useCSVImport.js'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useICSExport } from '../composables/useICSExport.js'
 import { useColumnMapping } from '../composables/useColumnMapping.js'
 import { useLocale } from '../composables/useLocale.js'
-
+import { useToast } from '../composables/useToast.js'
 import ColumnMappingConfirm from '../components/ColumnMappingConfirm.vue'
+import PageHeader from '../components/ui/PageHeader.vue'
+import BaseButton from '../components/ui/BaseButton.vue'
+import BaseCard from '../components/ui/BaseCard.vue'
+import DueBadge from '../components/ui/DueBadge.vue'
+import InlineNotice from '../components/ui/InlineNotice.vue'
 
-// CSV-Import: Drag&Drop, Parsing, Datei-State
+// CSV import: drag & drop, parsing, file state
 const {
-  uploadedFile, isDragging, tasks, errorMessage,
+  uploadedFile, isDragging, tasks, errorMessage, importWarning,
   handleDragOver, handleDragLeave, handleDrop, handleFileSelect,
 } = useCSVImport()
 
-// Column-Mapping: Detection (runs automatically when the shared task list
-// changes, see useColumnMapping.js) + State + Persistence
+// Column mapping: detection runs automatically when the shared task list changes
 const {
   userMapping, suggestions, missingRequired,
   availableColumns, isConfirmed, hasRequiredFields, needsConfirmation,
   updateMapping, confirmMapping, resetMapping,
 } = useColumnMapping()
 
-// Anreicherung: Status, Tage, Sortierung
-const { enrichedTasks, exportableCount, STATUS_STYLES } = useTaskEnrichment(tasks, userMapping)
-
-// ICS-Export
+const { enrichedTasks, exportableCount } = useTaskEnrichment(tasks, userMapping)
 const { exportMessage, exportError, exportToICS } = useICSExport(enrichedTasks)
-
 const { locale, t } = useLocale()
+const toast = useToast()
 
-function onMappingUpdate({ role, column }) {
-  updateMapping(role, column)
-}
+// Successful export is quick feedback, not page content
+watch(exportMessage, (msg) => {
+  if (msg) toast.show(msg, { tone: 'success' })
+})
 
-function onMappingConfirm() {
-  confirmMapping()
-}
+const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-ink'
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 light:bg-slate-50 text-slate-100 light:text-slate-900 p-10">
-    <header class="max-w-6xl mx-auto mb-14 text-center">
-      <h1 class="text-4xl font-bold text-emerald-400 light:text-emerald-600">{{ t('deadlines.title') }}</h1>
-      <p class="mt-2 text-slate-400 light:text-slate-500">{{ t('deadlines.subtitle') }}</p>
-    </header>
+  <div class="mx-auto max-w-5xl px-6 py-10 sm:px-10">
+    <PageHeader :title="t('deadlines.title')" accent="." :description="t('deadlines.subtitle')">
+      <template v-if="enrichedTasks.length && !needsConfirmation" #actions>
+        <BaseButton v-if="isConfirmed" variant="ghost" :icon="PhSlidersHorizontal" :title="t('deadlines.changeMappingTitle')" @click="resetMapping">
+          {{ t('deadlines.changeMapping') }}
+        </BaseButton>
+        <BaseButton variant="primary" :icon="PhCalendarBlank" :disabled="exportableCount === 0" @click="exportToICS">
+          {{ t('deadlines.exportButton') }} <span class="font-mono">({{ exportableCount }})</span>
+        </BaseButton>
+      </template>
+    </PageHeader>
 
-    <!-- Anleitung für BBNet-User -->
-    <div class="max-w-2xl mx-auto mb-8 p-6 bg-slate-900/60 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl">
-      <details class="group">
-        <summary class="flex items-center justify-between cursor-pointer list-none">
-          <span class="font-semibold text-slate-200 light:text-slate-800">
-            📖 {{ t('deadlines.howItWorks') }}
-            <span class="text-slate-500 text-sm font-normal">{{ t('deadlines.forBBNetUsers') }}</span>
+    <div class="mt-10 space-y-4">
+      <!-- Drop zone (label wraps a visually hidden but focusable file input) -->
+      <label
+        :class="[
+          'flex cursor-pointer items-center gap-5 rounded-xl border border-dashed bg-surface transition-colors duration-150',
+          'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
+          enrichedTasks.length ? 'px-5 py-4' : 'flex-col px-6 py-14 text-center',
+          isDragging ? 'border-blue-ink bg-blue-soft' : 'border-line-strong hover:bg-surface-muted',
+        ]"
+        @dragover="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
+      >
+        <input type="file" accept=".csv,text/csv" class="sr-only" @change="handleFileSelect" />
+        <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-ink-muted">
+          <PhUploadSimple class="size-5" aria-hidden="true" />
+        </span>
+        <span :class="enrichedTasks.length ? 'min-w-0 flex-1' : ''">
+          <span class="block font-medium text-ink">{{ t('deadlines.dropCsv') }}</span>
+          <span class="block text-sm text-ink-muted">{{ t('deadlines.orClickToSelect') }}</span>
+        </span>
+        <span v-if="uploadedFile && enrichedTasks.length" class="hidden items-center gap-2 text-right sm:flex">
+          <PhFileCsv class="size-4 text-ink-muted" aria-hidden="true" />
+          <span>
+            <span class="block max-w-56 truncate font-mono text-[13px] text-ink">{{ uploadedFile.name }}</span>
+            <span class="block font-mono text-[12px] text-ink-muted">{{ t('deadlines.uploadSummary', { count: enrichedTasks.length, exportable: exportableCount }) }}</span>
           </span>
-          <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+        </span>
+      </label>
+
+      <InlineNotice v-if="importWarning && !errorMessage" tone="warning">{{ importWarning }}</InlineNotice>
+      <InlineNotice v-if="errorMessage || exportError" tone="error">{{ errorMessage || exportError }}</InlineNotice>
+
+      <!-- How it works (BBNet's own UI labels stay German in both locales) -->
+      <details class="group rounded-xl border border-line bg-surface">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-xl px-5 py-3.5 text-sm [&::-webkit-details-marker]:hidden">
+          <span><span class="font-medium text-ink">{{ t('deadlines.howItWorks') }}</span> <span class="text-ink-muted">· {{ t('deadlines.forBBNetUsers') }}</span></span>
+          <PhCaretDown class="size-4 text-ink-muted transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
         </summary>
-        <!-- BBNet's own UI labels (in quotes) are kept in German regardless
-             of app language — that's literally what BBNet displays. -->
-        <ol v-if="locale === 'de'" class="mt-4 space-y-2 text-sm text-slate-300 light:text-slate-600 list-decimal list-inside">
-          <li>Im <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">BBNet</span> → <span
-              class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">Hausaufgabe</span> öffnen</li>
-          <li>Oben rechts neben <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«Neuer Antrag»</span> auf die
-            <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">⋯</span> klicken
-          </li>
-          <li><span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«Gesamte Liste exportieren»</span> wählen → CSV
-            wird heruntergeladen</li>
-          <li>CSV-Datei unten in die Box ziehen ⬇️</li>
-          <li>Auf <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«In Kalender exportieren»</span> klicken
-          </li>
-          <li>Heruntergeladene <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">.ics</span>-Datei öffnen →
-            alle Termine landen im Kalender ✨</li>
-        </ol>
-        <ol v-else class="mt-4 space-y-2 text-sm text-slate-300 light:text-slate-600 list-decimal list-inside">
-          <li>In <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">BBNet</span>, open
-            <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">Hausaufgabe</span> (Homework)</li>
-          <li>Click the <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">⋯</span> next to
-            <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«Neuer Antrag»</span> (New Request) in the top right
-          </li>
-          <li>Choose <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«Gesamte Liste exportieren»</span>
-            (Export entire list) → the CSV downloads</li>
-          <li>Drag the CSV file into the box below ⬇️</li>
-          <li>Click <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">«In Kalender exportieren»</span> (Export to
-            calendar) below
-          </li>
-          <li>Open the downloaded <span class="font-mono bg-slate-950/70 light:bg-slate-100 px-1.5 py-0.5 rounded">.ics</span> file → all
-            deadlines land in your calendar ✨</li>
-        </ol>
-        <p class="mt-4 text-xs text-slate-500 border-t border-slate-800 light:border-slate-200 pt-3">
-          {{ t('deadlines.localNotice') }}
-        </p>
+        <div class="border-t border-line px-5 py-4 text-sm text-ink">
+          <ol v-if="locale === 'de'" class="list-inside list-decimal space-y-2 marker:font-mono marker:text-ink-muted">
+            <li>Im <span :class="code">BBNet</span> unter <span :class="code">Hausaufgabe</span> öffnen</li>
+            <li>Oben rechts neben <span :class="code">«Neuer Antrag»</span> auf <span :class="code">⋯</span> klicken</li>
+            <li><span :class="code">«Gesamte Liste exportieren»</span> wählen, die CSV wird heruntergeladen</li>
+            <li>Die CSV oben in das Feld ziehen</li>
+            <li><span :class="code">In Kalender exportieren</span> klicken und die <span :class="code">.ics</span>-Datei öffnen</li>
+          </ol>
+          <ol v-else class="list-inside list-decimal space-y-2 marker:font-mono marker:text-ink-muted">
+            <li>In <span :class="code">BBNet</span>, open <span :class="code">Hausaufgabe</span> (homework)</li>
+            <li>Click <span :class="code">⋯</span> next to <span :class="code">«Neuer Antrag»</span> in the top right</li>
+            <li>Choose <span :class="code">«Gesamte Liste exportieren»</span> (export entire list), the CSV downloads</li>
+            <li>Drag the CSV into the field above</li>
+            <li>Click <span :class="code">Export to calendar</span> and open the <span :class="code">.ics</span> file</li>
+          </ol>
+          <p class="mt-4 flex items-center gap-2 text-[13px] text-ink-muted">
+            <PhLock class="size-3.5 shrink-0" aria-hidden="true" />{{ t('deadlines.localNotice') }}
+          </p>
+        </div>
       </details>
     </div>
 
-    <!-- Drop Zone -->
-    <div class="max-w-2xl mx-auto">
-      <label @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop" :class="[
-        'block border-2 border-dashed rounded-2xl p-14 text-center cursor-pointer transition-all',
-        isDragging
-          ? 'border-emerald-400 bg-emerald-400/10 scale-105'
-          : 'border-slate-700 light:border-slate-300 bg-slate-900 light:bg-white hover:border-slate-600 light:hover:border-slate-400 hover:bg-slate-900/80 light:hover:bg-slate-50'
-      ]">
-        <input type="file" accept=".csv" class="hidden" @change="handleFileSelect" />
-        <div class="text-6xl mb-4">📂</div>
-        <p class="text-xl font-semibold mb-2">{{ t('deadlines.dropCsv') }}</p>
-        <p class="text-slate-400 light:text-slate-500 text-sm">{{ t('deadlines.orClickToSelect') }}</p>
-      </label>
+    <ColumnMappingConfirm
+      v-if="needsConfirmation"
+      class="mt-8"
+      :user-mapping="userMapping"
+      :available-columns="availableColumns"
+      :suggestions="suggestions"
+      :has-required-fields="hasRequiredFields"
+      :missing-required="missingRequired"
+      @update="updateMapping($event.role, $event.column)"
+      @confirm="confirmMapping"
+    />
 
-      <div v-if="uploadedFile"
-        class="mt-6 p-5 bg-slate-900 light:bg-white border border-emerald-400/30 light:border-emerald-500/40 rounded-2xl">
-        <p class="text-emerald-400 light:text-emerald-600 font-semibold">✅ {{ uploadedFile.name }}</p>
-        <p class="text-slate-400 light:text-slate-500 text-sm mt-1">
-          {{ t('deadlines.uploadSummary', { count: enrichedTasks.length, exportable: exportableCount }) }}
-        </p>
-      </div>
-
-      <div v-if="errorMessage || exportError"
-        class="mt-6 p-5 bg-red-900/30 light:bg-red-50 border border-red-500/50 light:border-red-300 rounded-2xl text-red-300 light:text-red-700">
-        ⚠️ {{ errorMessage || exportError }}
-      </div>
-
-      <div v-if="exportMessage"
-        class="mt-6 p-5 bg-emerald-900/30 light:bg-emerald-50 border border-emerald-500/50 light:border-emerald-300 rounded-2xl text-emerald-300 light:text-emerald-700">
-        {{ exportMessage }}
-      </div>
-    </div>
-
-    <!-- Column Mapping Confirmation -->
-    <ColumnMappingConfirm v-if="needsConfirmation" :user-mapping="userMapping" :available-columns="availableColumns"
-      :suggestions="suggestions" :has-required-fields="hasRequiredFields" :missing-required="missingRequired"
-      @update="onMappingUpdate" @confirm="onMappingConfirm" />
-
-    <!-- Action Bar + Table -->
-    <div v-if="enrichedTasks.length > 0" class="max-w-6xl mx-auto mt-14">
-      <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h2 class="text-2xl font-bold text-slate-100 light:text-slate-900">{{ t('deadlines.yourTasks') }}</h2>
-        <div class="flex items-center gap-3">
-          <button v-if="isConfirmed" @click="resetMapping"
-            class="px-4 py-2.5 text-sm bg-slate-800 light:bg-slate-100 hover:bg-slate-700 light:hover:bg-slate-200 text-slate-200 light:text-slate-700 rounded-xl transition border border-slate-700 light:border-slate-300"
-            :title="t('deadlines.changeMappingTitle')">
-            {{ t('deadlines.changeMapping') }}
-          </button>
-          <button @click="exportToICS" :disabled="exportableCount === 0"
-            class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 light:disabled:bg-slate-200 disabled:text-slate-500 light:disabled:text-slate-400 disabled:cursor-not-allowed text-slate-900 font-bold rounded-xl transition shadow-lg shadow-emerald-500/20">
-            {{ t('deadlines.exportButton', { count: exportableCount }) }}
-          </button>
-        </div>
-      </div>
-
-      <div class="overflow-x-auto rounded-2xl border border-slate-800 light:border-slate-200">
-        <table class="w-full text-left">
-          <thead class="bg-slate-900 light:bg-slate-100 text-slate-400 light:text-slate-500 text-xs uppercase tracking-wide">
-            <tr>
-              <th class="px-5 py-4 font-semibold">{{ t('deadlines.colStatus') }}</th>
-              <th class="px-5 py-4 font-semibold">{{ t('deadlines.colDays') }}</th>
-              <th class="px-5 py-4 font-semibold">{{ userMapping.category || t('deadlines.colSubject') }}</th>
-              <th class="px-5 py-4 font-semibold">{{ userMapping.title || t('deadlines.colTitle') }}</th>
-              <th class="px-5 py-4 font-semibold">{{ userMapping.deadline || t('deadlines.colDue') }}</th>
-              <th class="px-5 py-4 font-semibold">{{ userMapping.graded || t('deadlines.colGraded') }}</th>
+    <!-- Task table -->
+    <section v-if="enrichedTasks.length > 0 && !needsConfirmation" class="mt-12" aria-labelledby="h-tasks">
+      <h2 id="h-tasks" class="mb-3 font-display text-[22px] font-bold tracking-[-0.01em]">
+        {{ t('deadlines.yourTasks') }} <span class="font-mono text-[15px] font-normal text-ink-muted">{{ enrichedTasks.length }}</span>
+      </h2>
+      <BaseCard padding="none" class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-line font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">
+              <th scope="col" class="px-5 py-3 font-normal">{{ t('deadlines.colDays') }}</th>
+              <th scope="col" class="px-5 py-3 font-normal">{{ userMapping.title || t('deadlines.colTitle') }}</th>
+              <th scope="col" class="px-5 py-3 font-normal">{{ userMapping.category || t('deadlines.colSubject') }}</th>
+              <th scope="col" class="px-5 py-3 font-normal">{{ userMapping.deadline || t('deadlines.colDue') }}</th>
+              <th scope="col" class="px-5 py-3 font-normal">{{ userMapping.graded || t('deadlines.colGraded') }}</th>
             </tr>
           </thead>
-          <tbody class="bg-slate-950/40 light:bg-white">
-            <tr v-for="(task, index) in enrichedTasks" :key="index"
-              class="border-t border-slate-800/70 light:border-slate-200 hover:bg-slate-900/60 light:hover:bg-slate-50 transition">
-              <td class="px-5 py-4 align-top">
-                <span
-                  :class="['inline-block px-2.5 py-1 rounded-full text-xs font-bold border', STATUS_STYLES[task._status.color]]">
-                  {{ task._status.label }}
+          <tbody class="divide-y divide-line">
+            <tr v-for="(task, index) in enrichedTasks" :key="index" class="transition-colors duration-150 hover:bg-surface-muted/50">
+              <td class="whitespace-nowrap px-5 py-3 align-top"><DueBadge :code="task._status.code" :days="task._days" /></td>
+              <td class="max-w-xs px-5 py-3 align-top font-medium text-ink">{{ task._title || t('common.dash') }}</td>
+              <td class="px-5 py-3 align-top text-ink-muted">{{ task._category || t('common.dash') }}</td>
+              <td class="whitespace-nowrap px-5 py-3 align-top font-mono text-[13px] text-ink-muted">{{ task._deadline || t('common.dash') }}</td>
+              <td class="px-5 py-3 align-top">
+                <span v-if="task._isGraded" class="inline-flex items-center gap-1.5 text-yellow-ink">
+                  <PhStar weight="fill" class="size-3.5" aria-hidden="true" />{{ t('deadlines.gradedYes') }}
                 </span>
-              </td>
-              <td class="px-5 py-4 text-sm align-top">
-                <span v-if="task._days === null" class="text-slate-500">{{ t('common.dash') }}</span>
-                <span v-else-if="task._days < 0" class="text-red-400 light:text-red-600 font-mono">
-                  {{ t('deadlines.daysOverdue', { days: Math.abs(task._days) }) }}
-                </span>
-                <span v-else class="text-slate-300 light:text-slate-600 font-mono">{{ t('deadlines.dueInDays', { days: task._days }) }}</span>
-              </td>
-              <td class="px-5 py-4 text-sm text-slate-300 light:text-slate-600 align-top">{{ task._category || t('common.dash') }}</td>
-              <td class="px-5 py-4 text-sm text-slate-200 light:text-slate-800 align-top font-medium max-w-xs">{{ task._title || t('common.dash') }}
-              </td>
-              <td class="px-5 py-4 text-sm text-slate-400 light:text-slate-500 align-top whitespace-nowrap">{{ task._deadline || t('common.dash') }}</td>
-              <td class="px-5 py-4 text-sm align-top">
-                <span v-if="task._isGraded" class="text-amber-300 light:text-amber-600">{{ t('deadlines.gradedYes') }}</span>
-                <span v-else class="text-slate-500">{{ t('deadlines.gradedNo') }}</span>
+                <span v-else class="text-ink-muted">{{ t('deadlines.gradedNo') }}</span>
               </td>
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
+      </BaseCard>
+    </section>
   </div>
 </template>

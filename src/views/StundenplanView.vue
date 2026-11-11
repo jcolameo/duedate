@@ -1,5 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { RouterLink } from 'vue-router'
+import { PhTray, PhUploadSimple, PhPlus, PhTrash, PhCalendarPlus, PhDownloadSimple, PhWarning } from '@phosphor-icons/vue'
 import { useCSVImport } from '../composables/useCSVImport.js'
 import { useColumnMapping } from '../composables/useColumnMapping.js'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
@@ -8,274 +10,148 @@ import { useAvailability, WEEKDAYS } from '../composables/useAvailability.js'
 import { usePlanExport } from '../composables/usePlanExport.js'
 import { usePlanState } from '../composables/usePlanState.js'
 import { useLocale } from '../composables/useLocale.js'
-import { WORK_DAYS, DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
+import { useToast } from '../composables/useToast.js'
+import PageHeader from '../components/ui/PageHeader.vue'
+import BaseCard from '../components/ui/BaseCard.vue'
+import BaseButton from '../components/ui/BaseButton.vue'
+import BaseInput from '../components/ui/BaseInput.vue'
+import BaseSelect from '../components/ui/BaseSelect.vue'
+import EmptyState from '../components/ui/EmptyState.vue'
+import SegmentedControl from '../components/ui/SegmentedControl.vue'
+import DueBadge from '../components/ui/DueBadge.vue'
+import InlineNotice from '../components/ui/InlineNotice.vue'
+import WeekGrid from '../components/WeekGrid.vue'
 
 const { tasks } = useCSVImport()
 const { userMapping } = useColumnMapping()
 const { enrichedTasks } = useTaskEnrichment(tasks, userMapping)
 const { getPlanningFor, setEffort, setPriority } = useTaskPlanning()
 const { blocks, addBlock, removeBlock } = useAvailability()
-const { exportMessage: planExportMessage, exportError: planExportError, exportPlanToICS } = usePlanExport()
+const { exportMessage, exportError, exportPlanToICS } = usePlanExport()
 const { plan, generate: handleGeneratePlan } = usePlanState()
 const { t } = useLocale()
+const toast = useToast()
 
-const priorityLabel = computed(() => ({
-  high: t('stundenplan.priorityHigh'),
-  medium: t('stundenplan.priorityMedium'),
-  low: t('stundenplan.priorityLow'),
-}))
+watch(exportMessage, (msg) => { if (msg) toast.show(msg, { tone: 'success' }) })
+
+const priorityOptions = computed(() =>
+  PRIORITY_OPTIONS.map(p => ({ value: p, label: t('stundenplan.priority' + p[0].toUpperCase() + p.slice(1)) })),
+)
+const effortOptions = EFFORT_OPTIONS.map(e => ({ value: e, label: e }))
+const dayOptions = computed(() => WEEKDAYS.map(d => ({ value: d, label: t('common.days.' + d) })))
 
 const reasonLabel = { noFreeSlot: 'stundenplan.reasonNoFreeSlot', noFreeSlotDefaultEffort: 'stundenplan.reasonNoFreeSlotDefaultEffort' }
 
-const newBlock = ref({ label: '', day: 'Mon', startTime: '09:00', endTime: '10:00' })
+const emptyBlock = () => ({ label: '', day: 'Mon', startTime: '09:00', endTime: '10:00' })
+const newBlock = ref(emptyBlock())
 
 function handleAddBlock() {
   if (!newBlock.value.label.trim()) return
-  addBlock({ ...newBlock.value })
-  newBlock.value = { label: '', day: 'Mon', startTime: '09:00', endTime: '10:00' }
+  addBlock({ ...newBlock.value, label: newBlock.value.label.trim() })
+  newBlock.value = emptyBlock()
 }
 
 function handleExportPlan() {
   if (plan.value) exportPlanToICS(plan.value.sessions)
 }
-
-const TOTAL_SLOTS = (DAY_END_MIN - DAY_START_MIN) / 30
-
-const hourMarks = computed(() => {
-  const marks = []
-  for (let m = DAY_START_MIN; m < DAY_END_MIN; m += 60) {
-    marks.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:00`)
-  }
-  return marks
-})
-
-function toMinutes(hhmm) {
-  const [h, m] = String(hhmm || '00:00').split(':').map(Number)
-  return h * 60 + (m || 0)
-}
-
-function gridStyle(dayLabel, startMin, endMin) {
-  const dayIdx = WORK_DAYS.indexOf(dayLabel)
-  const rowStart = Math.max(1, Math.round((startMin - DAY_START_MIN) / 30) + 1)
-  const rowSpan = Math.max(1, Math.round((endMin - startMin) / 30))
-  return {
-    gridColumn: String(dayIdx + 2),
-    gridRow: `${rowStart} / span ${rowSpan}`,
-  }
-}
-
-const availabilityForGrid = computed(() =>
-  blocks.value
-    .map(b => {
-      const start = Math.max(DAY_START_MIN, toMinutes(b.startTime))
-      const end = Math.min(DAY_END_MIN, toMinutes(b.endTime))
-      return { ...b, start, end }
-    })
-    .filter(b => b.end > b.start)
-)
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 light:bg-slate-50 text-slate-100 light:text-slate-900 p-10">
-    <div class="max-w-4xl mx-auto">
-      <header class="mb-10">
-        <h1 class="text-3xl font-bold text-emerald-400 light:text-emerald-600">{{ t('stundenplan.title') }}</h1>
-        <p class="mt-2 text-slate-400 light:text-slate-500">
-          {{ t('stundenplan.subtitle') }}
+  <div class="mx-auto max-w-5xl px-6 py-10 sm:px-10">
+    <PageHeader :title="t('stundenplan.title')" accent="." :description="t('stundenplan.subtitle')" />
+
+    <!-- Tasks: effort + priority -->
+    <section class="mt-12" aria-labelledby="h-tasks">
+      <h2 id="h-tasks" class="mb-3 font-display text-[22px] font-bold tracking-[-0.01em]">{{ t('stundenplan.tasksToSchedule') }}</h2>
+
+      <EmptyState v-if="enrichedTasks.length === 0" :icon="PhTray" :title="t('stundenplan.emptyTitle')" :description="t('stundenplan.emptyState')">
+        <BaseButton :as="RouterLink" to="/deadlines" :icon="PhUploadSimple">{{ t('stundenplan.importCta') }}</BaseButton>
+      </EmptyState>
+
+      <BaseCard v-else padding="none">
+        <ul class="divide-y divide-line">
+          <li v-for="task in enrichedTasks" :key="task._id" class="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3">
+            <div class="min-w-0 flex-1 basis-56">
+              <p class="truncate text-sm font-medium">{{ task._title || t('common.untitled') }}</p>
+              <p class="mt-0.5 flex items-center gap-3 text-[13px] text-ink-muted">
+                <span v-if="task._category" class="truncate">{{ task._category }}</span>
+                <DueBadge :code="task._status.code" :days="task._days" />
+              </p>
+            </div>
+            <SegmentedControl
+              size="sm"
+              :label="`${t('stundenplan.priority')}: ${task._title}`"
+              :options="priorityOptions"
+              :model-value="getPlanningFor(task).priority"
+              @update:model-value="setPriority(task._id, $event)"
+            />
+            <SegmentedControl
+              size="sm"
+              mono
+              :label="`${t('stundenplan.effort')}: ${task._title}`"
+              :options="effortOptions"
+              :model-value="getPlanningFor(task).effort"
+              @update:model-value="setEffort(task._id, $event)"
+            />
+          </li>
+        </ul>
+      </BaseCard>
+    </section>
+
+    <!-- Busy times -->
+    <section class="mt-12" aria-labelledby="h-busy">
+      <h2 id="h-busy" class="font-display text-[22px] font-bold tracking-[-0.01em]">{{ t('stundenplan.availability') }}</h2>
+      <p class="mb-3 mt-1 text-sm text-ink-muted">{{ t('stundenplan.availabilityHint') }}</p>
+
+      <BaseCard>
+        <form class="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_7rem_7rem_7rem_auto]" @submit.prevent="handleAddBlock">
+          <BaseInput v-model="newBlock.label" :label="t('stundenplan.labelField')" :placeholder="t('stundenplan.labelPlaceholder')" />
+          <BaseSelect v-model="newBlock.day" :label="t('stundenplan.dayField')" :options="dayOptions" />
+          <BaseInput v-model="newBlock.startTime" type="time" :label="t('stundenplan.startField')" class="font-mono" />
+          <BaseInput v-model="newBlock.endTime" type="time" :label="t('stundenplan.endField')" class="font-mono" />
+          <BaseButton type="submit" :icon="PhPlus" :disabled="!newBlock.label.trim()">{{ t('stundenplan.addBlock') }}</BaseButton>
+        </form>
+
+        <p v-if="blocks.length === 0" class="mt-5 text-sm text-ink-muted">{{ t('stundenplan.noBlocksYet') }}</p>
+        <ul v-else class="mt-5 divide-y divide-line border-t border-line">
+          <li v-for="block in blocks" :key="block.id" class="flex items-center gap-4 py-2.5">
+            <span class="w-8 font-mono text-[13px] text-ink-muted">{{ t('common.days.' + block.day) }}</span>
+            <span class="font-mono text-[13px] text-ink-muted">{{ block.startTime }}–{{ block.endTime }}</span>
+            <span class="min-w-0 flex-1 truncate text-sm">{{ block.label }}</span>
+            <BaseButton variant="ghost" size="sm" icon-only :icon="PhTrash" :label="t('stundenplan.removeBlock', { label: block.label })" @click="removeBlock(block.id)" />
+          </li>
+        </ul>
+      </BaseCard>
+    </section>
+
+    <!-- Weekly plan -->
+    <section class="mt-12" aria-labelledby="h-plan">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h2 id="h-plan" class="font-display text-[22px] font-bold tracking-[-0.01em]">{{ t('stundenplan.weeklyPlan') }}</h2>
+        <div class="flex flex-wrap gap-2">
+          <BaseButton :icon="PhDownloadSimple" :disabled="!plan || plan.sessions.length === 0" @click="handleExportPlan">{{ t('stundenplan.exportIcs') }}</BaseButton>
+          <BaseButton variant="primary" :icon="PhCalendarPlus" :disabled="enrichedTasks.length === 0" @click="handleGeneratePlan">{{ t('stundenplan.generatePlan') }}</BaseButton>
+        </div>
+      </div>
+
+      <p v-if="!plan" class="text-sm text-ink-muted">{{ t('stundenplan.clickGenerate') }}</p>
+
+      <template v-else>
+        <p class="mb-4 text-sm" role="status">
+          {{ t('stundenplan.scheduledSummary', { scheduled: plan.sessions.length, total: plan.sessions.length + plan.unscheduled.length }) }}
+          <span v-if="plan.unscheduled.length > 0" class="text-ink-muted">{{ t('stundenplan.unscheduledSummary', { count: plan.unscheduled.length }) }}</span>
         </p>
-      </header>
+        <InlineNotice v-if="exportError" tone="error" class="mb-4">{{ exportError }}</InlineNotice>
 
-      <!-- Tasks to schedule -->
-      <section class="mb-10">
-        <h2 class="text-lg font-bold text-slate-100 light:text-slate-900 mb-4">{{ t('stundenplan.tasksToSchedule') }}</h2>
+        <WeekGrid :days="plan.days" :sessions="plan.sessions" :blocks="blocks" :label="t('stundenplan.weeklyPlan')" />
 
-        <div v-if="enrichedTasks.length === 0"
-          class="p-8 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl text-center">
-          <p class="text-slate-300 light:text-slate-600 mb-4">{{ t('stundenplan.emptyState') }}</p>
-          <RouterLink to="/deadlines"
-            class="inline-block px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded-xl transition">
-            {{ t('stundenplan.importCta') }}
-          </RouterLink>
-        </div>
-
-        <div v-else class="space-y-3">
-          <div v-for="task in enrichedTasks" :key="task._id"
-            class="p-4 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl">
-            <div class="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <p class="text-sm font-medium text-slate-200 light:text-slate-800">{{ task._title || t('common.dash') }}</p>
-                <p class="text-xs text-slate-500">{{ task._category || t('common.dash') }} · {{ task._deadline || t('common.dash') }}</p>
-              </div>
-
-              <div class="flex items-center gap-4 flex-wrap">
-                <!-- Priority -->
-                <div class="flex items-center gap-1 p-1 bg-slate-950/60 light:bg-slate-100 rounded-lg border border-slate-800 light:border-slate-200">
-                  <button v-for="p in PRIORITY_OPTIONS" :key="p" type="button" @click="setPriority(task._id, p)"
-                    :class="[
-                      'px-2.5 py-1 rounded-md text-xs transition',
-                      getPlanningFor(task).priority === p
-                        ? 'bg-emerald-500/10 text-emerald-400 light:text-emerald-600 font-semibold'
-                        : 'text-slate-400 hover:text-slate-200 light:hover:text-slate-700',
-                    ]">
-                    {{ priorityLabel[p] }}
-                  </button>
-                </div>
-
-                <!-- Effort -->
-                <div class="flex items-center gap-1 p-1 bg-slate-950/60 light:bg-slate-100 rounded-lg border border-slate-800 light:border-slate-200">
-                  <button v-for="e in EFFORT_OPTIONS" :key="e" type="button" @click="setEffort(task._id, e)" :class="[
-                    'px-2.5 py-1 rounded-md text-xs transition',
-                    getPlanningFor(task).effort === e
-                      ? 'bg-emerald-500/10 text-emerald-400 light:text-emerald-600 font-semibold'
-                      : 'text-slate-400 hover:text-slate-200 light:hover:text-slate-700',
-                  ]">
-                    {{ e }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Availability -->
-      <section>
-        <h2 class="text-lg font-bold text-slate-100 light:text-slate-900 mb-4">{{ t('stundenplan.availability') }}</h2>
-
-        <div class="p-5 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl mb-4">
-          <div class="flex items-end gap-3 flex-wrap">
-            <div class="flex-1 min-w-[10rem]">
-              <label class="block text-xs text-slate-500 mb-1">{{ t('stundenplan.labelField') }}</label>
-              <input v-model="newBlock.label" type="text" :placeholder="t('stundenplan.labelPlaceholder')"
-                class="w-full px-3 py-2 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-lg text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none" />
-            </div>
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">{{ t('stundenplan.dayField') }}</label>
-              <select v-model="newBlock.day"
-                class="px-3 py-2 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-lg text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none">
-                <option v-for="d in WEEKDAYS" :key="d" :value="d">{{ t('common.days.' + d) }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">{{ t('stundenplan.startField') }}</label>
-              <input v-model="newBlock.startTime" type="time"
-                class="px-3 py-2 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-lg text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none" />
-            </div>
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">{{ t('stundenplan.endField') }}</label>
-              <input v-model="newBlock.endTime" type="time"
-                class="px-3 py-2 bg-slate-950/60 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-lg text-sm text-slate-200 light:text-slate-800 focus:border-emerald-400 focus:outline-none" />
-            </div>
-            <button type="button" @click="handleAddBlock"
-              class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded-lg transition">
-              {{ t('stundenplan.addBlock') }}
-            </button>
-          </div>
-        </div>
-
-        <div v-if="blocks.length === 0" class="text-sm text-slate-500 px-1">
-          {{ t('stundenplan.noBlocksYet') }}
-        </div>
-        <div v-else class="space-y-2">
-          <div v-for="block in blocks" :key="block.id"
-            class="flex items-center justify-between p-4 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 rounded-xl">
-            <div>
-              <p class="text-sm font-medium text-slate-200 light:text-slate-800">{{ block.label }}</p>
-              <p class="text-xs text-slate-500">{{ t('common.days.' + block.day) }} · {{ block.startTime }}–{{ block.endTime }}</p>
-            </div>
-            <button type="button" @click="removeBlock(block.id)"
-              class="text-slate-500 hover:text-red-400 light:hover:text-red-600 text-sm transition">
-              {{ t('stundenplan.remove') }}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Weekly Plan -->
-      <section class="mt-10">
-        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <h2 class="text-lg font-bold text-slate-100 light:text-slate-900">{{ t('stundenplan.weeklyPlan') }}</h2>
-          <div class="flex items-center gap-3">
-            <button type="button" @click="handleGeneratePlan" :disabled="enrichedTasks.length === 0"
-              class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 light:disabled:bg-slate-200 disabled:text-slate-500 light:disabled:text-slate-400 disabled:cursor-not-allowed text-slate-900 font-bold rounded-xl transition">
-              {{ t('stundenplan.generatePlan') }}
-            </button>
-            <button type="button" @click="handleExportPlan" :disabled="!plan || plan.sessions.length === 0"
-              class="px-5 py-2 bg-slate-800 light:bg-slate-100 hover:bg-slate-700 light:hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 light:text-slate-700 font-bold rounded-xl transition border border-slate-700 light:border-slate-300">
-              {{ t('stundenplan.exportIcs') }}
-            </button>
-          </div>
-        </div>
-
-        <div v-if="!plan" class="text-sm text-slate-500 px-1">
-          {{ t('stundenplan.clickGenerate') }}
-        </div>
-
-        <template v-else>
-          <p class="text-sm text-slate-300 light:text-slate-600 mb-2">
-            {{ t('stundenplan.scheduledSummary', { scheduled: plan.sessions.length, total: plan.sessions.length + plan.unscheduled.length }) }}
-            <span v-if="plan.unscheduled.length > 0">
-              {{ t('stundenplan.unscheduledSummary', { count: plan.unscheduled.length }) }}
-            </span>
-          </p>
-
-          <div v-if="planExportMessage" class="text-sm text-emerald-400 light:text-emerald-600 mb-2">
-            {{ planExportMessage }}
-          </div>
-          <div v-if="planExportError" class="text-sm text-red-400 light:text-red-600 mb-2">
-            {{ planExportError }}
-          </div>
-
-          <div class="overflow-x-auto">
-            <div class="min-w-[42rem]">
-              <!-- Day headers -->
-              <div class="grid mb-1" style="grid-template-columns: 3rem repeat(7, 1fr);">
-                <div></div>
-                <div v-for="day in plan.days" :key="day.label"
-                  class="text-center text-xs font-semibold text-slate-400 light:text-slate-500 pb-1">
-                  {{ t('common.days.' + day.label) }}
-                </div>
-              </div>
-
-              <!-- Grid body -->
-              <div class="relative grid rounded-xl border border-slate-800 light:border-slate-200 overflow-hidden"
-                :style="{ gridTemplateColumns: '3rem repeat(7, 1fr)', gridTemplateRows: `repeat(${TOTAL_SLOTS}, 1.35rem)` }">
-
-                <!-- hour labels -->
-                <div v-for="(h, i) in hourMarks" :key="h" class="text-[10px] text-slate-600 text-right pr-1.5 -mt-1.5"
-                  :style="{ gridColumn: '1', gridRow: `${i * 2 + 1}` }">
-                  {{ h }}
-                </div>
-
-                <!-- day column backgrounds -->
-                <div v-for="(day, dIdx) in plan.days" :key="'bg-' + day.label"
-                  class="border-l border-slate-800 light:border-slate-200 bg-slate-900/40 light:bg-white"
-                  :style="{ gridColumn: String(dIdx + 2), gridRow: `1 / span ${TOTAL_SLOTS}` }">
-                </div>
-
-                <!-- availability (busy) blocks -->
-                <div v-for="(b, i) in availabilityForGrid" :key="'avail-' + i"
-                  class="bg-slate-700/40 light:bg-slate-300/60 rounded mx-0.5 my-px"
-                  :style="gridStyle(b.day, b.start, b.end)" :title="b.label">
-                </div>
-
-                <!-- scheduled sessions -->
-                <div v-for="(s, i) in plan.sessions" :key="'sess-' + i"
-                  class="bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 light:text-emerald-700 rounded mx-0.5 my-px px-1 text-[10px] leading-tight overflow-hidden"
-                  :style="gridStyle(s.day, s.startMin, s.endMin)" :title="`${s.title} (${s.startTime}–${s.endTime})`">
-                  {{ s.title }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="plan.unscheduled.length > 0" class="mt-4 space-y-1">
-            <p v-for="u in plan.unscheduled" :key="u.taskId" class="text-xs text-slate-500">
-              ⚠️ {{ u.title }} — {{ t(reasonLabel[u.reason]) }}
-            </p>
-          </div>
-        </template>
-      </section>
-    </div>
+        <ul v-if="plan.unscheduled.length > 0" class="mt-4 space-y-1">
+          <li v-for="u in plan.unscheduled" :key="u.taskId" class="flex items-center gap-2 text-[13px] text-ink-muted">
+            <PhWarning class="size-3.5 shrink-0 text-yellow-ink" aria-hidden="true" />
+            <span class="text-ink">{{ u.title }}</span> · {{ t(reasonLabel[u.reason]) }}
+          </li>
+        </ul>
+      </template>
+    </section>
   </div>
 </template>

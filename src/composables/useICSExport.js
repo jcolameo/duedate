@@ -1,18 +1,17 @@
 import { ref } from 'vue'
-import { createEvents } from 'ics'
 import { useLocale } from './useLocale.js'
+import { buildDeadlineEvent, buildIcs, downloadIcs } from '../utils/ics.js'
 
 /**
- * Composable für .ics-Kalender-Export.
- * Nutzt normalisierte Felder (_title, _category, etc.) aus useTaskEnrichment
- * → funktioniert mit jeder CSV-Spaltenbenennung dank Mapping.
+ * .ics export of all deadlines (all-day events). Uses the normalized task
+ * fields from useTaskEnrichment, so it works with any CSV column naming.
  */
 export function useICSExport(enrichedTasks) {
   const { t } = useLocale()
   const exportMessage = ref('')
   const exportError = ref('')
 
-  function exportToICS() {
+  async function exportToICS() {
     exportMessage.value = ''
     exportError.value = ''
 
@@ -22,51 +21,14 @@ export function useICSExport(enrichedTasks) {
       return
     }
 
-    const events = validTasks.map((task) => {
-      const d = task._deadlineDate
-      const category    = task._category || ''
-      const title       = task._title || t('common.untitled')
-      const description = task._description || ''
-      const grade       = task._isGraded ? ' ⭐' : ''
-
-      // Title-Format: "📚 Fach: Titel ⭐"  oder  "📚 Titel ⭐" wenn keine Kategorie
-      const eventTitle = category
-        ? `📚 ${category}: ${title}${grade}`
-        : `📚 ${title}${grade}`
-
-      return {
-        title: eventTitle,
-        description: String(description).slice(0, 500),
-        start: [d.getFullYear(), d.getMonth() + 1, d.getDate()],
-        duration: { days: 1 },
-        categories: ['Hausaufgaben', category].filter(Boolean),
-        status: 'CONFIRMED',
-        busyStatus: 'BUSY',
-      }
-    })
-
-    createEvents(events, (error, value) => {
-      if (error) {
-        exportError.value = t('errors.icsExportError', { message: error.message })
-        return
-      }
-      const blob = new Blob([value], { type: 'text/calendar;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = 'deadlines.ics'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
+    const events = validTasks.map(task => buildDeadlineEvent(task, { untitled: t('common.untitled') }))
+    try {
+      downloadIcs(await buildIcs(events), 'deadlines.ics')
       exportMessage.value = t('export.deadlinesExported', { count: events.length })
-    })
+    } catch (error) {
+      exportError.value = t('errors.icsExportError', { message: error.message })
+    }
   }
 
-  return {
-    exportMessage,
-    exportError,
-    exportToICS,
-  }
+  return { exportMessage, exportError, exportToICS }
 }

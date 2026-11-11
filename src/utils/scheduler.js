@@ -2,6 +2,10 @@ export const WORK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 export const DAY_START_MIN = 8 * 60   // 08:00
 export const DAY_END_MIN = 21 * 60    // 21:00
 
+// Tasks due further out than this are not pulled into the current week
+export const PLANNING_HORIZON_DAYS = 14
+const SLOT_MINUTES = 30
+
 const EFFORT_MINUTES = { '30m': 30, '1h': 60, '2h': 120, '3h+': 180 }
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 }
 
@@ -44,10 +48,11 @@ export function getWeekDays(today = new Date()) {
 /**
  * Finds the first free slot of `durationMin` within the working day,
  * given a list of already-busy [start, end] intervals (minutes from midnight).
+ * `earliestMin` lets today start at the current time instead of 08:00.
  */
-function findFreeSlot(durationMin, busyIntervals) {
+function findFreeSlot(durationMin, busyIntervals, earliestMin = DAY_START_MIN) {
   const sorted = [...busyIntervals].sort((a, b) => a[0] - b[0])
-  let cursor = DAY_START_MIN
+  let cursor = Math.max(DAY_START_MIN, earliestMin)
   for (const [busyStart, busyEnd] of sorted) {
     if (busyStart - cursor >= durationMin) {
       return [cursor, cursor + durationMin]
@@ -63,9 +68,10 @@ function findFreeSlot(durationMin, busyIntervals) {
 /**
  * Deterministic, local-only weekly plan generator. No AI, no network —
  * same inputs always produce the same output. Schedules eligible tasks
- * (valid deadline, sorted by urgency then priority) into the first free
- * slot before their deadline, working around availability blocks and
- * previously-placed sessions.
+ * (valid deadline within PLANNING_HORIZON_DAYS, sorted by urgency then
+ * priority) into the first free slot before their deadline, working around
+ * availability blocks and previously-placed sessions. Today only uses the
+ * time from now on.
  *
  * @param {Array} enrichedTasks - from useTaskEnrichment
  * @param {(task) => {effort: string|null, priority: string}} getPlanningFor - from useTaskPlanning
@@ -75,6 +81,9 @@ function findFreeSlot(durationMin, busyIntervals) {
 export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, today = new Date()) {
   const todayStart = startOfDay(today)
   const days = getWeekDays(today)
+  // Today: first free half-hour from now on (10:07 -> 10:30)
+  const nowMin = today.getHours() * 60 + today.getMinutes()
+  const todayEarliest = Math.ceil(nowMin / SLOT_MINUTES) * SLOT_MINUTES
 
   const busyByDay = {}
   for (const day of days) busyByDay[day.label] = []
@@ -86,6 +95,7 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
 
   const eligible = enrichedTasks
     .filter(t => t._deadlineDate)
+    .filter(t => t._days === null || t._days <= PLANNING_HORIZON_DAYS)
     .map(t => ({ task: t, planning: getPlanningFor(t) }))
     .sort((a, b) => {
       const daysA = a.task._days ?? Infinity
@@ -106,7 +116,8 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
       if (day.date < todayStart) continue
       if (!isOverdue && day.date > startOfDay(task._deadlineDate)) break
 
-      const slot = findFreeSlot(durationMin, busyByDay[day.label])
+      const earliest = day.date.getTime() === todayStart.getTime() ? todayEarliest : DAY_START_MIN
+      const slot = findFreeSlot(durationMin, busyByDay[day.label], earliest)
       if (slot) {
         sessions.push({
           taskId: task._id,

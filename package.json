@@ -1,17 +1,23 @@
 {
   "name": "duedate",
   "private": true,
-  "version": "0.1.6",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
     "deploy": "npm run build && gh-pages -d dist",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "5.3.0",
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource/space-mono": "5.3.0",
+    "@phosphor-icons/vue": "2.2.1",
     "@tailwindcss/vite": "^4.2.4",
     "ics": "^3.12.0",
     "papaparse": "^5.5.3",

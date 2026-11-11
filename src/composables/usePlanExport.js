@@ -1,17 +1,16 @@
 import { ref } from 'vue'
-import { createEvents } from 'ics'
 import { useLocale } from './useLocale.js'
+import { buildSessionEvent, buildIcs, downloadIcs } from '../utils/ics.js'
 
 /**
- * Composable für .ics-Export des generierten Wochenplans.
- * Nutzt die von generatePlan() erzeugten Sessions (Titel, Tag, Start/Ende).
+ * .ics export of the generated weekly plan (timed work sessions).
  */
 export function usePlanExport() {
   const { t } = useLocale()
   const exportMessage = ref('')
   const exportError = ref('')
 
-  function exportPlanToICS(sessions) {
+  async function exportPlanToICS(sessions) {
     exportMessage.value = ''
     exportError.value = ''
 
@@ -20,44 +19,14 @@ export function usePlanExport() {
       return
     }
 
-    const events = sessions.map((session) => {
-      const d = session.date
-      const durationMin = session.endMin - session.startMin
-      return {
-        title: `📊 ${session.title}`,
-        start: [
-          d.getFullYear(), d.getMonth() + 1, d.getDate(),
-          Math.floor(session.startMin / 60), session.startMin % 60,
-        ],
-        duration: { minutes: durationMin },
-        categories: ['Stundenplan'],
-        status: 'CONFIRMED',
-        busyStatus: 'BUSY',
-      }
-    })
-
-    createEvents(events, (error, value) => {
-      if (error) {
-        exportError.value = t('errors.icsExportError', { message: error.message })
-        return
-      }
-      const blob = new Blob([value], { type: 'text/calendar;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = 'stundenplan.ics'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
+    const events = sessions.map(buildSessionEvent)
+    try {
+      downloadIcs(await buildIcs(events), 'stundenplan.ics')
       exportMessage.value = t('export.sessionsExported', { count: events.length })
-    })
+    } catch (error) {
+      exportError.value = t('errors.icsExportError', { message: error.message })
+    }
   }
 
-  return {
-    exportMessage,
-    exportError,
-    exportPlanToICS,
-  }
+  return { exportMessage, exportError, exportPlanToICS }
 }

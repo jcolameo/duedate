@@ -5,6 +5,8 @@
  * welche Rolle hat (Titel, Deadline, Fach, etc.).
  */
 
+import { parseGermanDate } from './dateParser.js'
+
 // Bekannte Spalten-Aliase (mehrsprachig)
 const COLUMN_ALIASES = {
   title: ['titel', 'title', 'name', 'aufgabe', 'task', 'thema'],
@@ -16,16 +18,17 @@ const COLUMN_ALIASES = {
   files: ['datei', 'dateien', 'files', 'file', 'anhang', 'attachment'],
 }
 
+// Matching order for alias lookup. `files` comes first because its aliases
+// are specific ("datei", "anhang") while a header like "Datei(en) zur Aufgabe"
+// also contains the generic title alias "aufgabe".
+const ALIAS_PRIORITY = ['files', 'title', 'deadline', 'start', 'category', 'description', 'graded']
+
+// A value "looks like a date" exactly when the real parser accepts it, so
+// detection and parsing can never disagree (previously a column could be
+// detected as a date while every value later parsed to "?").
 function looksLikeDate(value) {
   if (!value || typeof value !== 'string') return false
-  const v = value.trim()
-  const patterns = [
-    /^\d{1,2}\.\s*\w+\s+\d{4}$/,
-    /^\d{1,2}\.\d{1,2}\.\d{2,4}$/,
-    /^\d{4}-\d{2}-\d{2}$/,
-    /^\d{1,2}\/\d{1,2}\/\d{2,4}$/,
-  ]
-  return patterns.some(p => p.test(v))
+  return parseGermanDate(value) !== null
 }
 
 function looksLikeBoolean(value) {
@@ -40,10 +43,13 @@ function normalizeHeader(header) {
 
 function matchByAlias(header) {
   const normalized = normalizeHeader(header)
-  for (const [role, aliases] of Object.entries(COLUMN_ALIASES)) {
-    if (aliases.some(alias => normalized.includes(alias))) {
-      return role
-    }
+  // 1. Exact match wins (e.g. "Note" -> graded)
+  for (const role of ALIAS_PRIORITY) {
+    if (COLUMN_ALIASES[role].includes(normalized)) return role
+  }
+  // 2. Otherwise substring match, in priority order
+  for (const role of ALIAS_PRIORITY) {
+    if (COLUMN_ALIASES[role].some(alias => normalized.includes(alias))) return role
   }
   return null
 }
