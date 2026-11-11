@@ -24,13 +24,15 @@ Before changing code:
 
 ## 3. Founder and primary use case
 
-The first user is an Interaction Design student in Switzerland who wants a system that reduces administrative friction across:
+The first user is a design student who wants a system that reduces administrative friction across:
 
 - studies, assignments and project deadlines;
 - personal projects and creative work;
 - freelancing and future client acquisition;
-- job applications and RAV administration;
+- job applications and related administration;
 - personal routines, hobbies, training and recovery.
+
+Personal details about the founder are intentionally kept out of this public file (see the gitignored local `CLAUDE.md`).
 
 The product must work exceptionally well for the founder’s real life before it is expanded or monetized. It must not become a generic task manager, a Notion clone, or an enterprise dashboard.
 
@@ -516,7 +518,7 @@ The user can provide:
 - cover-letter / Motivationsschreiben template;
 - role preferences;
 - relevant skills and keywords;
-- location preferences, such as Switzerland: Aargau, Zürich, Bern, Basel, and Remote;
+- location preferences (regions, remote);
 - seniority preferences.
 
 A future AI agent may:
