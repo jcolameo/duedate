@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import Papa from 'papaparse'
 import { useLocale } from './useLocale.js'
+import { CSV_PARSE_OPTIONS, normalizeParseResult } from '../utils/csvParse.js'
 
 const { t } = useLocale()
 
@@ -36,21 +37,26 @@ const isDragging = ref(false)
 const tasks = ref(restored ? restored.rows : [])
 const columns = ref(tasks.value.length ? Object.keys(tasks.value[0]) : [])
 const errorMessage = ref('')
+// Non-blocking notice, e.g. "2 rows were skipped"
+const importWarning = ref('')
 
 function parseCSV(file) {
   errorMessage.value = ''
+  importWarning.value = ''
   Papa.parse(file, {
-    header: true,
-    delimiter: ';',
-    skipEmptyLines: true,
+    ...CSV_PARSE_OPTIONS,
     complete: (results) => {
-      if (results.errors.length > 0) {
-        errorMessage.value = t('errors.parseError', { message: results.errors[0].message })
+      const { rows, fields, skippedRows, fatalError } = normalizeParseResult(results)
+      if (fatalError) {
+        errorMessage.value = t(fatalError === 'noHeader' ? 'errors.csvNoHeader' : 'errors.csvNoRows')
         return
       }
-      tasks.value = results.data
-      columns.value = results.meta.fields || []
-      saveTasks(file.name, results.data)
+      if (skippedRows > 0) {
+        importWarning.value = t('deadlines.rowsSkipped', { count: skippedRows })
+      }
+      tasks.value = rows
+      columns.value = fields
+      saveTasks(file.name, rows)
     },
     error: (err) => {
       errorMessage.value = t('errors.fileReadError', { message: err.message })
@@ -83,6 +89,8 @@ function handleFileSelect(e) {
     uploadedFile.value = file
     parseCSV(file)
   }
+  // Reset so choosing the same file again still fires "change"
+  e.target.value = ''
 }
 
 export function useCSVImport() {
@@ -92,6 +100,7 @@ export function useCSVImport() {
     tasks,
     columns,
     errorMessage,
+    importWarning,
     handleDragOver,
     handleDragLeave,
     handleDrop,

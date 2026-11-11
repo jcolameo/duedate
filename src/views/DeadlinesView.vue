@@ -9,7 +9,7 @@ import ColumnMappingConfirm from '../components/ColumnMappingConfirm.vue'
 
 // CSV-Import: Drag&Drop, Parsing, Datei-State
 const {
-  uploadedFile, isDragging, tasks, errorMessage,
+  uploadedFile, isDragging, tasks, errorMessage, importWarning,
   handleDragOver, handleDragLeave, handleDrop, handleFileSelect,
 } = useCSVImport()
 
@@ -96,11 +96,13 @@ function onMappingConfirm() {
     <div class="max-w-2xl mx-auto">
       <label @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop" :class="[
         'block border-2 border-dashed rounded-2xl p-14 text-center cursor-pointer transition-all',
+        'focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-emerald-400',
         isDragging
           ? 'border-emerald-400 bg-emerald-400/10 scale-105'
           : 'border-slate-700 light:border-slate-300 bg-slate-900 light:bg-white hover:border-slate-600 light:hover:border-slate-400 hover:bg-slate-900/80 light:hover:bg-slate-50'
       ]">
-        <input type="file" accept=".csv" class="hidden" @change="handleFileSelect" />
+        <!-- sr-only instead of hidden: stays reachable with Tab, Enter/Space opens the file dialog -->
+        <input type="file" accept=".csv,text/csv" class="sr-only" @change="handleFileSelect" />
         <div class="text-6xl mb-4">📂</div>
         <p class="text-xl font-semibold mb-2">{{ t('deadlines.dropCsv') }}</p>
         <p class="text-slate-400 light:text-slate-500 text-sm">{{ t('deadlines.orClickToSelect') }}</p>
@@ -114,7 +116,12 @@ function onMappingConfirm() {
         </p>
       </div>
 
-      <div v-if="errorMessage || exportError"
+      <div v-if="importWarning && !errorMessage" role="status"
+        class="mt-6 p-5 bg-amber-900/30 light:bg-amber-50 border border-amber-500/40 light:border-amber-300 rounded-2xl text-amber-200 light:text-amber-800 text-sm">
+        {{ importWarning }}
+      </div>
+
+      <div v-if="errorMessage || exportError" role="alert"
         class="mt-6 p-5 bg-red-900/30 light:bg-red-50 border border-red-500/50 light:border-red-300 rounded-2xl text-red-300 light:text-red-700">
         ⚠️ {{ errorMessage || exportError }}
       </div>

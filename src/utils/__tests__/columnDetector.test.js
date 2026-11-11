@@ -51,6 +51,28 @@ describe('helpers', () => {
     expect(matchByAlias('Benotet?')).toBe('graded')
     expect(matchByAlias('Spezies')).toBeNull()
   })
+
+  it('matchByAlias prefers an exact alias over a substring match', () => {
+    expect(matchByAlias('Note')).toBe('graded')
+    expect(matchByAlias('Aufgabe')).toBe('title')
+  })
+
+  it('looksLikeDate agrees with the parser (no false positives)', () => {
+    expect(looksLikeDate('2026-04-24')).toBe(true)
+    expect(looksLikeDate('24/04/2026')).toBe(true)
+    expect(looksLikeDate('31.02.2026')).toBe(false)
+    expect(looksLikeDate('24. Foo 2026')).toBe(false)
+  })
+})
+
+describe('detectColumns — ISO dates', () => {
+  it('detects an ISO-formatted deadline column without an alias', () => {
+    const rows = [
+      { Aufgabe: 'Bericht', Ende: '2026-04-24' },
+      { Aufgabe: 'Poster', Ende: '2026-05-02' },
+    ]
+    expect(detectColumns(['Aufgabe', 'Ende'], rows).mapping.deadline).toBe('Ende')
+  })
 })
 
 describe('detectColumns — BBNet export', () => {
@@ -74,10 +96,10 @@ describe('detectColumns — BBNet export', () => {
     expect(new Set(cols).size).toBe(cols.length)
   })
 
-  // Found while writing these tests: "Datei(en) zur Aufgabe" contains "aufgabe",
+  // Regression (fixed in A3): "Datei(en) zur Aufgabe" contains "aufgabe",
   // a title alias, so it is classified as a title candidate and the files column
-  // is never mapped. Fixed in roadmap step A3.
-  it.fails('[A3] maps "Datei(en) zur Aufgabe" to files', () => {
+  // was never mapped.
+  it('maps "Datei(en) zur Aufgabe" to files', () => {
     expect(result.mapping.files).toBe('Datei(en) zur Aufgabe')
   })
 })

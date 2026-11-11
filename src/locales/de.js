@@ -45,6 +45,7 @@ export const de = {
     dropCsv: 'CSV hier reinziehen',
     orClickToSelect: 'oder klicken zum Auswählen',
     uploadSummary: '{count} Aufgaben · {exportable} mit Datum exportierbar',
+    rowsSkipped: '{count} fehlerhafte Zeile(n) übersprungen (Spalten passten nicht). Prüfe die CSV, falls etwas fehlt.',
     changeMapping: '⚙️ Mapping ändern',
     changeMappingTitle: 'Spalten-Zuordnung anpassen',
     exportButton: '📅 In Kalender exportieren ({count})',
@@ -134,7 +135,8 @@ export const de = {
     english: '🇬🇧 English',
   },
   errors: {
-    parseError: 'Parse-Fehler: {message}',
+    csvNoHeader: 'Die Datei hat keine Kopfzeile mit Spaltennamen.',
+    csvNoRows: 'In der Datei wurden keine Aufgaben gefunden.',
     fileReadError: 'Datei konnte nicht gelesen werden: {message}',
     noValidTasks: 'Keine Aufgaben mit gültigem Datum gefunden.',
     noPlanToExport: 'Kein Plan zum Exportieren vorhanden.',

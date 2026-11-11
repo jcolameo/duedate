@@ -42,22 +42,61 @@ describe('parseGermanDate', () => {
     expect(parseGermanDate('morgen')).toBeNull()
   })
 
-  // --- Known gaps from the Phase 1 audit, fixed in roadmap step A3 ---
+  // --- Formats and validation added in roadmap step A3 ---
 
-  it.fails('[A3] parses ISO format "2026-04-24"', () => {
+  it('parses ISO format "2026-04-24"', () => {
     expect(ymd(parseGermanDate('2026-04-24'))).toEqual([2026, 4, 24])
   })
 
-  it.fails('[A3] parses two-digit year "24.04.26"', () => {
+  it('parses two-digit year "24.04.26"', () => {
     expect(ymd(parseGermanDate('24.04.26'))).toEqual([2026, 4, 24])
   })
 
-  it.fails('[A3] parses slash format "24/04/2026"', () => {
+  it('parses slash format "24/04/2026"', () => {
     expect(ymd(parseGermanDate('24/04/2026'))).toEqual([2026, 4, 24])
   })
 
-  it.fails('[A3] rejects impossible dates like 31.02.2026 instead of rolling over', () => {
+  it('rejects impossible dates like 31.02.2026 instead of rolling over', () => {
     expect(parseGermanDate('31.02.2026')).toBeNull()
+  })
+
+  it('knows leap years', () => {
+    expect(ymd(parseGermanDate('29.02.2028'))).toEqual([2028, 2, 29])
+    expect(parseGermanDate('29.02.2027')).toBeNull()
+  })
+
+  it('rejects invalid months and days', () => {
+    expect(parseGermanDate('12.13.2026')).toBeNull()
+    expect(parseGermanDate('00.05.2026')).toBeNull()
+    expect(parseGermanDate('2026-02-30')).toBeNull()
+  })
+
+  it('reads slash dates day-first and rejects US month-first dates', () => {
+    expect(ymd(parseGermanDate('05/04/2026'))).toEqual([2026, 4, 5])
+    expect(parseGermanDate('4/24/2026')).toBeNull()
+  })
+
+  it('parses abbreviated month names, with or without a dot', () => {
+    expect(ymd(parseGermanDate('24. Apr 2026'))).toEqual([2026, 4, 24])
+    expect(ymd(parseGermanDate('24. Apr. 2026'))).toEqual([2026, 4, 24])
+    expect(ymd(parseGermanDate('1. Okt. 26'))).toEqual([2026, 10, 1])
+    expect(ymd(parseGermanDate('3. Mär 2026'))).toEqual([2026, 3, 3])
+  })
+
+  it('ignores a leading weekday', () => {
+    expect(ymd(parseGermanDate('Fr, 24. April 2026'))).toEqual([2026, 4, 24])
+    expect(ymd(parseGermanDate('Freitag 24.04.2026'))).toEqual([2026, 4, 24])
+  })
+
+  it('ignores a trailing time', () => {
+    expect(ymd(parseGermanDate('24.04.2026 23:59'))).toEqual([2026, 4, 24])
+    expect(ymd(parseGermanDate('24. April 2026, 08:00'))).toEqual([2026, 4, 24])
+    expect(ymd(parseGermanDate('2026-04-24T23:59:00'))).toEqual([2026, 4, 24])
+  })
+
+  it('returns local midnight (no UTC shift)', () => {
+    const d = parseGermanDate('2026-04-24')
+    expect([d.getHours(), d.getMinutes()]).toEqual([0, 0])
   })
 })
 

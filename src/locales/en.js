@@ -45,6 +45,7 @@ export const en = {
     dropCsv: 'Drop your CSV here',
     orClickToSelect: 'or click to browse',
     uploadSummary: '{count} tasks · {exportable} exportable with a valid date',
+    rowsSkipped: '{count} broken row(s) skipped (columns did not match). Check the CSV if something is missing.',
     changeMapping: '⚙️ Change mapping',
     changeMappingTitle: 'Adjust column mapping',
     exportButton: '📅 Export to calendar ({count})',
@@ -134,7 +135,8 @@ export const en = {
     english: '🇬🇧 English',
   },
   errors: {
-    parseError: 'Parse error: {message}',
+    csvNoHeader: 'The file has no header row with column names.',
+    csvNoRows: 'No tasks were found in the file.',
     fileReadError: 'File could not be read: {message}',
     noValidTasks: 'No tasks with a valid date found.',
     noPlanToExport: 'No plan to export yet.',
