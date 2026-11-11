@@ -92,6 +92,8 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B6 | ⬜ | `feat:` Heute-Ansicht |
 | B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
+| B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
+| B10 | ⬜ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -148,7 +150,22 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Test: Unit-Tests für Aufteilung, Puffer, Überbuchung, Rundung; Vergleich mehrerer Wochen.
 - Optional B8b: Planer-Einstellungen (Arbeitszeitfenster, Puffer-Tage, max. Stunden pro Tag).
 
-### ✅ MVP erreicht nach B7 (B8 direkt danach)
+**B9 — Kalender: Wochen blättern + Monatsansicht** (aus Nutzer-Feedback)
+- Ziel: Nicht nur die aktuelle Woche, sondern ein richtiger Kalender mit Überblick.
+- Woche: vor/zurück blättern, „Heute“-Knopf, Tastatur (← → T). Ersetzt „Woche blättern“ aus C6.
+- Monat: Raster Mo–So mit Deadlines (rot), geplanten Sessions (blau, als Anzahl/Stunden pro Tag) und belegten Zeiten; Klick auf einen Tag öffnet die Woche.
+- Voraussetzung: Planer v2 (B8) rechnet über mehrere Wochen; der Plan wird dafür gespeichert oder pro Woche deterministisch berechnet.
+- Dateien: `MyWeekView.vue` → Kalender-Ansicht mit Umschalter Woche/Monat, neu `MonthGrid.vue`, `utils/calendar.js` (Monatsraster, KW).
+- Akzeptanz: Beliebige Woche/Monat erreichbar; Deadlines und Sessions stimmen mit dem Planer überein; Monatswechsel inkl. Jahreswechsel korrekt.
+- Test: Unit für Monatsraster (Monatsanfang/-ende, Schaltjahr, KW 53); Browser-Test Navigation per Tastatur.
+
+**B10 — Jahresübersicht + Aufräumen**
+- Jahr: 12 Mini-Monate, Tage mit Deadlines markiert (Dichte = wie viel ansteht), Klick öffnet den Monat. Gut für Semesterplanung und Freelance-Auslastung.
+- Aufräumen: Vergangenes wird standardmässig ausgeblendet (nicht gelöscht). In den Einstellungen: „Erledigte Einträge älter als X Monate löschen“ mit Vorschau und Bestätigung; vorher JSON-Backup anbieten (B7).
+- Begründung „ausblenden statt sofort löschen“: Die Historie wird für C2b (Schätzung lernt aus erfasster Zeit) gebraucht.
+- Test: Unit für Aufräum-Regel (nur erledigt + älter als X); Browser-Test Jahresansicht.
+
+### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
 
 ---
 
@@ -162,7 +179,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | C3 | ⬜ | `feat:` Wiedervorlage („wieder zeigen am“) |
 | C4 | ⬜ | `feat:` Wiederkehrende Aufgaben (Training) |
 | C5 | ⬜ | `feat:` Wochenrückblick |
-| C6 | ⬜ | `feat:` Erinnerungen via Kalender + Woche blättern |
+| C6 | ⬜ | `feat:` Erinnerungen via Kalender |
 
 **C1 — Mikroschritte**: Checkliste pro Aufgabe (manuell, 10–20-Min.-Schritte); Heute-Ansicht zeigt nur den *nächsten* Schritt. Dateien: `TaskDetail.vue`, `useTasks.js`, `HomeView.vue`. Akzeptanz: Schritte hinzufügen/abhaken/sortieren per Tastatur. Test: Unit für Fortschritt; manuell.
 
@@ -176,7 +193,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 **C5 — Wochenrückblick**: Geführter 5-Min.-Dialog (Sonntag/Montag angeboten): erledigt diese Woche, liegengeblieben (verschieben / löschen / zerlegen), Top 3 nächste Woche. Unterstützende Sprache, keine Vorwürfe. Dateien: neu `views/ReviewView.vue`. Akzeptanz: Durchlauf in < 5 Min. möglich. Test: manuell mit Testdaten.
 
-**C6 — Erinnerungen + Woche blättern**: ICS-Export mit Erinnerungseinträgen (z. B. 1 Tag + 2 h vorher) → dein Kalender erinnert zuverlässig, ohne Server; Export pro Aufgabe; My Week vor/zurück blättern. Dateien: `utils/ics.js`, `MyWeekView.vue`, `scheduler.js`. Akzeptanz: Erinnerung erscheint in Apple/Google Kalender. Test: Unit für ICS-Inhalt; manuell im Kalender.
+**C6 — Erinnerungen**: ICS-Export mit Erinnerungseinträgen (z. B. 1 Tag + 2 h vorher) → dein Kalender erinnert zuverlässig, ohne Server; Export pro Aufgabe. (Woche blättern ist nach B9 verschoben.) Dateien: `utils/ics.js`, `MyWeekView.vue`, `scheduler.js`. Akzeptanz: Erinnerung erscheint in Apple/Google Kalender. Test: Unit für ICS-Inhalt; manuell im Kalender.
 
 ---
 
