@@ -19,7 +19,7 @@ One primary action per screen. Nothing moves unless the user caused it.
 | Ambient gradient blobs, background imagery, photos | **None** | No decoration in a work tool |
 | Faux-OS window chrome, picsum placeholders | Not used | Website patterns |
 | Light palette only | Light **and** dark (dark = default), see §3 | Existing product decision |
-| Serif for hero headings | Serif only for page titles (H1); everything else sans | Apps have no heroes |
+| Serif for hero headings | **No serif.** Bold display grotesk (Bricolage Grotesque) for page titles and section headings | User decision: more daring, design-school character |
 
 Kept from `SKILL.md` without change: banned list (§2: no Inter/Roboto, no Lucide/Feather, no heavy
 shadows, no gradients/neon/glass, no pill-shaped large containers or primary buttons, **no emojis in UI**,
@@ -64,12 +64,18 @@ Pastels (`*-soft` background / `*-ink` text):
 - Color is never the only signal: always label, icon or position as well.
 
 ## 5. Typography
-- Sans (UI, body): `-apple-system, 'SF Pro Text', 'Helvetica Neue', 'Switzer', sans-serif` — system fonts first,
-  no network font loading by default.
-- Serif (page H1 only): `'Newsreader', 'Instrument Serif', Georgia, serif`, `letter-spacing: -0.02em`,
-  `line-height: 1.1`. If a web font is used, it is **self-hosted** (never Google Fonts CDN, privacy).
-- Mono (dates, durations, numbers, `<kbd>`): `ui-monospace, 'SF Mono', 'JetBrains Mono', monospace`,
-  `font-variant-numeric: tabular-nums`.
+All fonts are OFL-licensed and **self-hosted** via `@fontsource` (imported in `main.js`), never loaded from
+Google Fonts. System fonts are only fallbacks.
+
+| Role | Font | Tailwind | Use |
+|---|---|---|---|
+| Display | Bricolage Grotesque (variable) | `font-display` | Page titles (`PageHeader`): extrabold, 44–56 px, `tracking-[-0.04em]`, `leading-[0.95]`; section headings: bold, ~22 px |
+| Sans | Geist (variable) | `font-sans` (default) | Body text, UI, buttons, labels |
+| Mono | Space Mono (400/700) | `font-mono` | Numbers, dates, durations, amounts (CHF), keys (`<kbd>`), meta lines |
+
+- **Accent character:** a page title may end in one accent-colored character (`?` or `.`, `text-blue-ink`).
+  It is the only decorative color on a screen.
+- Mono eyebrow above the title for context (date, week, count), uppercase, `tracking-[0.04em]`.
 - Body `line-height: 1.6`; never pure black or pure white text.
 
 ## 6. Components (`src/components/ui/`, reference page `#/design`)

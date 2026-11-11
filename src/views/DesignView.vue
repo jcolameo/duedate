@@ -17,6 +17,7 @@ import BaseTag from '../components/ui/BaseTag.vue'
 import BaseKbd from '../components/ui/BaseKbd.vue'
 import BaseDialog from '../components/ui/BaseDialog.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
+import PageHeader from '../components/ui/PageHeader.vue'
 import { useTheme } from '../composables/useTheme.js'
 import { useToast } from '../composables/useToast.js'
 
@@ -60,19 +61,20 @@ function showErrorToast() {
 <template>
   <div class="min-h-screen bg-canvas text-ink">
     <div class="mx-auto max-w-5xl px-6 py-12 sm:px-10">
-      <header class="flex flex-wrap items-end justify-between gap-6 border-b border-line pb-8">
-        <div>
-          <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">DueDate · Design-Basis</p>
-          <h1 class="mt-2 font-serif text-4xl leading-[1.1] tracking-[-0.02em]">Gestaltung</h1>
-          <p class="mt-2 max-w-xl text-ink-muted">
-            Tokens und Bausteine für alle Screens. Regeln und Begründungen stehen in <code class="font-mono text-[13px]">DESIGN.md</code>.
-          </p>
-        </div>
-        <div class="flex gap-1 rounded-lg border border-line bg-surface p-1" role="group" aria-label="Farbschema">
-          <BaseButton size="sm" :variant="theme === 'dark' ? 'primary' : 'ghost'" :icon="PhMoon" :aria-pressed="theme === 'dark'" @click="setTheme('dark')">Dunkel</BaseButton>
-          <BaseButton size="sm" :variant="theme === 'light' ? 'primary' : 'ghost'" :icon="PhSun" :aria-pressed="theme === 'light'" @click="setTheme('light')">Hell</BaseButton>
-        </div>
-      </header>
+      <PageHeader
+        class="border-b border-line pb-8"
+        eyebrow="DueDate · Design-Basis"
+        title="Gestaltung"
+        accent="."
+        description="Tokens und Bausteine für alle Screens. Regeln und Begründungen stehen in DESIGN.md."
+      >
+        <template #actions>
+          <div class="flex gap-1 rounded-lg border border-line bg-surface p-1" role="group" aria-label="Farbschema">
+            <BaseButton size="sm" :variant="theme === 'dark' ? 'primary' : 'ghost'" :icon="PhMoon" :aria-pressed="theme === 'dark'" @click="setTheme('dark')">Dunkel</BaseButton>
+            <BaseButton size="sm" :variant="theme === 'light' ? 'primary' : 'ghost'" :icon="PhSun" :aria-pressed="theme === 'light'" @click="setTheme('light')">Hell</BaseButton>
+          </div>
+        </template>
+      </PageHeader>
 
       <!-- Colors -->
       <section class="mt-12" aria-labelledby="s-colors">
@@ -117,16 +119,18 @@ function showErrorToast() {
       <section class="mt-12" aria-labelledby="s-type">
         <h2 id="s-type" class="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">Typografie</h2>
         <BaseCard class="mt-4" padding="lg">
-          <p class="font-serif text-4xl leading-[1.1] tracking-[-0.02em]">Was steht heute an?</p>
-          <p class="mt-1 text-[12px] text-ink-muted">Serif · nur Seitentitel (H1)</p>
-          <p class="mt-6 text-lg font-semibold">Diese Woche</p>
-          <p class="text-[12px] text-ink-muted">Sans · Abschnitte</p>
+          <p class="font-display text-[56px] font-extrabold leading-[0.95] tracking-[-0.04em]">Was steht heute an<span class="text-blue-ink">?</span></p>
+          <p class="mt-2 text-[12px] text-ink-muted">Bricolage Grotesque · Seitentitel, mit Akzentzeichen</p>
+          <p class="mt-6 font-display text-[22px] font-bold tracking-[-0.01em]">Diese Woche</p>
+          <p class="text-[12px] text-ink-muted">Bricolage Grotesque · Abschnitte</p>
           <p class="mt-4 max-w-prose">
             Drei Aufgaben sind für heute geplant. Fang mit der kleinsten an, die anderen laufen nicht weg.
           </p>
           <p class="mt-1 text-sm text-ink-muted">Sekundärtext für Hinweise und Metadaten.</p>
-          <p class="mt-4 font-mono text-sm tabular-nums">24.11.2026 · 2 h 30 min · CHF 1'240.00</p>
-          <p class="text-[12px] text-ink-muted">Mono · Daten, Dauer, Beträge</p>
+          <p class="text-[12px] text-ink-muted">Geist · Text und Bedienelemente</p>
+          <p class="mt-6 font-mono text-[28px]">CHF 4'860.00</p>
+          <p class="font-mono text-sm text-ink-muted">24.11.2026 · 2 h 30 min · 36 h × CHF 135.00</p>
+          <p class="mt-1 text-[12px] text-ink-muted">Space Mono · Daten, Dauer, Beträge, Tastenkürzel</p>
         </BaseCard>
       </section>
 
