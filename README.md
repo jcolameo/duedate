@@ -1,84 +1,61 @@
-# 📅 DueDate
+# DueDate
 
-> CSV rein → Kalender raus. Kein Tippen.
+A local-first deadline and planning app for studies, freelance work and personal projects.
+No login, no backend, no tracking — all data stays in your browser.
 
-A lightweight web app that turns your school/work CSV into a sortable task list and exports deadlines directly to your calendar (`.ics`). No login, no backend, no tracking. **100% local.**
+## Features (current)
 
----
+- **Deadlines** — import a school/task CSV by drag & drop, smart column detection with a review step,
+  status per task (overdue, urgent, soon, ok) and `.ics` calendar export.
+- **Home** — overview of overdue and urgent tasks and one task to focus on.
+- **Stundenplan** — effort and priority per task, recurring busy blocks, a deterministic weekly plan
+  and `.ics` export of the planned sessions.
+- **My Week** — deadlines, planned sessions and busy blocks in one weekly grid, combined `.ics` export.
+- **Settings** — dark/light theme, German/English.
 
-## ✨ Features
+What comes next is planned step by step in [`ROADMAP.md`](ROADMAP.md).
+Design rules for all UI work are in [`DESIGN.md`](DESIGN.md).
 
-- 📂 **Drag & Drop CSV** — supports semicolon-delimited German formats
-- 🎯 **Smart Status Detection** — `OVERDUE`, `URGENT`, `SOON`, `OK`
-- 📅 **One-Click Calendar Export** — `.ics` works with Apple Calendar, Google Calendar, Outlook
-- ⭐ **Graded Tasks Highlight** — never miss what counts
-- 🌙 **Dark Mode by default** — easy on the eyes
-- 🔒 **Privacy-first** — everything runs in your browser, nothing leaves your device
-
----
-
-## 🚀 Quick Start
+## Quick start
 
 ```bash
-# Clone the repo
-git clone https://github.com/<your-username>/duedate.git
-cd duedate
-
-# Install dependencies
 npm install
-
-# Run dev server
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Then open <http://localhost:5173/duedate/>.
 
----
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run deploy` | Build and publish to GitHub Pages |
+| `npm run storybook` | Component workshop |
 
-## 📋 CSV Format
+## CSV import
 
-DueDate expects **semicolon-separated** CSVs with at least these columns:
+Semicolon-separated files with a header row. At least a **title** and a **deadline** column are
+needed; the app proposes a mapping and you confirm or correct it once (it is remembered).
 
-| Column   | Required | Example              |
-| -------- | -------- | -------------------- |
-| `Titel`  | ✅ Yes   | `Abgabe Projektarbeit` |
-| `Abgabe` | ✅ Yes   | `24. April 2026`     |
-| `Fach`   | optional | `Frontend Development` |
-| `Beschreibung` | optional | `Gemäss Auftrag` |
-| `Benotet?` | optional | `Ja` / `Nein` |
+| Role | Example header | Example value |
+|---|---|---|
+| Title (required) | `Titel` | `Abgabe Projektarbeit` |
+| Deadline (required) | `Abgabe` | `24. April 2026` or `24.04.2026` |
+| Category | `Fach` | `Frontend Development` |
+| Description | `Beschreibung` | `Gemäss Auftrag` |
+| Graded | `Benotet?` | `Ja` / `Nein` |
 
-Date formats supported:
-- `24. April 2026`
-- `24.04.2026`
+## Tech stack
 
----
+Vue 3 (Composition API) · Vite · Tailwind CSS 4 · vue-router (hash history) ·
+[PapaParse](https://www.papaparse.com/) · [ics](https://github.com/adamgibbons/ics) · Storybook
 
-## 🧱 Tech Stack
+## Privacy
 
-- **[Vue 3](https://vuejs.org/)** (Composition API)
-- **[Vite](https://vitejs.dev/)** (build tool)
-- **[Tailwind CSS](https://tailwindcss.com/)** (styling)
-- **[PapaParse](https://www.papaparse.com/)** (CSV parsing)
-- **[ics.js](https://github.com/adamgibbons/ics)** (calendar export)
+Everything runs in the browser. Imported files and all data are stored only in your browser's
+`localStorage` and never sent to a server.
 
----
+## License
 
-## 🗺️ Roadmap
-
-- [x] CSV → Table → `.ics` Export
-- [x] Refactored into composables
-- [ ] Notion-compatible CSV export
-- [ ] Markdown export (Obsidian-friendly)
-- [ ] Search & filter
-- [ ] LocalStorage (remember last CSV)
-- [ ] AI-powered column detection *(future paid tier)*
-
----
-
-## 📜 License
-
-MIT — do whatever you want, just don't blame me if your deadlines still hit you. 😉
-
----
-
-Made with 🧠 + ☕ for everyone who hates manual calendar entry.
+MIT

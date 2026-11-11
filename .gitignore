@@ -25,3 +25,7 @@ dist-ssr
 
 *storybook.log
 storybook-static
+
+# Private Claude Code memory (personal profile, never commit)
+CLAUDE.md
+CLAUDE.local.md
