@@ -13,6 +13,8 @@ const router = createRouter({
     { path: '/stundenplan', name: 'stundenplan', component: StundenplanView },
     { path: '/my-week', name: 'my-week', component: MyWeekView },
     { path: '/settings', name: 'settings', component: SettingsView },
+    // Design reference (tokens + components), intentionally not in the sidebar
+    { path: '/design', name: 'design', component: () => import('../views/DesignView.vue') },
   ],
 })
 

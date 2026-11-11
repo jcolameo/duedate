@@ -30,24 +30,32 @@ Emojis typed by the user inside their own content are allowed; the UI itself nev
 
 ## 3. Tokens (CSS variables in `src/style.css`)
 
+Defined as `--dd-*` variables and exposed as Tailwind utilities via `@theme inline`
+(`bg-canvas`, `text-ink`, `border-line`, `bg-red-soft` …). Never use raw hex values in components.
+All pairs are contrast-checked (WCAG 2.2 AA: text ≥ 4.5:1, UI edges and focus ≥ 3:1).
+
 | Token | Light | Dark |
 |---|---|---|
-| `--bg` canvas | `#FBFBFA` | `#191919` |
-| `--surface` cards, panels | `#FFFFFF` | `#202020` |
-| `--surface-muted` hover, inputs | `#F7F6F3` | `#252525` |
-| `--border` | `#EAEAEA` | `rgba(255,255,255,0.08)` |
-| `--text` | `#2F3437` | `#E6E6E4` |
-| `--text-muted` | `#787774` | `#9B9A97` |
-| `--accent` primary button bg | `#111111` | `#E6E6E4` (text `#191919`) |
+| `canvas` | `#FBFBFA` | `#191919` |
+| `surface` | `#FFFFFF` | `#202020` |
+| `surface-muted` | `#F4F3F0` | `#262626` |
+| `line` (dividers, decorative) | `#EAEAEA` | `rgba(255,255,255,0.09)` |
+| `line-strong` (input edges, ≥ 3:1) | `#8F8E89` | `rgba(255,255,255,0.36)` |
+| `ink` | `#2F3437` | `#E6E6E4` |
+| `ink-muted` | `#6B6A66` ¹ | `#9B9A97` |
+| `accent` / `on-accent` | `#111111` / `#FFFFFF` | `#E6E6E4` / `#191919` |
+| `focus` | `#1F6C9F` | `#8CC4EA` |
 
-Pastels (tag background / text). Dark values are derived and **must be contrast-checked in A5**:
+Pastels (`*-soft` background / `*-ink` text):
 
-| Name | Light bg / text | Dark bg / text |
+| Name | Light | Dark |
 |---|---|---|
 | red | `#FDEBEC` / `#9F2F2D` | `rgba(253,235,236,0.10)` / `#F2A7A5` |
 | blue | `#E1F3FE` / `#1F6C9F` | `rgba(225,243,254,0.10)` / `#8CC4EA` |
 | green | `#EDF3EC` / `#346538` | `rgba(237,243,236,0.10)` / `#9BC59E` |
-| yellow | `#FBF3DB` / `#956400` | `rgba(251,243,219,0.10)` / `#E2C06B` |
+| yellow | `#FBF3DB` / `#8A5C00` ¹ | `rgba(251,243,219,0.10)` / `#E2C06B` |
+
+¹ Darker than `SKILL.md` (`#787774`, `#956400`), which fail 4.5:1 on the canvas / tag background.
 
 ## 4. Semantic color mapping
 - **Areas:** Studium = blue · Freelance = green · Privat = yellow.
@@ -64,7 +72,7 @@ Pastels (tag background / text). Dark values are derived and **must be contrast-
   `font-variant-numeric: tabular-nums`.
 - Body `line-height: 1.6`; never pure black or pure white text.
 
-## 6. Components (built in A5, `src/components/ui/`)
+## 6. Components (`src/components/ui/`, reference page `#/design`)
 Button (primary / secondary / ghost / danger) · Card (1 px border, radius 8–12 px, no shadow) ·
 Input / Select / Checkbox · Tag (pastel pill, `text-xs`, uppercase, tracking 0.05em) ·
 Dialog / side panel · Toast (with undo) · Kbd · EmptyState (one sentence + one action).
@@ -75,8 +83,8 @@ when a task is completed; toast and panel enter/exit. Easing `cubic-bezier(0.16,
 All disabled under `prefers-reduced-motion: reduce` except instant state changes.
 
 ## 8. Icons
-One icon family, one weight, consistent size (16/20 px). Candidate: Phosphor (regular/bold);
-the dependency is decided and justified in roadmap step A5. Decorative icons get `aria-hidden="true"`,
+One icon family, one weight, consistent size (16/20 px). Phosphor (`@phosphor-icons/vue`), weight **bold**
+set once in `main.js`. Decorative icons get `aria-hidden="true"`,
 icon-only buttons get `aria-label`.
 
 ## 9. Copy

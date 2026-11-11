@@ -134,6 +134,10 @@ export const de = {
     german: '🇩🇪 Deutsch',
     english: '🇬🇧 English',
   },
+  ui: {
+    close: 'Schliessen',
+    dismissToast: 'Meldung schliessen',
+  },
   errors: {
     csvNoHeader: 'Die Datei hat keine Kopfzeile mit Spaltennamen.',
     csvNoRows: 'In der Datei wurden keine Aufgaben gefunden.',

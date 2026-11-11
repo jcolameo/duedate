@@ -34,7 +34,8 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | A2 | ✅ | `test:` Unit-Tests einrichten |
 | A3 | ✅ | `fix:` CSV-Import robust machen |
 | A4 | ✅ | `fix:` Kalender-Export + Planer korrigieren |
-| A5 | ⬜ | `refactor:` Design-Basis (Basis-Komponenten, Fokus, ARIA) |
+| A5a | ✅ | `feat:` Design-Basis: Tokens + Basis-Komponenten (`#/design`) |
+| A5b | ⬜ | `refactor:` Bestehende Seiten + Sidebar auf Design-Basis umstellen |
 
 **A1 — Aufräumen**
 - Ziel: Unnötige/riskante Teile entfernen.

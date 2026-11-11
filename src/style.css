@@ -1,2 +1,130 @@
 @import "tailwindcss";
 @custom-variant light (&:where(.light, .light *));
+
+/*
+ * Design tokens — see DESIGN.md (§3–§7).
+ * Dark is the default (:root), light is activated by .light on <html>.
+ * Components use the Tailwind utilities generated in @theme below
+ * (bg-canvas, text-ink, border-line …), never raw hex values.
+ */
+:root {
+  color-scheme: dark;
+  --dd-canvas: #191919;
+  --dd-surface: #202020;
+  --dd-surface-muted: #262626;
+  --dd-line: rgba(255, 255, 255, 0.09);
+  --dd-line-strong: rgba(255, 255, 255, 0.36);
+  --dd-ink: #e6e6e4;
+  --dd-ink-muted: #9b9a97;
+  --dd-accent: #e6e6e4;
+  --dd-on-accent: #191919;
+  --dd-accent-hover: #ffffff;
+  --dd-focus: #8cc4ea;
+
+  --dd-red-soft: rgba(253, 235, 236, 0.1);
+  --dd-red-ink: #f2a7a5;
+  --dd-blue-soft: rgba(225, 243, 254, 0.1);
+  --dd-blue-ink: #8cc4ea;
+  --dd-green-soft: rgba(237, 243, 236, 0.1);
+  --dd-green-ink: #9bc59e;
+  --dd-yellow-soft: rgba(251, 243, 219, 0.1);
+  --dd-yellow-ink: #e2c06b;
+}
+
+.light {
+  color-scheme: light;
+  --dd-canvas: #fbfbfa;
+  --dd-surface: #ffffff;
+  --dd-surface-muted: #f4f3f0;
+  --dd-line: #eaeaea;
+  --dd-line-strong: #8f8e89;
+  --dd-ink: #2f3437;
+  /* SKILL.md's #787774 is 4.3:1 on the canvas — darkened to pass WCAG AA */
+  --dd-ink-muted: #6b6a66;
+  --dd-accent: #111111;
+  --dd-on-accent: #ffffff;
+  --dd-accent-hover: #333333;
+  --dd-focus: #1f6c9f;
+
+  --dd-red-soft: #fdebec;
+  --dd-red-ink: #9f2f2d;
+  --dd-blue-soft: #e1f3fe;
+  --dd-blue-ink: #1f6c9f;
+  --dd-green-soft: #edf3ec;
+  --dd-green-ink: #346538;
+  --dd-yellow-soft: #fbf3db;
+  --dd-yellow-ink: #8a5c00;
+}
+
+@theme inline {
+  --color-canvas: var(--dd-canvas);
+  --color-surface: var(--dd-surface);
+  --color-surface-muted: var(--dd-surface-muted);
+  --color-line: var(--dd-line);
+  --color-line-strong: var(--dd-line-strong);
+  --color-ink: var(--dd-ink);
+  --color-ink-muted: var(--dd-ink-muted);
+  --color-accent: var(--dd-accent);
+  --color-on-accent: var(--dd-on-accent);
+  --color-accent-hover: var(--dd-accent-hover);
+  --color-focus: var(--dd-focus);
+
+  --color-red-soft: var(--dd-red-soft);
+  --color-red-ink: var(--dd-red-ink);
+  --color-blue-soft: var(--dd-blue-soft);
+  --color-blue-ink: var(--dd-blue-ink);
+  --color-green-soft: var(--dd-green-soft);
+  --color-green-ink: var(--dd-green-ink);
+  --color-yellow-soft: var(--dd-yellow-soft);
+  --color-yellow-ink: var(--dd-yellow-ink);
+}
+
+@theme {
+  /* System fonts first (no network loading). Segoe UI / Cascadia cover Windows. */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI',
+    'Helvetica Neue', 'Switzer', sans-serif;
+  --font-serif: 'Newsreader', 'Instrument Serif', 'Iowan Old Style', Charter, Cambria, Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace;
+
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--dd-canvas);
+    color: var(--dd-ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+
+  /* One visible, consistent focus ring for every interactive element (DESIGN.md §10) */
+  :focus-visible {
+    outline: 2px solid var(--dd-focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--dd-blue-soft);
+  }
+
+  kbd {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Motion is opt-out for people who ask for less (DESIGN.md §7) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

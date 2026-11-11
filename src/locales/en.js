@@ -134,6 +134,10 @@ export const en = {
     german: '🇩🇪 Deutsch',
     english: '🇬🇧 English',
   },
+  ui: {
+    close: 'Close',
+    dismissToast: 'Dismiss message',
+  },
   errors: {
     csvNoHeader: 'The file has no header row with column names.',
     csvNoRows: 'No tasks were found in the file.',
