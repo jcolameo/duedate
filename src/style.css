@@ -43,36 +43,36 @@
 
 .light {
   color-scheme: light;
-  --dd-canvas: #f5f3ee;
-  --dd-surface: #fbfaf7;
-  --dd-surface-muted: #ebe8e1;
-  --dd-line: #dedad2;
-  --dd-line-strong: #85847f;
+  --dd-canvas: #ece9e2;
+  --dd-surface: #f3f1ec;
+  --dd-surface-muted: #e0ddd5;
+  --dd-line: #d2cec5;
+  --dd-line-strong: #7a7974;
   --dd-ink: #2f3437;
   /* Warm off-white canvas (easier on the eyes than pure white); ink-muted and line-strong
      are darkened so they keep WCAG AA / 3:1 on canvas, surface and surface-muted */
-  --dd-ink-muted: #66655f;
+  --dd-ink-muted: #5f5e59;
   --dd-accent: #111111;
   --dd-on-accent: #ffffff;
   --dd-accent-hover: #333333;
   --dd-focus: #1f6c9f;
 
-  --dd-red-soft: #fdebec;
+  --dd-red-soft: #f1dcda;
   --dd-red-ink: #9f2f2d;
-  --dd-blue-soft: #e1f3fe;
-  --dd-blue-ink: #1f6c9f;
-  --dd-green-soft: #edf3ec;
+  --dd-blue-soft: #d8e8f0;
+  --dd-blue-ink: #1a6192;
+  --dd-green-soft: #e0e8dc;
   --dd-green-ink: #346538;
-  --dd-yellow-soft: #fbf3db;
-  --dd-yellow-ink: #8a5c00;
+  --dd-yellow-soft: #efe6c8;
+  --dd-yellow-ink: #7c5200;
 
-  --dd-orange-soft: #fbecdd;
-  --dd-orange-ink: #9a4a12;
-  --dd-purple-soft: #f1ecf8;
+  --dd-orange-soft: #f0dfcc;
+  --dd-orange-ink: #8f430f;
+  --dd-purple-soft: #e6dff0;
   --dd-purple-ink: #6940a5;
-  --dd-pink-soft: #fbedf4;
+  --dd-pink-soft: #f0dfe7;
   --dd-pink-ink: #a13668;
-  --dd-teal-soft: #e4f3f1;
+  --dd-teal-soft: #d8e9e5;
   --dd-teal-ink: #2a6a63;
 }
 
