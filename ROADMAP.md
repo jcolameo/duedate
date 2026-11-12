@@ -15,11 +15,32 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | Basis | Bestehendes Vue-Repo. AI-Studio-Version (React) wird **nicht** übernommen, nur einzelne Ideen werden neu gebaut. |
 | Daten | `localStorage`, versioniertes Schema mit Migration. Bestehende Daten dürfen nie verloren gehen. |
 
-## 🎯 MVP-Ziel
+## 🎯 MVP-Ziel (Stand: Definition des Nutzers)
 
-> **Nach Schritt B7 nutze ich DueDate täglich am Desktop:** eigene Aufgaben in unter 5 Sekunden erfassen,
-> abhaken, nach Bereich (Studium / Freelance / Privat) sehen, eine klare „Heute“-Ansicht mit max. 3 Aufgaben,
-> BBNet-Import ohne Bugs, Backup als JSON.
+> **Der MVP ist erreicht, wenn diese Features perfekt funktionieren** (alle Zustände gestaltet, Tastatur und axe sauber, Tests grün, Deutsch und Englisch komplett, kein bekannter Fehler):
+
+| # | MVP-Feature | Stand | Fehlt bis „perfekt“ |
+|---|---|---|---|
+| 1 | Schnellerfassung und Überblick („Heute“, 3 Aufgaben) | läuft | Überblick als Quickview überarbeiten (siehe „Später“) |
+| 2 | Deadlines und CSV-Import | läuft | **B14** (Auswahl, Altes ausblenden) |
+| 3 | Planer und Kalender | läuft (B8–B13) | Politur und Alltagstest |
+| 4 | Kleinkram (Quicktasks) | geplant | **K3** |
+| 5 | Daten und Backup (Export/Import, Hell/Dunkel) | läuft | Hinweise für neue Nutzer |
+| + | Kanban mit Projekten | geplant | **K1, K2** (K4–K6 danach) |
+
+Nicht im MVP: Habit-Tracker (F3), Wiedervorlage (C3), Wiederkehrendes (C4), Fokus-Timer (C2), Wochenrückblick (C5), Freelance (Phase D), Jobs (Phase F), Life Planner.
+
+**Nach dem MVP**
+1. **Veröffentlichung als Open Source** mit eigener Webseite (Demo auf Basis der Pages-Version). Vorher: Lizenz wählen, README, Beitragsregeln, Changelog, Prüfung, dass im öffentlichen Repo nichts Persönliches steckt (`CLAUDE.md` bleibt privat und ausgeschlossen, `PROJECT_CONTEXT.md` und README generisch), Namensprüfung („DueDate“ ist sehr allgemein).
+2. Später Desktop- und Mobile-Download (Phase E und danach).
+3. Die ausgegrauten Funktionen (Freelance, Jobs, Life Planner und weitere) werden zuerst **privat** vom Nutzer genutzt und weiterentwickelt. Ziel: später als **Abo** anbieten.
+
+**Weichenstellung vor der Veröffentlichung (noch zu entscheiden):**
+- **Wo liegt der Code der Bezahl-Module?** Ein öffentliches Repo unter einer freien Lizenz kann jeder kopieren, auch diese Module. Entweder privates Repo oder eine saubere Modulschnittstelle im offenen Kern („Module ein/aus“, siehe „Später“).
+- **Was wird bezahlt?** Üblich und passend zum geplanten eigenen Backend: das Lokale bleibt gratis, kostenpflichtig wird, was Betrieb kostet (Sync zwischen Geräten, Konto, Cloud-Backups).
+- **Lizenz:** MIT (einfach) oder AGPL (schützt davor, dass jemand den Code als eigenen Dienst verkauft).
+
+**Arbeitsweise:** laufende Auslieferung in kleinen Schritten; jeder Merge auf `main` wird getestet, gebaut und auf GitHub Pages veröffentlicht (siehe Deployment). Die MVP-Liste ist das Ziel, nicht ein Stichtag.
 
 ## Status-Legende
 ⬜ offen · 🔄 in Arbeit · ✅ erledigt
@@ -218,7 +239,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Akzeptanz: CSV mit 3 alten und 5 aktuellen Zeilen → Vorschau, alte abgewählt; Import → nur 5 Aufgaben; erneuter Import derselben Datei → keine alten, kein Duplikat; Ignorierte lassen sich zurückholen.
 - Test: Unit für Vorauswahl nach Alter, Merge mit Ignorierliste, Migration, Backup-Round-Trip; Browser-Test Vorschau, Tastatur, axe.
 
-### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
+### Hinweis: Der frühere „MVP nach B7“ (Erfassen, Heute, Backup) ist erreicht, gilt aber nicht mehr als MVP. Siehe „MVP-Ziel“ oben.
 
 ---
 
