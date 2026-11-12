@@ -18,6 +18,7 @@ import BaseKbd from './ui/BaseKbd.vue'
 import SegmentedControl from './ui/SegmentedControl.vue'
 import MarkdownEditor from './ui/MarkdownEditor.vue'
 import TagChip from './ui/TagChip.vue'
+import TagMenu from './TagMenu.vue'
 import { useTags } from '../composables/useTags.js'
 import { findTagByName, normalizeTagName } from '../utils/tags.js'
 
@@ -33,7 +34,10 @@ const { addTask, removeTask } = useTasks()
 const { areaFilter } = useAreaFilter()
 const { t, locale } = useLocale()
 const toast = useToast()
-const { tags: allTags, ensureTags } = useTags()
+const { tags: allTags, tagsById, ensureTags } = useTags()
+// Tags picked in the menu (typed #tags are added on save)
+const pickedTagIds = ref([])
+const pickedTags = computed(() => pickedTagIds.value.map(id => tagsById.value.get(id)).filter(Boolean))
 
 const text = ref('')
 const triedSubmit = ref(false)
@@ -97,13 +101,14 @@ function reset() {
   pickedPriority.value = null
   description.value = ''
   showDescription.value = false
+  pickedTagIds.value = []
 }
 
 function save(keepOpen) {
   triedSubmit.value = true
   if (titleMissing.value) return
   const title = parsed.value.title
-  const tagIds = ensureTags(parsed.value.tags)
+  const tagIds = [...new Set([...ensureTags(parsed.value.tags), ...pickedTagIds.value])]
   const task = addTask({ title, tags: tagIds, description: description.value.trim(), due: due.value || null, priority: important.value ? 'high' : null, area: area.value })
   toast.show(t('quickAdd.saved', { title }), {
     tone: 'success',
@@ -187,15 +192,22 @@ function onKeydown(e) {
         <PhFlag :weight="important ? 'fill' : 'bold'" class="size-3.5" aria-hidden="true" />{{ t('quickAdd.important') }}
       </button>
 
-      <template v-if="previewTags.length">
-        <span class="text-[13px] text-ink-muted">{{ t('tags.title') }}</span>
-        <span class="flex flex-wrap items-center gap-1.5">
-          <span v-for="tag in previewTags" :key="tag.id" class="inline-flex items-center gap-1">
-            <TagChip :tag="tag" />
-            <span v-if="tag.isNew" class="font-mono text-[11px] text-ink-muted">{{ t('tags.new') }}</span>
-          </span>
+      <span class="text-[13px] text-ink-muted">{{ t('tags.title') }}</span>
+      <!-- relative: the tag menu popover aligns to this row -->
+      <span class="relative flex flex-wrap items-center gap-1.5">
+        <span v-for="tag in previewTags" :key="tag.id" class="inline-flex items-center gap-1">
+          <TagChip :tag="tag" />
+          <span v-if="tag.isNew" class="font-mono text-[11px] text-ink-muted">{{ t('tags.new') }}</span>
         </span>
-      </template>
+        <TagChip
+          v-for="tag in pickedTags"
+          :key="tag.id"
+          :tag="tag"
+          removable
+          @remove="pickedTagIds = pickedTagIds.filter(x => x !== tag.id)"
+        />
+        <TagMenu v-model="pickedTagIds" />
+      </span>
     </div>
 
     <!-- Optional description (Markdown), hidden by default to keep capture fast -->
