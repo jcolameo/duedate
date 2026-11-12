@@ -40,7 +40,8 @@ const errorMessage = ref('')
 // Non-blocking notice, e.g. "2 rows were skipped"
 const importWarning = ref('')
 
-function parseCSV(file) {
+/** `done({ ok })` is called when parsing has finished (used by the shortcut import). */
+function parseCSV(file, done = () => {}) {
   errorMessage.value = ''
   importWarning.value = ''
   Papa.parse(file, {
@@ -49,6 +50,7 @@ function parseCSV(file) {
       const { rows, fields, skippedRows, fatalError } = normalizeParseResult(results)
       if (fatalError) {
         errorMessage.value = t(fatalError === 'noHeader' ? 'errors.csvNoHeader' : 'errors.csvNoRows')
+        done({ ok: false })
         return
       }
       if (skippedRows > 0) {
@@ -57,11 +59,19 @@ function parseCSV(file) {
       tasks.value = rows
       columns.value = fields
       saveTasks(file.name, rows)
+      done({ ok: true, rows: rows.length })
     },
     error: (err) => {
       errorMessage.value = t('errors.fileReadError', { message: err.message })
+      done({ ok: false })
     },
   })
+}
+
+/** Reads a CSV file into the shared import state; resolves with { ok, rows? }. */
+function importFile(file) {
+  uploadedFile.value = file
+  return new Promise(resolve => parseCSV(file, resolve))
 }
 
 function handleDragOver(e) {
@@ -105,5 +115,6 @@ export function useCSVImport() {
     handleDragLeave,
     handleDrop,
     handleFileSelect,
+    importFile,
   }
 }

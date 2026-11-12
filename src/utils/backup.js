@@ -10,7 +10,7 @@
  * they are tested without a browser. UI preferences that are only about
  * looks (filters) are not part of a backup.
  */
-import { createTask, upgradeToV3, SCHEMA_VERSION } from './taskModel.js'
+import { createTask, upgradeToV3, upgradeToV4, SCHEMA_VERSION } from './taskModel.js'
 import { normalizeBlocks } from './availability.js'
 
 export const BACKUP_FORMAT = 'duedate-backup'
@@ -25,6 +25,7 @@ const KEYS = {
   csv: 'duedate.tasks.v1',
   theme: 'duedate.theme.v1',
   locale: 'duedate.locale.v1',
+  planner: 'duedate.plannerSettings.v1',
 }
 const SCHEMA_KEY = 'duedate.schemaVersion'
 
@@ -70,6 +71,7 @@ export function createBackup(storage, now = new Date()) {
       settings: {
         theme: storage.getItem(KEYS.theme) || null,
         locale: storage.getItem(KEYS.locale) || null,
+        planner: isObject(readJSON(storage, KEYS.planner)) ? readJSON(storage, KEYS.planner) : null,
       },
     },
   }
@@ -137,6 +139,7 @@ export function applyBackup(backup, storage) {
 
   let tasks = data.tasks
   if ((backup.schema ?? 2) < 3) tasks = upgradeToV3(tasks)
+  if ((backup.schema ?? 2) < 4) tasks = upgradeToV4(tasks)
   tasks = tasks.map(task => {
     const full = createTask(task)
     return { ...full, tags: (Array.isArray(full.tags) ? full.tags : []).filter(id => tagIds.has(id)) }
@@ -151,6 +154,7 @@ export function applyBackup(backup, storage) {
   put(storage, KEYS.csv, data.csv)
   if (data.settings?.theme) put(storage, KEYS.theme, data.settings.theme)
   if (data.settings?.locale) put(storage, KEYS.locale, data.settings.locale)
+  if (isObject(data.settings?.planner)) put(storage, KEYS.planner, data.settings.planner)
 }
 
 /** Removes all user data (theme and language stay). */

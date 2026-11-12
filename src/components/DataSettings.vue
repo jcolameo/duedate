@@ -1,8 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { PhDownloadSimple, PhUploadSimple, PhTrash, PhShieldCheck } from '@phosphor-icons/vue'
+import { PhDownloadSimple, PhUploadSimple, PhTrash, PhShieldCheck, PhBroom } from '@phosphor-icons/vue'
 import { useBackup } from '../composables/useBackup.js'
 import { useLocale } from '../composables/useLocale.js'
+import { useTasks } from '../composables/useTasks.js'
+import { useToast } from '../composables/useToast.js'
+import { selectCleanup, CLEANUP_MONTHS } from '../utils/cleanup.js'
+import SegmentedControl from './ui/SegmentedControl.vue'
 import BaseCard from './ui/BaseCard.vue'
 import BaseButton from './ui/BaseButton.vue'
 import BaseDialog from './ui/BaseDialog.vue'
@@ -15,6 +19,8 @@ import InlineNotice from './ui/InlineNotice.vue'
  */
 const { current, lastBackup, exportBackup, readFile, restore, wipe } = useBackup()
 const { t, locale } = useLocale()
+const { tasks, removeTasks, restoreTasks } = useTasks()
+const toast = useToast()
 
 const fmt = (iso) => new Date(iso).toLocaleString(locale.value === 'de' ? 'de-CH' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -65,6 +71,22 @@ const rows = computed(() => (pending.value
     ]
   : []))
 
+// --- Clean up old finished tasks ---------------------------------------------
+const cleanupMonths = ref(6)
+const cleanupOptions = CLEANUP_MONTHS.map(m => ({ value: m, label: String(m) }))
+const cleanup = computed(() => selectCleanup(tasks.value, cleanupMonths.value))
+const cleanupOpen = ref(false)
+const cleanupBackup = ref(true)
+
+function confirmCleanup() {
+  if (cleanupBackup.value) exportBackup()
+  const removed = removeTasks(cleanup.value.remove.map(task => task.id))
+  cleanupOpen.value = false
+  toast.show(t('backup.cleanedUp', { count: removed.length }), {
+    action: { label: t('ui.undo'), onClick: () => restoreTasks(removed) },
+  })
+}
+
 // --- Delete everything -----------------------------------------------------
 const wipeOpen = ref(false)
 const wipeBackup = ref(true)
@@ -106,6 +128,26 @@ const checkbox = 'size-4 shrink-0 accent-[var(--dd-ink)]'
         </BaseButton>
       </div>
       <InlineNotice v-if="fileError" tone="error" class="mt-3">{{ t('backup.error_' + fileError.code, fileError.params) }}</InlineNotice>
+    </div>
+
+    <!-- Clean up -->
+    <div class="border-t border-line px-5 py-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="min-w-0 flex-1 basis-72">
+          <p class="text-sm font-medium">{{ t('backup.cleanupTitle') }}</p>
+          <p class="text-[13px] text-ink-muted">{{ t('backup.cleanupText') }}</p>
+        </div>
+        <span class="flex items-center gap-2">
+          <SegmentedControl v-model="cleanupMonths" mono :label="t('backup.cleanupTitle')" :options="cleanupOptions" />
+          <span class="text-[13px] text-ink-muted" aria-hidden="true">{{ t('backup.cleanupUnit') }}</span>
+        </span>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <p class="font-mono text-[12px] text-ink-muted" aria-live="polite">
+          {{ t('backup.cleanupCount', { count: cleanup.remove.length }) }}<template v-if="cleanup.keepCsv.length"> · {{ t('backup.cleanupKeepCsv', { count: cleanup.keepCsv.length }) }}</template>
+        </p>
+        <BaseButton :icon="PhBroom" :disabled="cleanup.remove.length === 0" @click="cleanupOpen = true">{{ t('backup.cleanup') }}</BaseButton>
+      </div>
     </div>
 
     <!-- Delete -->
@@ -151,6 +193,18 @@ const checkbox = 'size-4 shrink-0 accent-[var(--dd-ink)]'
     <template #actions>
       <BaseButton variant="ghost" @click="restoreOpen = false">{{ t('quickAdd.cancel') }}</BaseButton>
       <BaseButton variant="primary" @click="confirmRestore">{{ t('backup.replace') }}</BaseButton>
+    </template>
+  </BaseDialog>
+
+  <!-- Clean up: confirm -->
+  <BaseDialog v-model:open="cleanupOpen" :title="t('backup.cleanupDialogTitle')" :description="t('backup.cleanupDialogText', { count: cleanup.remove.length, months: cleanupMonths })">
+    <label class="flex cursor-pointer items-start gap-2.5 text-sm">
+      <input v-model="cleanupBackup" type="checkbox" :class="[checkbox, 'mt-0.5']" />
+      <span>{{ t('backup.safetyFirst') }}</span>
+    </label>
+    <template #actions>
+      <BaseButton variant="ghost" @click="cleanupOpen = false">{{ t('quickAdd.cancel') }}</BaseButton>
+      <BaseButton variant="primary" :icon="PhBroom" @click="confirmCleanup">{{ t('backup.cleanup') }}</BaseButton>
     </template>
   </BaseDialog>
 

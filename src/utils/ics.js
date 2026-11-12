@@ -33,14 +33,19 @@ export function buildDeadlineEvent(task, { untitled = '', withDescription = true
 }
 
 /**
- * Timed work session from the weekly plan. The UID is per task (the planner
- * places one session per task), so re-exporting a regenerated plan moves the
- * existing calendar entry instead of adding a second one.
+ * Timed work session from the plan. The UID is per task and session number, so
+ * re-exporting a regenerated plan moves the existing calendar entry instead of
+ * adding a second one.
  */
 export function buildSessionEvent(session) {
+  // A task can have many sessions (B8). Session number n gets its own UID, so an
+  // export after re-planning moves/updates "session 3" instead of piling up
+  // duplicates. Session 1 keeps the UID from before B8.
+  const suffix = session.n > 1 ? `-${session.n}` : ''
+  const part = session.of > 1 ? ` (${session.n}/${session.of})` : ''
   return {
-    uid: `session-${session.taskId}@${UID_DOMAIN}`,
-    title: `📊 ${session.title}`,
+    uid: `session-${session.taskId}${suffix}@${UID_DOMAIN}`,
+    title: `📊 ${session.title}${part}`,
     start: [...dateParts(session.date), Math.floor(session.startMin / 60), session.startMin % 60],
     duration: { minutes: session.endMin - session.startMin },
     categories: ['Stundenplan'],

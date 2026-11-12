@@ -3,10 +3,15 @@
  * replacement when the user does not want the current one, estimate effort.
  * Works on enriched tasks (_id, _title, _days) and plain ones (id, title).
  */
+import { remainingMinutes, formatMinutes } from './estimate.js'
+
+export { formatMinutes }
+
 export const TODAY_LIMIT = 3
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 }
-const EFFORT_MINUTES = { '30m': 30, '1h': 60, '2h': 120, '3h+': 180 }
+/** A task never adds more than this to a single day (planner rule, B8) */
+export const DAILY_TASK_CAP_MIN = 180
 
 const idOf = (task) => task._id ?? task.id
 const titleOf = (task) => task._title ?? task.title ?? ''
@@ -62,32 +67,25 @@ export function pickReplacement(openTasks, { exclude = [], skipped = [] } = {}) 
   return ranked.find(t => !passed.has(idOf(t))) || ranked[0] || null
 }
 
+/** Time still to do on a task (estimate minus finished checklist steps), or null. */
 export function effortMinutes(task) {
-  return EFFORT_MINUTES[task.effort] ?? null
+  return remainingMinutes(task)
 }
 
 /**
- * Time needed for the given tasks, or null when it cannot be told honestly
- * (no tasks, or one without an effort). "3h+" makes the total a minimum.
+ * What today's tasks still need, or null when it cannot be told honestly
+ * (no tasks, or one without an estimate). A big task counts with at most
+ * DAILY_TASK_CAP_MIN, because that is all that fits into a single day.
  */
 export function totalEffort(tasks) {
   if (!tasks.length) return null
   let minutes = 0
-  let atLeast = false
   for (const task of tasks) {
     const m = effortMinutes(task)
     if (m === null) return null
-    minutes += m
-    if (task.effort === '3h+') atLeast = true
+    minutes += Math.min(m, DAILY_TASK_CAP_MIN)
   }
-  return { minutes, atLeast }
-}
-
-/** 45 -> "45 min", 60 -> "1 h", 150 -> "2,5 h" (decimal separator per language). */
-export function formatMinutes(minutes, decimal = ',') {
-  if (minutes < 60) return `${minutes} min`
-  const hours = minutes / 60
-  return `${Number.isInteger(hours) ? hours : hours.toFixed(1).replace('.', decimal)} h`
+  return { minutes }
 }
 
 /** Validates stored state: { date: 'YYYY-MM-DD', ids: string[], skipped: string[] }. */

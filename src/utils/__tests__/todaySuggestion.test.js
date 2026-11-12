@@ -82,20 +82,22 @@ describe('pickReplacement', () => {
 })
 
 describe('effort', () => {
-  it('maps effort values to minutes', () => {
-    expect([effortMinutes({ effort: '30m' }), effortMinutes({ effort: '2h' }), effortMinutes({ effort: null })]).toEqual([30, 120, null])
+  it('uses the remaining time of the estimate', () => {
+    expect([effortMinutes({ estimateMin: 30 }), effortMinutes({ estimateMin: 120 }), effortMinutes({ estimateMin: null })]).toEqual([30, 120, null])
+    // 4 h with 1 of 2 steps done -> 2 h left
+    expect(effortMinutes({ estimateMin: 240, source: 'manual', description: '- [x] a\n- [ ] b' })).toBe(120)
   })
 
-  it('sums up when every task has an effort', () => {
-    expect(totalEffort([{ effort: '1h' }, { effort: '30m' }])).toEqual({ minutes: 90, atLeast: false })
+  it('sums up when every task has an estimate', () => {
+    expect(totalEffort([{ estimateMin: 60 }, { estimateMin: 30 }])).toEqual({ minutes: 90 })
   })
 
-  it('3h+ turns the total into a minimum', () => {
-    expect(totalEffort([{ effort: '3h+' }, { effort: '1h' }])).toEqual({ minutes: 240, atLeast: true })
+  it('a big task counts with at most one day of work', () => {
+    expect(totalEffort([{ estimateMin: 960 }, { estimateMin: 60 }])).toEqual({ minutes: 240 })
   })
 
-  it('stays silent instead of guessing when one effort is missing', () => {
-    expect(totalEffort([{ effort: '1h' }, { effort: null }])).toBeNull()
+  it('stays silent instead of guessing when one estimate is missing', () => {
+    expect(totalEffort([{ estimateMin: 60 }, { estimateMin: null }])).toBeNull()
     expect(totalEffort([])).toBeNull()
   })
 

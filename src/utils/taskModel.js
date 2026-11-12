@@ -6,7 +6,7 @@
  *   due: 'YYYY-MM-DD'|null, dueRaw: string|null (original CSV text, for display),
  *   start, category, description, graded: boolean, files,
  *   priority: 'high'|'medium'|'low'|null (null = automatic default),
- *   effort: string|null, notes: string, steps: [], tags: string[] (tag IDs, B5c),
+ *   estimateMin: number|null (total effort, B8), notes: string, steps: [], tags: string[] (tag IDs, B5c),
  *   source: 'csv'|'manual', sourceKey: string|null,
  *   createdAt, updatedAt, completedAt: ISO timestamps|null
  * }
@@ -18,9 +18,10 @@ import { parseGermanDate, daysUntil } from './dateParser.js'
 import { taskId } from './taskId.js'
 import { AREAS, DEFAULT_AREA, normalizeArea } from './areas.js'
 import { checklistProgress, checklistTextOf } from './checklist.js'
+import { LEGACY_EFFORT_MINUTES } from './estimate.js'
 
-/** Version of the stored data shape (3 since B5b); backups carry it. */
-export const SCHEMA_VERSION = 3
+/** Version of the stored data shape (3 since B5b, 4 since B8); backups carry it. */
+export const SCHEMA_VERSION = 4
 export const TASK_STATUS = ['open', 'done']
 export { AREAS }
 
@@ -93,7 +94,7 @@ export function createTask(fields, now = new Date()) {
     graded: false,
     files: '',
     priority: null,
-    effort: null,
+    estimateMin: null,
     notes: '',
     steps: [],
     tags: [],
@@ -140,14 +141,14 @@ const CSV_FIELDS = ['title', 'dueRaw', 'due', 'start', 'category', 'description'
 
 /** Has the user changed anything on this task that a re-import must not lose? */
 export function isTouched(task) {
-  return task.status !== 'open' || !!task.priority || !!task.effort || !!task.notes ||
+  return task.status !== 'open' || !!task.priority || !!task.estimateMin || !!task.notes ||
     (task.steps && task.steps.length > 0) || (task.tags && task.tags.length > 0) || normalizeArea(task.area) !== DEFAULT_AREA
 }
 
 /**
  * Merges a fresh CSV import into the existing tasks.
  * - Same sourceKey: CSV fields are refreshed, user fields (status, priority,
- *   effort, notes, steps, area, tags) are kept.
+ *   estimateMin, notes, steps, area, tags) are kept.
  * - New rows: added.
  * - CSV tasks missing from the new import: removed only if untouched
  *   (e.g. after correcting a wrong mapping); touched ones are kept.
@@ -185,7 +186,7 @@ export function migrateLegacy({ rows, mapping, planning }, now = new Date()) {
     if (!entry) return task
     return {
       ...task,
-      effort: entry.effort || null,
+      estimateMin: LEGACY_EFFORT_MINUTES[entry.effort] ?? null,
       priority: entry.priority || null,
     }
   })
@@ -204,6 +205,23 @@ export function upgradeToV3(tasks) {
     changed = true
     const description = task.description ? `${task.description}\n\n${task.notes}` : task.notes
     return { ...task, description, notes: '' }
+  })
+  return changed ? next : tasks
+}
+
+/**
+ * Schema 4 (B8): effort '30m' | '1h' | '2h' | '3h+' becomes `estimateMin`
+ * (minutes, total effort). The old field is removed. Idempotent, returns the
+ * same array when nothing changes.
+ */
+export function upgradeToV4(tasks) {
+  let changed = false
+  const next = tasks.map((task) => {
+    if (!('effort' in task) && 'estimateMin' in task) return task
+    changed = true
+    const { effort, ...rest } = task
+    const known = typeof task.estimateMin === 'number' ? task.estimateMin : LEGACY_EFFORT_MINUTES[effort]
+    return { ...rest, estimateMin: known ?? null }
   })
   return changed ? next : tasks
 }

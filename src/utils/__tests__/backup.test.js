@@ -33,6 +33,7 @@ const FULL = {
   'duedate.tasks.v1': JSON.stringify({ fileName: 'x.csv', rows: [{ Titel: 'Plakat', Abgabe: '20.11.2026' }] }),
   'duedate.theme.v1': 'light',
   'duedate.locale.v1': 'en',
+  'duedate.plannerSettings.v1': JSON.stringify({ bufferDays: 2, maxPerDayHours: 8 }),
 }
 
 describe('createBackup', () => {
@@ -43,12 +44,12 @@ describe('createBackup', () => {
     expect(b.data.tags).toHaveLength(2)
     expect(b.data.availability).toHaveLength(1)
     expect(b.data.csv.rows).toHaveLength(1)
-    expect(b.data.settings).toEqual({ theme: 'light', locale: 'en' })
+    expect(b.data.settings).toEqual({ theme: 'light', locale: 'en', planner: { bufferDays: 2, maxPerDayHours: 8 } })
   })
 
   it('an empty app gives an empty, valid backup', () => {
     const b = createBackup(fakeStorage(), NOW)
-    expect(b.data).toEqual({ tasks: [], tags: [], availability: [], today: null, columnMapping: null, csv: null, settings: { theme: null, locale: null } })
+    expect(b.data).toEqual({ tasks: [], tags: [], availability: [], today: null, columnMapping: null, csv: null, settings: { theme: null, locale: null, planner: null } })
     expect(parseBackup(JSON.stringify(b)).backup).toBeTruthy()
   })
 
@@ -95,6 +96,17 @@ describe('older and sloppy backups', () => {
     const target = fakeStorage()
     applyBackup(old, target)
     expect(JSON.parse(target.getItem('duedate.taskStore.v1')).tasks[0]).toMatchObject({ description: 'alte Notiz', notes: '' })
+  })
+
+  it('upgrades schema 3 (old effort values become minutes)', () => {
+    const old = { ...createBackup(fakeStorage(), NOW), schema: 3 }
+    const { estimateMin, ...rest } = createTask({ id: 'e', title: 'X' }, NOW)
+    old.data.tasks = [{ ...rest, effort: '2h' }, { ...rest, id: 'f', effort: '3h+' }, { ...rest, id: 'g', effort: null }]
+    const target = fakeStorage()
+    applyBackup(old, target)
+    const stored = JSON.parse(target.getItem('duedate.taskStore.v1')).tasks
+    expect(stored.map(t => t.estimateMin)).toEqual([120, 180, null])
+    expect(stored.every(t => !('effort' in t))).toBe(true)
   })
 
   it('fills missing task fields with defaults', () => {
@@ -156,10 +168,10 @@ describe('parseBackup gives readable errors', () => {
 })
 
 describe('clearAllData / helpers', () => {
-  it('removes data and looks-only state but keeps theme and language', () => {
+  it('removes data and looks-only state but keeps theme, language and planner rules', () => {
     const s = fakeStorage({ ...FULL, 'duedate.areaFilter.v1': 'study', 'duedate.lastBackup.v1': 'x', 'duedate.taskPlanning.v1': '{}' })
     clearAllData(s)
-    expect(s.keys()).toEqual(['duedate.locale.v1', 'duedate.theme.v1'])
+    expect(s.keys()).toEqual(['duedate.locale.v1', 'duedate.plannerSettings.v1', 'duedate.theme.v1'])
   })
 
   it('summarize copes with nothing', () => {

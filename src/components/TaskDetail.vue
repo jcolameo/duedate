@@ -6,17 +6,22 @@ import { useTasks } from '../composables/useTasks.js'
 import { useTaskActions } from '../composables/useTaskActions.js'
 import { useLocale } from '../composables/useLocale.js'
 import { useToast } from '../composables/useToast.js'
-import { EFFORT_OPTIONS } from '../composables/useTaskPlanning.js'
+import EffortInput from './ui/EffortInput.vue'
+import { remainingMinutes, formatMinutes } from '../utils/estimate.js'
 import { enrichTask, fromISODate } from '../utils/taskModel.js'
 import { AREAS, normalizeArea } from '../utils/areas.js'
 import { dueLabel } from '../utils/dueLabel.js'
-import { AREA_META } from './ui/areaMeta.js'
+import { AREA_META, sessionClass } from './ui/areaMeta.js'
 import BaseDialog from './ui/BaseDialog.vue'
 import BaseButton from './ui/BaseButton.vue'
 import SegmentedControl from './ui/SegmentedControl.vue'
 import DueBadge from './ui/DueBadge.vue'
 import MarkdownEditor from './ui/MarkdownEditor.vue'
 import TagPicker from './TagPicker.vue'
+import ProgressBar from './ui/ProgressBar.vue'
+import { usePlanState } from '../composables/usePlanState.js'
+import { taskProgress, plannedSessions, taskTimeline } from '../utils/taskProgress.js'
+import { shortDate } from '../utils/planSummary.js'
 
 /**
  * Side panel to edit one task (B5). Changes are saved immediately, the
@@ -25,7 +30,8 @@ import TagPicker from './TagPicker.vue'
  * import would overwrite them; they are changed in BBNet instead.
  * Native <dialog>: Esc closes, focus is trapped and returns to the opener.
  */
-const { taskId, closeTask } = useTaskDetail()
+const { taskId, context, closeTask } = useTaskDetail()
+const { plan } = usePlanState()
 const { getTask, updateTask, removeTask, restoreTask } = useTasks()
 const { toggleDone } = useTaskActions()
 const { t, locale } = useLocale()
@@ -34,6 +40,24 @@ const toast = useToast()
 const task = computed(() => (taskId.value ? getTask(taskId.value) : null))
 const view = computed(() => (task.value ? enrichTask(task.value) : null))
 const isCsv = computed(() => task.value?.source === 'csv')
+
+// How far are we, what is planned, when did it start (calendar and panel)
+const progress = computed(() => (task.value ? taskProgress(task.value) : null))
+const planned = computed(() => (task.value ? plannedSessions(plan.value, task.value.id) : null))
+const timeline = computed(() => (task.value ? taskTimeline(task.value) : null))
+const loc = computed(() => (locale.value === 'de' ? 'de-CH' : 'en-GB'))
+const decimal = computed(() => (locale.value === 'de' ? ',' : '.'))
+const time = (min) => formatMinutes(min, decimal.value)
+const dayText = (date) => date.toLocaleDateString(loc.value, { weekday: 'short', day: 'numeric', month: 'numeric' })
+const fullDate = (date) => date.toLocaleDateString(loc.value, { day: 'numeric', month: 'long', year: 'numeric' })
+const SESSIONS_SHOWN = 5
+const progressLabel = computed(() =>
+  progress.value.steps
+    ? t('detail.progressLabel', { percent: progress.value.percent, ...progress.value.steps })
+    : t('detail.progressLabelNone', { percent: progress.value.percent }),
+)
+// The session the panel was opened from, only while it belongs to this task
+const fromSession = computed(() => (context.value && task.value && context.value.taskId === task.value.id ? context.value : null))
 
 const open = computed({
   get: () => !!task.value,
@@ -83,10 +107,12 @@ const priorityOptions = computed(() => [
   { value: 'medium', label: t('stundenplan.priorityMedium') },
   { value: 'low', label: t('stundenplan.priorityLow') },
 ])
-const effortOptions = computed(() => [
-  { value: null, label: t('common.dash') },
-  ...EFFORT_OPTIONS.map(e => ({ value: e, label: e })),
-])
+// Time left after finished checklist steps, shown only when it differs from the estimate
+const remaining = computed(() => {
+  const left = task.value ? remainingMinutes(task.value) : null
+  if (left === null || left === task.value.estimateMin) return ''
+  return t('estimate.remaining', { time: formatMinutes(left, locale.value === 'de' ? ',' : '.') })
+})
 
 function remove() {
   const removed = removeTask(task.value.id)
@@ -144,6 +170,27 @@ const readOnly = 'text-sm text-ink'
         </div>
       </div>
 
+      <!-- Opened from a work session in the calendar -->
+      <div v-if="fromSession" :class="['rounded-lg border-l-2 px-3 py-2', sessionClass({ area: task.area })]">
+        <p v-if="fromSession.of > 1" class="text-sm font-medium">{{ t('detail.sessionOf', { n: fromSession.n, of: fromSession.of }) }}</p>
+        <p v-else class="text-sm font-medium">{{ t('calendar.legendSession') }}</p>
+        <p class="font-mono text-[13px]">{{ dayText(fromSession.date) }} · {{ fromSession.startTime }}–{{ fromSession.endTime }}</p>
+      </div>
+
+      <!-- How far are we -->
+      <section aria-labelledby="detail-progress">
+        <h3 id="detail-progress" class="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('detail.progress') }}</h3>
+        <ProgressBar class="mt-2" :value="progress.percent" :label="progressLabel" />
+        <p class="mt-2 text-sm">
+          <template v-if="progress.steps">{{ t('detail.stepsDone', progress.steps) }}</template>
+          <template v-else-if="progress.isDone">{{ t('tasks.markDone') }}</template>
+          <span v-else class="text-ink-muted">{{ t('detail.noSteps') }}</span>
+        </p>
+        <p v-if="progress.estimateMin" class="mt-1 font-mono text-[12px] text-ink-muted">
+          {{ t('detail.timeLine', { total: time(progress.estimateMin), done: time(progress.doneMin), left: time(progress.remainingMin) }) }}
+        </p>
+      </section>
+
       <!-- Date -->
       <div class="space-y-1.5">
         <label v-if="!isCsv" for="detail-due" :class="fieldLabel">{{ t('detail.due') }}</label>
@@ -185,8 +232,9 @@ const readOnly = 'text-sm text-ink'
       </div>
 
       <div class="space-y-1.5">
-        <p :class="fieldLabel">{{ t('stundenplan.effort') }}</p>
-        <SegmentedControl :model-value="task.effort" mono :label="t('stundenplan.effort')" :options="effortOptions" @update:model-value="set('effort', $event)" />
+        <p :class="fieldLabel">{{ t('estimate.label') }}</p>
+        <EffortInput :key="task.id" :model-value="task.estimateMin" :label="t('estimate.label')" @update:model-value="set('estimateMin', $event)" />
+        <p class="text-[13px] text-ink-muted">{{ remaining || t('estimate.hint') }}</p>
       </div>
 
       <TagPicker :model-value="task.tags || []" @update:model-value="set('tags', $event)" />
@@ -227,6 +275,42 @@ const readOnly = 'text-sm text-ink'
         </dl>
         <p class="mt-3 text-[13px] text-ink-muted">{{ t('detail.csvHint') }}</p>
       </div>
+
+      <!-- Planned work time -->
+      <section aria-labelledby="detail-planned">
+        <h3 id="detail-planned" class="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('detail.planned') }}</h3>
+        <p v-if="!plan" class="mt-2 text-sm text-ink-muted">{{ t('detail.noPlanYet') }}</p>
+        <p v-else-if="planned.sessions.length === 0" class="mt-2 text-sm text-ink-muted">{{ t('detail.notPlanned') }}</p>
+        <template v-else>
+          <p class="mt-2 font-mono text-[12px] text-ink-muted">
+            {{ t('detail.plannedSummary', { count: planned.sessions.length, time: time(planned.minutes), from: shortDate(planned.first), to: shortDate(planned.last) }) }}
+          </p>
+          <ul class="mt-2 divide-y divide-line rounded-lg border border-line">
+            <li
+              v-for="s in planned.upcoming.slice(0, SESSIONS_SHOWN)"
+              :key="s.n"
+              :class="['flex items-baseline gap-3 px-3 py-1.5 text-sm', fromSession && fromSession.n === s.n && 'bg-surface-muted']"
+            >
+              <span class="w-24 shrink-0 font-mono text-[13px] text-ink-muted">{{ dayText(s.date) }}</span>
+              <span class="font-mono text-[13px]">{{ s.startTime }}–{{ s.endTime }}</span>
+              <span v-if="s.of > 1" class="ml-auto font-mono text-[12px] text-ink-muted">{{ s.n }}/{{ s.of }}</span>
+            </li>
+          </ul>
+          <p v-if="planned.upcoming.length > SESSIONS_SHOWN" class="mt-1 text-[13px] text-ink-muted">{{ t('detail.moreSessions', { count: planned.upcoming.length - SESSIONS_SHOWN }) }}</p>
+        </template>
+      </section>
+
+      <!-- Facts -->
+      <section aria-labelledby="detail-facts">
+        <h3 id="detail-facts" class="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('detail.facts') }}</h3>
+        <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <template v-if="timeline.created"><dt class="text-ink-muted">{{ t('detail.created') }}</dt><dd>{{ fullDate(timeline.created) }}</dd></template>
+          <template v-if="timeline.updated"><dt class="text-ink-muted">{{ t('detail.updated') }}</dt><dd>{{ fullDate(timeline.updated) }}</dd></template>
+          <template v-if="timeline.completed"><dt class="text-ink-muted">{{ t('detail.completedOn') }}</dt><dd>{{ fullDate(timeline.completed) }}</dd></template>
+          <dt class="text-ink-muted">{{ t('detail.source') }}</dt>
+          <dd>{{ isCsv ? t('detail.sourceCsv') : t('detail.sourceManual') }}</dd>
+        </dl>
+      </section>
     </div>
 
     <template v-if="task" #actions>

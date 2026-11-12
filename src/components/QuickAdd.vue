@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { PhFlag, PhKeyReturn, PhX, PhTextAlignLeft } from '@phosphor-icons/vue'
+import { PhFlag, PhKeyReturn, PhX, PhTextAlignLeft, PhFileArrowUp } from '@phosphor-icons/vue'
+import { useRouter } from 'vue-router'
+import { useFileImport } from '../composables/useFileImport.js'
+import { dragHasFiles } from '../utils/fileTypes.js'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
 import { useTasks } from '../composables/useTasks.js'
 import { useAreaFilter } from '../composables/useAreaFilter.js'
@@ -34,6 +37,26 @@ const { addTask, removeTask } = useTasks()
 const { areaFilter } = useAreaFilter()
 const { t, locale } = useLocale()
 const toast = useToast()
+const router = useRouter()
+const { importFile } = useFileImport()
+
+// --- Import a file instead of typing (same CSV import as on Deadlines) ----------
+const fileDragging = ref(false)
+async function importFromDialog(file) {
+  if (!file) return
+  isOpen.value = false
+  const result = await importFile(file)
+  if (result.status === 'needs-mapping') router.push('/deadlines')
+}
+function onFileChosen(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  importFromDialog(file)
+}
+function onFileDrop(event) {
+  fileDragging.value = false
+  importFromDialog(event.dataTransfer?.files?.[0])
+}
 const { tags: allTags, tagsById, ensureTags } = useTags()
 // Tags picked in the menu (typed #tags are added on save)
 const pickedTagIds = ref([])
@@ -128,6 +151,12 @@ function onKeydown(e) {
 
 <template>
   <BaseDialog v-model:open="isOpen" :title="t('quickAdd.title')">
+   <div
+     :class="['rounded-lg', fileDragging && 'outline-2 outline-dashed outline-offset-8 outline-ink-muted']"
+     @dragover="(e) => { if (dragHasFiles(e)) { e.preventDefault(); fileDragging = true } }"
+     @dragleave="fileDragging = false"
+     @drop.prevent="onFileDrop"
+   >
     <label for="quick-add-input" class="sr-only">{{ t('quickAdd.inputLabel') }}</label>
     <input
       id="quick-add-input"
@@ -238,6 +267,16 @@ function onKeydown(e) {
       · {{ t('tags.helpQuick') }} <BaseKbd>#fotografie</BaseKbd>
       · <BaseKbd>!</BaseKbd>
     </p>
+
+    <!-- Several tasks at once: a CSV file (same import as on the Deadlines page) -->
+    <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-3">
+      <label class="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md px-1.5 -mx-1.5 text-[13px] text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-ink has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus">
+        <input type="file" accept=".csv,.tsv,text/csv" class="sr-only" @change="onFileChosen" />
+        <PhFileArrowUp class="size-3.5" aria-hidden="true" />{{ t('import.fileButton') }}
+      </label>
+      <span class="text-[12px] text-ink-muted">{{ t('import.fileHint') }}</span>
+    </div>
+   </div>
 
     <template #actions>
       <span class="mr-auto hidden items-center gap-1.5 self-center text-[12px] text-ink-muted sm:flex">

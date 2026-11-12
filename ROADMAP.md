@@ -94,9 +94,9 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B6 | ✅ | `feat:` Heute-Ansicht |
 | C1 | ✅ | `feat:` Checkliste in der Beschreibung (vorgezogen, siehe Phase C) |
 | B7 | ✅ | `feat:` JSON-Backup (Export/Import) |
-| B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
-| B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
-| B10 | ⬜ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
+| B8 | ✅ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
+| B9 | ✅ | `feat:` Kalender: Wochen blättern + Monatsansicht |
+| B10 | ✅ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -169,8 +169,9 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Akzeptanz: Aufgabe 12 h, Abgabe in 4 Wochen → mehrere Sessions verteilt über die Wochen, letzte Session ≥ 1 Tag vor Abgabe.
 - Test: Unit-Tests für Aufteilung, Puffer, Überbuchung, Rundung; Vergleich mehrerer Wochen.
 - Optional B8b: Planer-Einstellungen (Arbeitszeitfenster, Puffer-Tage, max. Stunden pro Tag).
+- Umgesetzt: Aufwand = Gesamtstunden (`estimateMin`, Schnellwahl 2/4/8/16 h + freies Feld „6“, „2,5“, „90 min“, 30-Minuten-Raster, Schema 4 mit Migration der alten Werte, `3h+` wurde zu 3 h). Neuer Planer `utils/scheduler.js`: Aufgabe → Arbeitszeiten ≤ 90 min (`splitIntoSessions`), gleichmässig über die Tage bis `Abgabe − Puffer` verteilt (jede Arbeitszeit auf dem freien Tag, der ihrem Zieltag am nächsten liegt, im Zweifel früher), höchstens 3 h pro Aufgabe und 6 h pro Tag insgesamt, Belegtes respektiert, Überfälliges so früh wie möglich, Dringendes zuerst, Horizont 26 Wochen. Rollend: neu berechnet ab heute, abgehakte Checklistenschritte ziehen ihren Anteil vom Aufwand ab (später auch erfasste Zeit). Ehrliche Meldung „Für X fehlen 9 h vor dem 13.11.“ statt Quetschen. Stundenplan: Regeln (Puffer 0/1/2/3/5 Tage, Tageslimit 3–10 h, wirken sofort auf einen sichtbaren Plan), Zusammenfassung, pro Aufgabe „Geplant: … bis 6.12.“. Meine Woche: **Wochen blättern** (Teil von B9), Export enthält den ganzen Plan; Kalender-Einträge „Aufgabe (2/8)“ mit stabiler UID pro Aufgabe und Nummer (Nr. 1 behält die alte UID). Planungsregeln stehen im Backup (`settings.planner`). Bewusst offen (B8b): Arbeitszeitfenster 08–21 Uhr einstellbar, Wochenenden ausnehmen (heute über „Belegte Zeiten“ möglich), Pausen zwischen Arbeitszeiten.
 
-**B9 — Kalender: Wochen blättern + Monatsansicht** (aus Nutzer-Feedback)
+**B9 — Kalender: Wochen blättern + Monatsansicht** (aus Nutzer-Feedback) — *Wochen blättern ist seit B8 in „Meine Woche“ da; offen: Monatsansicht*
 - Ziel: Nicht nur die aktuelle Woche, sondern ein richtiger Kalender mit Überblick.
 - Woche: vor/zurück blättern, „Heute“-Knopf, Tastatur (← → T). Ersetzt „Woche blättern“ aus C6.
 - Monat: Raster Mo–So mit Deadlines (rot), geplanten Sessions (blau, als Anzahl/Stunden pro Tag) und belegten Zeiten; Klick auf einen Tag öffnet die Woche.
@@ -184,6 +185,13 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Aufräumen: Vergangenes wird standardmässig ausgeblendet (nicht gelöscht). In den Einstellungen: „Erledigte Einträge älter als X Monate löschen“ mit Vorschau und Bestätigung; vorher JSON-Backup anbieten (B7).
 - Begründung „ausblenden statt sofort löschen“: Die Historie wird für C2b (Schätzung lernt aus erfasster Zeit) gebraucht.
 - Test: Unit für Aufräum-Regel (nur erledigt + älter als X); Browser-Test Jahresansicht.
+- Umgesetzt (Nutzerwunsch „wie ein echter Kalender, Jahr/Woche/Tag wählbar“): „Meine Woche“ heisst jetzt **Kalender** (`/calendar`, `/my-week` leitet um) mit Umschalter **Tag · Woche · Monat · Jahr** (Auswahl wird gemerkt), Zurück/Heute/Vor je Ansicht und Titel des Zeitraums. Tag = Zeitraster + Liste (Deadlines, Arbeitszeiten, Belegtes). Woche wie bisher. Monat = 6 Wochen mit KW, Deadlines (max. 2, dann „+n“) und geplante Zeit pro Tag. Jahr = 12 Monate, Deadline-Punkt, Arbeitslast in 3 Stufen. Klick auf einen Tag öffnet ihn, auf einen Monatsnamen den Monat. Tastatur: Pfeile, Pos1/Ende, Bild auf/ab; ein einziger Tab-Stopp pro Raster. `utils/calendar.js` (38 Tests), `components/calendar/MonthGrid.vue`, `YearGrid.vue`, `WeekGrid` jetzt für 1–7 Spalten. Export heisst `duedate-plan.ics`.
+- Einträge anklickbar (Nutzerwunsch): Arbeitszeiten und Deadlines in Woche/Tag (und in der Stundenplan-Woche) öffnen das Aufgaben-Panel. Das Panel zeigt oben die Arbeitszeit, von der man kommt („Arbeitszeit 2 von 8 · Do 12.11. · 14:30–16:00“), **Fortschritt** (Balken in %, Schritte x von y, Aufwand · erledigt · offen), die Beschreibung mit abhakbaren Schritten, **Geplant** (alle Arbeitszeiten dieser Aufgabe) und **Eckdaten** (erstellt, geändert, erledigt, Herkunft). Der Plan folgt jetzt den Daten, sobald es einen gibt (Aufgabe erledigt, Schritt abgehakt, Aufwand/Datum/Belegtes/Regel geändert → neu berechnet). `utils/taskProgress.js`.
+- Farben nach Bereich (Nutzerwunsch): Studium blau, Freelance grün, Privat gelb; Deadline = gefüllt mit Flagge, Arbeitszeit = hell mit farbigem Rand, überfällige Deadline = rot. Legende, Bereich im Namen für Screenreader, Bereichsfilter im Kalender (gemeinsam mit dem Überblick), Monat: eine Zeile pro Bereich, Jahr: Tagesfarbe = Hauptbereich, Deadline-Punkte in Bereichsfarben. Arbeitszeiten tragen `area` im Plan.
+- Aufräumen umgesetzt: Einstellungen → „Erledigtes aufräumen“ (3/6/12 Monate, Vorschau „Wird gelöscht: n“, Bestätigung mit optionaler Backup-Datei vorher, danach „Rückgängig“). Nur eigene erledigte Aufgaben; BBNet-Aufgaben bleiben, weil sie beim nächsten CSV-Import als offen zurückkämen (Archiv-Flag wäre die Alternative, später falls gewünscht). Vergangenes wird im Kalender nicht angezeigt, soweit erledigt.
+
+- Datei-Import als Abkürzung (Nutzerwunsch): „Neue Aufgabe“ hat die Zeile **Datei importieren** (CSV wählen oder in den Dialog ziehen); eine Datei lässt sich auch auf das ganze Fenster ziehen (Overlay „Datei hier ablegen“). Gleiche Pipeline wie Deadlines: beim ersten Mal die Spalten bestätigen (führt zu Deadlines), danach direkt importiert mit Toast + Rückgängig, „nichts Neues“ bei gleicher Datei. Nicht unterstützte Typen (Excel, Markdown) melden „kommt später“. Erweiterbar über `readers` in `composables/useFileImport.js`, Typ-Erkennung in `utils/fileTypes.js` (17 Tests). Excel später mit `read-excel-file` (lazy).
+
 
 ### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
 
@@ -279,6 +287,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | KI: Kunden-Briefing → Scope, Rückfragen, Kalkulationsentwurf | Wie oben; Ergebnis landet in Kalkulation (D4) |
 | MCP: Claude verbinden | Variante A (JSON-Backup) ab B7 nutzbar. Lokaler MCP-Server (Mac) oder Remote-MCP erst nach Entscheid über Sync |
 | Speicher: IndexedDB (Dexie.js) | Statt localStorage (≈ 5 MB), sobald Zeiterfassung (C2/D3) viele Einträge erzeugt. Alles läuft über `useTasks`/Stores → Umbau ist lokal begrenzt. B7-Backup vorher. |
+| Kalender direkt verbinden statt .ics-Export | Nutzerwunsch: Aufgaben und Arbeitszeiten erscheinen automatisch im Kalender auf Handy und Desktop (Google, Apple, Microsoft). Drei Wege, vom einfachsten: **(1) Abo-Link (ICS-Feed)**: eine private URL, die der Kalender selbst abruft; funktioniert bei Apple, Google und Outlook mit einmaligem „Kalender abonnieren“, nur lesend, Google aktualisiert langsam (oft bis zu 24 h). Braucht einen kleinen Server, der den Plan ausliefert, also das eigene Backend (siehe unten). **(2) Google Calendar API** direkt aus dem Browser (OAuth-Anmeldung, eigener Kalender „DueDate“, Einträge werden angelegt/verschoben/gelöscht, fast sofort sichtbar); kein Server nötig, aber OAuth-Client einrichten, Token im Browser, Google sieht die Termine. **(3) Microsoft Graph** (Outlook/Windows) ähnlich wie (2). Apple/iCloud hat keine offene Kalender-API: dort nur über (1). Handy: braucht keine eigene App, sobald der Kalender-Account synchronisiert. Voraussetzung: stabile Eintrags-IDs (seit B8 vorhanden). Empfehlung: erst (1) mit dem Backend, danach optional (2). |
 | Datenbank / Sync Desktop ↔ Mobile | **Entscheid des Nutzers: eigenes Backend** (statt Supabase), erst später (frühestens mit Phase E). Offen: API und Login des Backends. Vorgehen dann: Sync-Schicht hinter den Stores (alle Zugriffe laufen schon über `useTasks`, `useTags` …), Austauschformat = JSON-Backup (`docs/BACKUP_FORMAT.md`), App bleibt local-first und funktioniert offline. Alternativen, falls nötig: Supabase (EU), PocketBase. Firebase verworfen. |
 | Kanban-Board (Modul) | Nach B7, zusammen mit Projekten (D2): Spalten Offen → In Arbeit → Erledigt, zweite Ansicht derselben Aufgaben, filterbar nach Bereich/Projekt. Braucht Status „In Arbeit“ (Migration). Aus „verworfen“ zurückgeholt, weil DueDate Hauptarbeitsort werden soll. |
 | Module ein/aus | Einstellungen-Schalter pro Modul (z. B. Kanban, Freelance). Mit dem ersten optionalen Modul. |

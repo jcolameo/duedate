@@ -1,7 +1,8 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useTaskEnrichment } from './useTaskEnrichment.js'
 import { useTaskPlanning } from './useTaskPlanning.js'
 import { useAvailability } from './useAvailability.js'
+import { usePlannerSettings } from './usePlannerSettings.js'
 import { generatePlan } from '../utils/scheduler.js'
 
 /**
@@ -11,16 +12,26 @@ import { generatePlan } from '../utils/scheduler.js'
  * source of truth (see PROJECT_CONTEXT.md Phase F); it just now also
  * survives navigation between views within a session, not just re-renders
  * of a single component.
+ *
+ * Once a plan exists it follows the data (rolling plan): finishing a task,
+ * ticking a checklist step, changing an estimate or date, a busy block or a
+ * planner rule re-plans automatically, so the calendar never shows work for
+ * tasks that are already done.
  */
 const { enrichedTasks } = useTaskEnrichment()
 const { getPlanningFor } = useTaskPlanning()
 const { blocks } = useAvailability()
+const { plannerOptions } = usePlannerSettings()
 
 const plan = ref(null)
 
 function generate() {
-  plan.value = generatePlan(enrichedTasks.value, getPlanningFor, blocks.value, new Date())
+  plan.value = generatePlan(enrichedTasks.value, getPlanningFor, blocks.value, new Date(), plannerOptions.value)
 }
+
+watch([enrichedTasks, blocks, plannerOptions], () => {
+  if (plan.value) generate()
+}, { deep: true })
 
 export function usePlanState() {
   return { plan, generate, enrichedTasks }

@@ -2,15 +2,18 @@
 import { computed } from 'vue'
 import { PhFlag } from '@phosphor-icons/vue'
 import { useLocale } from '../composables/useLocale.js'
-import { WORK_DAYS, DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
+import { DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
 import { expandBlocksByDay } from '../utils/availability.js'
+import { deadlineClass, sessionClass } from './ui/areaMeta.js'
+import { normalizeArea } from '../utils/areas.js'
 
 /**
- * Weekly time grid shared by Stundenplan and My Week (was duplicated before).
- * Rows are 30-minute slots between DAY_START_MIN and DAY_END_MIN.
+ * Time grid shared by Stundenplan and the calendar: one column per entry in
+ * `days` (7 for a week, 1 for the day view). Rows are 30-minute slots
+ * between DAY_START_MIN and DAY_END_MIN.
  */
 const props = defineProps({
-  /** [{ label: 'Mon'..'Sun', date: Date }] from getWeekDays() */
+  /** [{ label: 'Mon'..'Sun', date: Date }]: getWeekDays(), or one entry for a single day */
   days: { type: Array, required: true },
   /** Planned sessions from generatePlan() */
   sessions: { type: Array, default: () => [] },
@@ -21,10 +24,12 @@ const props = defineProps({
   label: { type: String, required: true },
 })
 
+const emit = defineEmits(['open-task', 'open-session'])
 const { t } = useLocale()
 
 const TOTAL_SLOTS = (DAY_END_MIN - DAY_START_MIN) / 30
-const COLUMNS = '3.25rem repeat(7, minmax(0, 1fr))'
+const COLUMNS = computed(() => `3.25rem repeat(${props.days.length}, minmax(0, 1fr))`)
+const minWidth = computed(() => (props.days.length > 1 ? 'min-w-[46rem]' : 'min-w-[22rem]'))
 
 const hourMarks = computed(() => {
   const marks = []
@@ -38,7 +43,7 @@ function toMinutes(hhmm) {
 }
 
 function place(dayLabel, startMin, endMin) {
-  const col = WORK_DAYS.indexOf(dayLabel) + 2
+  const col = props.days.findIndex(d => d.label === dayLabel) + 2
   const rowStart = Math.max(1, Math.round((startMin - DAY_START_MIN) / 30) + 1)
   const rowSpan = Math.max(1, Math.round((endMin - startMin) / 30))
   return { gridColumn: String(col), gridRow: `${rowStart} / span ${rowSpan}` }
@@ -47,8 +52,9 @@ function place(dayLabel, startMin, endMin) {
 const visibleBlocks = computed(() =>
   expandBlocksByDay(props.blocks)
     .map(b => ({ ...b, start: Math.max(DAY_START_MIN, toMinutes(b.startTime)), end: Math.min(DAY_END_MIN, toMinutes(b.endTime)) }))
-    .filter(b => b.end > b.start),
+    .filter(b => b.end > b.start && props.days.some(d => d.label === b.day)),
 )
+const visibleSessions = computed(() => props.sessions.filter(s => props.days.some(d => d.label === s.day)))
 
 const todayKey = new Date().toDateString()
 const isToday = (d) => d.date.toDateString() === todayKey
@@ -56,7 +62,7 @@ const isToday = (d) => d.date.toDateString() === todayKey
 
 <template>
   <div class="overflow-x-auto" role="region" :aria-label="label" tabindex="0">
-    <div class="min-w-[46rem]">
+    <div :class="minWidth">
       <!-- Day headers -->
       <div class="grid" :style="{ gridTemplateColumns: COLUMNS }">
         <div></div>
@@ -76,14 +82,18 @@ const isToday = (d) => d.date.toDateString() === todayKey
       <div v-if="deadlinesByDay" class="grid border-t border-line py-1.5" :style="{ gridTemplateColumns: COLUMNS }">
         <div class="pr-2 pt-1 text-right font-mono text-[10px] uppercase text-ink-muted"></div>
         <div v-for="day in days" :key="'dl-' + day.label" class="space-y-1 px-0.5">
-          <p
+          <button
             v-for="task in deadlinesByDay[day.label]"
             :key="task._id"
-            class="flex items-center gap-1 truncate rounded bg-red-soft px-1.5 py-0.5 text-[11px] font-medium text-red-ink"
+            type="button"
+            :class="['flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium transition-[filter] duration-150 hover:brightness-95', deadlineClass(task)]"
             :title="task._title"
+            :aria-label="`${t('calendar.legendDeadline')}: ${task._title || t('common.untitled')}, ${t('areas.' + normalizeArea(task._area))}`"
+            aria-haspopup="dialog"
+            @click="emit('open-task', task)"
           >
             <PhFlag class="size-3 shrink-0" aria-hidden="true" /><span class="truncate">{{ task._title || t('common.untitled') }}</span>
-          </p>
+          </button>
         </div>
       </div>
 
@@ -114,15 +124,19 @@ const isToday = (d) => d.date.toDateString() === todayKey
           :title="`${b.label} (${b.startTime}–${b.endTime})`"
         >{{ b.label }}</div>
 
-        <div
-          v-for="(s, i) in sessions"
+        <button
+          v-for="(s, i) in visibleSessions"
           :key="'ses-' + i"
-          class="mx-0.5 my-px overflow-hidden rounded border-l-2 border-blue-ink bg-blue-soft px-1 text-[10.5px] font-medium leading-tight text-blue-ink"
+          type="button"
+          :class="['mx-0.5 my-px cursor-pointer overflow-hidden rounded border-l-2 px-1 text-left text-[10.5px] font-medium leading-tight transition-[filter] duration-150 hover:brightness-110 focus-visible:outline-offset-[-2px] light:hover:brightness-95', sessionClass(s)]"
           :style="place(s.day, s.startMin, s.endMin)"
           :title="`${s.title} (${s.startTime}–${s.endTime})`"
+          :aria-label="`${t('calendar.legendSession')}: ${s.title}${s.of > 1 ? ` (${s.n}/${s.of})` : ''}, ${s.startTime}–${s.endTime}, ${t('areas.' + normalizeArea(s.area))}`"
+          aria-haspopup="dialog"
+          @click="emit('open-session', s)"
         >
           <span class="font-mono text-[10px]">{{ s.startTime }}</span> {{ s.title }}
-        </div>
+        </button>
       </div>
     </div>
   </div>
