@@ -30,7 +30,7 @@ Then open <http://localhost:5173/duedate/>.
 | `npm run dev` | Development server |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
-| `npm run deploy` | Build and publish to GitHub Pages |
+| `npm run deploy` | Manual fallback: build and push to the `gh-pages` branch (not needed once GitHub Actions deploys, see `.github/workflows/deploy.yml`) |
 | `npm run storybook` | Component workshop |
 
 ## CSV import
