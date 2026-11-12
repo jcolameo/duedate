@@ -7,7 +7,7 @@ const p = (s) => parseQuickAdd(s, NOW)
 
 describe('parseQuickAdd', () => {
   it('plain text is just the title', () => {
-    expect(p('Offerte schreiben')).toEqual({ title: 'Offerte schreiben', due: null, area: null, priority: null })
+    expect(p('Offerte schreiben')).toEqual({ title: 'Offerte schreiben', due: null, area: null, priority: null, tags: [] })
   })
 
   it('trims and collapses whitespace', () => {
@@ -15,7 +15,7 @@ describe('parseQuickAdd', () => {
   })
 
   it('empty input gives an empty title', () => {
-    expect(p('')).toEqual({ title: '', due: null, area: null, priority: null })
+    expect(p('')).toEqual({ title: '', due: null, area: null, priority: null, tags: [] })
     expect(p(null).title).toBe('')
   })
 
@@ -91,8 +91,14 @@ describe('parseQuickAdd', () => {
     expect(p(`Aufgabe ${tag}`)).toMatchObject({ title: 'Aufgabe', area })
   })
 
-  it('unknown #tags stay in the title', () => {
-    expect(p('Post #instagram')).toMatchObject({ title: 'Post #instagram', area: null })
+  it('other #words become user tags (B5c)', () => {
+    expect(p('Post #instagram')).toMatchObject({ title: 'Post', area: null, tags: ['instagram'] })
+    expect(p('Shooting #Fotografie #f #kunde-a')).toMatchObject({ title: 'Shooting', area: 'freelance', tags: ['Fotografie', 'kunde-a'] })
+  })
+
+  it('duplicate tags count once, a lone # stays text', () => {
+    expect(p('A #foto #Foto').tags).toEqual(['foto'])
+    expect(p('Nummer # 5')).toMatchObject({ title: 'Nummer # 5', tags: [] })
   })
 
   it('only the first area and date count', () => {
@@ -108,7 +114,7 @@ describe('parseQuickAdd', () => {
 
   it('the roadmap example', () => {
     expect(p('Portfolio abgeben fr #studium !')).toEqual({
-      title: 'Portfolio abgeben', due: '2026-11-13', area: 'study', priority: 'high',
+      title: 'Portfolio abgeben', due: '2026-11-13', area: 'study', priority: 'high', tags: [],
     })
   })
 

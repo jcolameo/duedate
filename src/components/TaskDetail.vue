@@ -16,6 +16,7 @@ import BaseButton from './ui/BaseButton.vue'
 import SegmentedControl from './ui/SegmentedControl.vue'
 import DueBadge from './ui/DueBadge.vue'
 import MarkdownEditor from './ui/MarkdownEditor.vue'
+import TagPicker from './TagPicker.vue'
 
 /**
  * Side panel to edit one task (B5). Changes are saved immediately, the
@@ -179,6 +180,8 @@ const readOnly = 'text-sm text-ink'
         <p :class="fieldLabel">{{ t('stundenplan.effort') }}</p>
         <SegmentedControl :model-value="task.effort" mono :label="t('stundenplan.effort')" :options="effortOptions" @update:model-value="set('effort', $event)" />
       </div>
+
+      <TagPicker :model-value="task.tags || []" @update:model-value="set('tags', $event)" />
 
       <!-- Manual tasks: own description. CSV tasks: the description belongs
            to BBNet (shown below), the user writes notes instead. -->

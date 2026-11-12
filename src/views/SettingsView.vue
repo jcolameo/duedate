@@ -6,6 +6,7 @@ import { useLocale } from '../composables/useLocale.js'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
 import SegmentedControl from '../components/ui/SegmentedControl.vue'
+import TagSettings from '../components/TagSettings.vue'
 
 const { theme, setTheme } = useTheme()
 const { locale, setLocale, t } = useLocale()
@@ -43,6 +44,12 @@ const localeOptions = [
           <SegmentedControl :label="t('settings.language')" :options="localeOptions" :model-value="locale" @update:model-value="setLocale" />
         </div>
       </BaseCard>
+    </section>
+
+    <section class="mt-10" aria-labelledby="h-tags">
+      <h2 id="h-tags" class="mb-1 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('tags.title') }}</h2>
+      <p class="mb-3 text-[13px] text-ink-muted">{{ t('tags.settingsHint') }}</p>
+      <TagSettings />
     </section>
   </div>
 </template>

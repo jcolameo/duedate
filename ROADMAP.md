@@ -90,7 +90,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B4 | ✅ | `feat:` Schnellerfassung (< 5 s) |
 | B5 | ✅ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
 | B5b | ✅ | `feat:` Beschreibung (Markdown) + ganze Karte klickbar |
-| B5c | ⬜ | `feat:` Eigene Tags mit Farbe + Filter |
+| B5c | ✅ | `feat:` Eigene Tags mit Farbe + Filter |
 | B6 | ⬜ | `feat:` Heute-Ansicht |
 | C1 | ⬜ | `feat:` Checkliste / Mikroschritte (vorgezogen, siehe Phase C) |
 | B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
@@ -144,6 +144,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Ziel: Freie Etiketten (Name + Farbe aus ~8 kontrastgeprüften Farben), zusätzlich zu Bereich/Priorität/Aufwand.
 - Schnellerfassung: `#wort`, das kein Bereich ist, wird zum Tag. Detail-Panel: Tags hinzufügen/entfernen. Filter nach Tag. Tags umbenennen/Farbe ändern/löschen.
 - Abgrenzung: Projekte (D2) sind eigene Objekte mit Kunde, Budget, Zeit; Aufgaben werden ihnen später zugeordnet.
+- Umgesetzt: `utils/tags.js`, `useTags` (`duedate.tags.v1`), `useTagFilter` (`duedate.tagFilter.v1`), TagChip/TagPicker/TagFilter/TagSettings. 8 Farben (4 neue Tokens, alle AA). Filter kombiniert mit Bereich. Verwaltung in Einstellungen (umbenennen, Farbe, löschen mit Rückgängig). Tags bleiben beim CSV-Re-Import erhalten.
 
 **B6 — Heute-Ansicht**
 - Ziel: Die Startseite beantwortet nur: „Was mache ich jetzt?“

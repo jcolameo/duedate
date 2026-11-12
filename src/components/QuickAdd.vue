@@ -17,6 +17,9 @@ import BaseButton from './ui/BaseButton.vue'
 import BaseKbd from './ui/BaseKbd.vue'
 import SegmentedControl from './ui/SegmentedControl.vue'
 import MarkdownEditor from './ui/MarkdownEditor.vue'
+import TagChip from './ui/TagChip.vue'
+import { useTags } from '../composables/useTags.js'
+import { findTagByName, normalizeTagName } from '../utils/tags.js'
 
 /**
  * Quick capture (B4): one line of text, parsed live into title, date, area
@@ -30,6 +33,7 @@ const { addTask, removeTask } = useTasks()
 const { areaFilter } = useAreaFilter()
 const { t, locale } = useLocale()
 const toast = useToast()
+const { tags: allTags, ensureTags } = useTags()
 
 const text = ref('')
 const triedSubmit = ref(false)
@@ -60,6 +64,12 @@ const important = computed(() =>
   pickedPriority.value !== null ? pickedPriority.value : parsed.value.priority === 'high',
 )
 function toggleImportant() { pickedPriority.value = !important.value }
+
+// Typed #tags, shown with their real color if they already exist
+const previewTags = computed(() => parsed.value.tags.map((name) => {
+  const existing = findTagByName(allTags.value, name)
+  return existing ? { ...existing, isNew: false } : { id: `new-${name}`, name: normalizeTagName(name), color: 'gray', isNew: true }
+}))
 
 const areaOptions = computed(() => AREAS.map(a => ({ value: a, label: t('areas.' + a), icon: AREA_META[a].icon })))
 const titleMissing = computed(() => !parsed.value.title)
@@ -93,7 +103,8 @@ function save(keepOpen) {
   triedSubmit.value = true
   if (titleMissing.value) return
   const title = parsed.value.title
-  const task = addTask({ title, description: description.value.trim(), due: due.value || null, priority: important.value ? 'high' : null, area: area.value })
+  const tagIds = ensureTags(parsed.value.tags)
+  const task = addTask({ title, tags: tagIds, description: description.value.trim(), due: due.value || null, priority: important.value ? 'high' : null, area: area.value })
   toast.show(t('quickAdd.saved', { title }), {
     tone: 'success',
     action: { label: t('ui.undo'), onClick: () => removeTask(task.id) },
@@ -175,6 +186,16 @@ function onKeydown(e) {
       >
         <PhFlag :weight="important ? 'fill' : 'bold'" class="size-3.5" aria-hidden="true" />{{ t('quickAdd.important') }}
       </button>
+
+      <template v-if="previewTags.length">
+        <span class="text-[13px] text-ink-muted">{{ t('tags.title') }}</span>
+        <span class="flex flex-wrap items-center gap-1.5">
+          <span v-for="tag in previewTags" :key="tag.id" class="inline-flex items-center gap-1">
+            <TagChip :tag="tag" />
+            <span v-if="tag.isNew" class="font-mono text-[11px] text-ink-muted">{{ t('tags.new') }}</span>
+          </span>
+        </span>
+      </template>
     </div>
 
     <!-- Optional description (Markdown), hidden by default to keep capture fast -->
@@ -202,6 +223,7 @@ function onKeydown(e) {
       {{ t('quickAdd.helpIntro') }}
       <BaseKbd>morgen</BaseKbd> <BaseKbd>fr</BaseKbd> <BaseKbd>15.12</BaseKbd>
       · <BaseKbd>#studium</BaseKbd> <BaseKbd>#freelance</BaseKbd> <BaseKbd>#privat</BaseKbd>
+      · {{ t('tags.helpQuick') }} <BaseKbd>#fotografie</BaseKbd>
       · <BaseKbd>!</BaseKbd>
     </p>
 

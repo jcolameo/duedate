@@ -16,6 +16,11 @@ import { useAreaFilter } from '../composables/useAreaFilter.js'
 import { filterByArea } from '../utils/areas.js'
 import { markdownSummary } from '../utils/markdown.js'
 import AreaFilter from '../components/AreaFilter.vue'
+import TagFilter from '../components/TagFilter.vue'
+import TagChip from '../components/ui/TagChip.vue'
+import { useTags } from '../composables/useTags.js'
+import { useTagFilter } from '../composables/useTagFilter.js'
+import { filterByTag, tagsOf } from '../utils/tags.js'
 import AreaTag from '../components/ui/AreaTag.vue'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
 import { useTaskDetail } from '../composables/useTaskDetail.js'
@@ -25,8 +30,16 @@ const { areaFilter } = useAreaFilter()
 const quickAdd = useQuickAdd()
 const { openTask, openFromClick } = useTaskDetail()
 // Everything below follows the area filter (shared with Deadlines)
-const openTasks = computed(() => filterByArea(allOpen.value, areaFilter.value))
-const doneTasks = computed(() => filterByArea(allDone.value, areaFilter.value))
+const { tagFilter } = useTagFilter()
+const { tagsById } = useTags()
+const filtered = (list) => filterByTag(filterByArea(list, areaFilter.value), tagFilter.value)
+const openTasks = computed(() => filtered(allOpen.value))
+const doneTasks = computed(() => filtered(allDone.value))
+const isFiltered = computed(() => areaFilter.value !== 'all' || tagFilter.value !== 'all')
+function resetFilters() {
+  areaFilter.value = 'all'
+  tagFilter.value = 'all'
+}
 const showAreaTags = computed(() => areaFilter.value === 'all')
 // One line about what the task is: BBNet subject, else the description
 const subline = (task) => task._category || markdownSummary(task.description)
@@ -55,8 +68,9 @@ const summary = computed(() =>
       :description="openTasks.length ? summary : t('home.subtitle')"
     />
 
-    <div v-if="allOpen.length" class="mt-8 flex justify-end">
+    <div v-if="allOpen.length" class="mt-8 flex flex-wrap items-center justify-end gap-3">
       <AreaFilter :tasks="allOpen" />
+      <TagFilter :tasks="allOpen" />
     </div>
 
     <div :class="allOpen.length ? 'mt-4' : 'mt-10'">
@@ -68,8 +82,8 @@ const summary = computed(() =>
       </EmptyState>
 
       <template v-else>
-        <EmptyState v-if="openTasks.length === 0 && allOpen.length" class="mb-6" :icon="PhFunnel" :title="t('areas.emptyTitle', { area: t('areas.' + areaFilter) })" :description="t('areas.emptyText')">
-          <BaseButton variant="secondary" @click="areaFilter = 'all'">{{ t('areas.showAll') }}</BaseButton>
+        <EmptyState v-if="openTasks.length === 0 && allOpen.length && isFiltered" class="mb-6" :icon="PhFunnel" :title="t('tags.emptyFilteredTitle')" :description="t('areas.emptyText')">
+          <BaseButton variant="secondary" @click="resetFilters">{{ t('tags.resetFilters') }}</BaseButton>
         </EmptyState>
         <EmptyState v-else-if="openTasks.length === 0" class="mb-6" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
 
@@ -88,6 +102,7 @@ const summary = computed(() =>
               </p>
               <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-ink-muted">
                 <AreaTag v-if="showAreaTags" :area="focusTask._area" />
+                <TagChip v-for="tag in tagsOf(focusTask, tagsById)" :key="tag.id" :tag="tag" />
                 <span v-if="subline(focusTask)" class="max-w-md truncate">{{ subline(focusTask) }}</span>
                 <DueBadge :code="focusTask._status.code" :days="focusTask._days" />
               </div>
@@ -138,7 +153,10 @@ const summary = computed(() =>
                   </p>
                   <p v-if="subline(task)" class="truncate text-[13px] text-ink-muted">{{ subline(task) }}</p>
                 </div>
-                <AreaTag v-if="showAreaTags" :area="task._area" class="hidden sm:inline-flex" />
+                <span class="hidden items-center gap-1.5 sm:flex">
+                  <TagChip v-for="tag in tagsOf(task, tagsById)" :key="tag.id" :tag="tag" />
+                  <AreaTag v-if="showAreaTags" :area="task._area" />
+                </span>
                 <DueBadge :code="task._status.code" :days="task._days" />
               </li>
             </ul>

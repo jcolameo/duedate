@@ -6,7 +6,7 @@
  *   due: 'YYYY-MM-DD'|null, dueRaw: string|null (original CSV text, for display),
  *   start, category, description, graded: boolean, files,
  *   priority: 'high'|'medium'|'low'|null (null = automatic default),
- *   effort: string|null, notes: string, steps: [],
+ *   effort: string|null, notes: string, steps: [], tags: string[] (tag IDs, B5c),
  *   source: 'csv'|'manual', sourceKey: string|null,
  *   createdAt, updatedAt, completedAt: ISO timestamps|null
  * }
@@ -93,6 +93,7 @@ export function createTask(fields, now = new Date()) {
     effort: null,
     notes: '',
     steps: [],
+    tags: [],
     source: 'manual',
     sourceKey: null,
     createdAt: ts,
@@ -137,13 +138,13 @@ const CSV_FIELDS = ['title', 'dueRaw', 'due', 'start', 'category', 'description'
 /** Has the user changed anything on this task that a re-import must not lose? */
 export function isTouched(task) {
   return task.status !== 'open' || !!task.priority || !!task.effort || !!task.notes ||
-    (task.steps && task.steps.length > 0) || normalizeArea(task.area) !== DEFAULT_AREA
+    (task.steps && task.steps.length > 0) || (task.tags && task.tags.length > 0) || normalizeArea(task.area) !== DEFAULT_AREA
 }
 
 /**
  * Merges a fresh CSV import into the existing tasks.
  * - Same sourceKey: CSV fields are refreshed, user fields (status, priority,
- *   effort, notes, steps, area) are kept.
+ *   effort, notes, steps, area, tags) are kept.
  * - New rows: added.
  * - CSV tasks missing from the new import: removed only if untouched
  *   (e.g. after correcting a wrong mapping); touched ones are kept.

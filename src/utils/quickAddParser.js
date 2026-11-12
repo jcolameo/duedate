@@ -9,9 +9,10 @@
  *   Dates without a year that are already past mean next year.
  * - Area: #studium/#study, #freelance/#fl, #privat/#personal, any prefix (#s, #f, #p).
  * - Priority: a standalone "!" (or "!!", "!!!") = high.
- * Everything else is the title. Unknown #tags stay in the title.
+ * - Tags (B5c): any other #word becomes a user tag ("#fotografie").
+ * Everything else is the title.
  *
- * Returns { title, due: 'YYYY-MM-DD'|null, area: string|null, priority: 'high'|null }.
+ * Returns { title, due: 'YYYY-MM-DD'|null, area: string|null, priority: 'high'|null, tags: string[] }.
  */
 import { toISODate } from './taskModel.js'
 
@@ -96,7 +97,7 @@ function dateFor(word, today, allowShort) {
 export function parseQuickAdd(input, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const words = String(input || '').trim().split(/\s+/).filter(Boolean)
-  const result = { title: '', due: null, area: null, priority: null }
+  const result = { title: '', due: null, area: null, priority: null, tags: [] }
   const keep = new Array(words.length).fill(true)
 
   // Index of the last word that is not a #tag or "!" (for short weekdays)
@@ -110,9 +111,19 @@ export function parseQuickAdd(input, now = new Date()) {
       keep[i] = false
       return
     }
-    if (word.startsWith('#') && !result.area) {
-      const area = areaFor(word.slice(1))
-      if (area) { result.area = area; keep[i] = false }
+    if (word.startsWith('#')) {
+      const name = word.slice(1)
+      const area = areaFor(name)
+      if (area) {
+        // Only the first area counts; a second one stays visible in the title
+        if (!result.area) { result.area = area; keep[i] = false }
+        return
+      }
+      if (/^[\p{L}\p{N}][\p{L}\p{N}_-]*$/u.test(name)) {
+        const lower = name.toLowerCase()
+        if (!result.tags.some(t => t.toLowerCase() === lower)) result.tags.push(name)
+        keep[i] = false
+      }
       return
     }
     if (result.due) return

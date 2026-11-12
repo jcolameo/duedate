@@ -19,6 +19,11 @@ import { useTaskActions } from '../composables/useTaskActions.js'
 import { useAreaFilter } from '../composables/useAreaFilter.js'
 import { filterByArea } from '../utils/areas.js'
 import AreaFilter from '../components/AreaFilter.vue'
+import TagFilter from '../components/TagFilter.vue'
+import TagChip from '../components/ui/TagChip.vue'
+import { useTags } from '../composables/useTags.js'
+import { useTagFilter } from '../composables/useTagFilter.js'
+import { filterByTag, tagsOf } from '../utils/tags.js'
 import AreaSelect from '../components/ui/AreaSelect.vue'
 import { useTaskDetail } from '../composables/useTaskDetail.js'
 
@@ -38,12 +43,21 @@ const {
 const { enrichedTasks, openTasks, doneTasks, exportableCount } = useTaskEnrichment()
 const { toggleDone, changeArea } = useTaskActions()
 const { areaFilter } = useAreaFilter()
+const { tagFilter } = useTagFilter()
+const { tagsById } = useTags()
 const { openTask, openFromClick } = useTaskDetail()
 
 // Completed tasks are hidden by default; open ones first, then done (newest first)
 const showDone = ref(false)
-const areaOpen = computed(() => filterByArea(openTasks.value, areaFilter.value))
-const areaDone = computed(() => filterByArea(doneTasks.value, areaFilter.value))
+// Area and tag filters combine
+const filtered = (list) => filterByTag(filterByArea(list, areaFilter.value), tagFilter.value)
+const areaOpen = computed(() => filtered(openTasks.value))
+const areaDone = computed(() => filtered(doneTasks.value))
+const isFiltered = computed(() => areaFilter.value !== 'all' || tagFilter.value !== 'all')
+function resetFilters() {
+  areaFilter.value = 'all'
+  tagFilter.value = 'all'
+}
 const visibleTasks = computed(() => (showDone.value ? [...areaOpen.value, ...areaDone.value] : areaOpen.value))
 const { exportMessage, exportError, exportToICS } = useICSExport(enrichedTasks)
 const { locale, t } = useLocale()
@@ -151,14 +165,15 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
         </h2>
         <div class="flex flex-wrap items-center gap-3">
           <AreaFilter :tasks="openTasks" />
+          <TagFilter :tasks="openTasks" />
           <BaseButton v-if="areaDone.length" variant="ghost" size="sm" :icon="showDone ? PhEyeSlash : PhEye" :aria-pressed="showDone" @click="showDone = !showDone">
             {{ showDone ? t('tasks.hideDone') : t('tasks.showDone', { count: areaDone.length }) }}
           </BaseButton>
         </div>
       </div>
 
-      <EmptyState v-if="visibleTasks.length === 0 && areaFilter !== 'all' && openTasks.length" :icon="PhFunnel" :title="t('areas.emptyTitle', { area: t('areas.' + areaFilter) })" :description="t('areas.emptyText')">
-        <BaseButton variant="secondary" @click="areaFilter = 'all'">{{ t('areas.showAll') }}</BaseButton>
+      <EmptyState v-if="visibleTasks.length === 0 && isFiltered && openTasks.length" :icon="PhFunnel" :title="t('tags.emptyFilteredTitle')" :description="t('areas.emptyText')">
+        <BaseButton variant="secondary" @click="resetFilters">{{ t('tags.resetFilters') }}</BaseButton>
       </EmptyState>
       <EmptyState v-else-if="visibleTasks.length === 0" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
 
@@ -191,6 +206,9 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
               </td>
               <td :class="['max-w-xs px-4 py-3 align-middle font-medium', task._isDone ? 'text-ink-muted line-through decoration-line-strong' : 'text-ink']">
                 <button type="button" class="rounded-sm text-left underline-offset-4 decoration-line-strong hover:underline" :aria-haspopup="'dialog'" @click="openTask(task)">{{ task._title || t('common.untitled') }}</button>
+                <span v-if="task.tags?.length" class="mt-1 flex flex-wrap gap-1 no-underline">
+                  <TagChip v-for="tag in tagsOf(task, tagsById)" :key="tag.id" :tag="tag" />
+                </span>
               </td>
               <td class="whitespace-nowrap px-4 py-3 align-middle">
                 <AreaSelect :area="task._area" :title="task._title || t('common.untitled')" @change="changeArea(task, $event)" />

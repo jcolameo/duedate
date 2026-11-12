@@ -29,6 +29,16 @@
   --dd-green-ink: #9bc59e;
   --dd-yellow-soft: rgba(251, 243, 219, 0.16);
   --dd-yellow-ink: #e2c06b;
+
+  /* Extra tag colors (B5c), only for user tags */
+  --dd-orange-soft: rgba(251, 236, 221, 0.16);
+  --dd-orange-ink: #f0b27a;
+  --dd-purple-soft: rgba(241, 236, 248, 0.16);
+  --dd-purple-ink: #c9aef0;
+  --dd-pink-soft: rgba(251, 237, 244, 0.16);
+  --dd-pink-ink: #f0a6c9;
+  --dd-teal-soft: rgba(228, 243, 241, 0.16);
+  --dd-teal-ink: #86cfc5;
 }
 
 .light {
@@ -54,6 +64,15 @@
   --dd-green-ink: #346538;
   --dd-yellow-soft: #fbf3db;
   --dd-yellow-ink: #8a5c00;
+
+  --dd-orange-soft: #fbecdd;
+  --dd-orange-ink: #9a4a12;
+  --dd-purple-soft: #f1ecf8;
+  --dd-purple-ink: #6940a5;
+  --dd-pink-soft: #fbedf4;
+  --dd-pink-ink: #a13668;
+  --dd-teal-soft: #e4f3f1;
+  --dd-teal-ink: #2a6a63;
 }
 
 @theme inline {
@@ -77,6 +96,14 @@
   --color-green-ink: var(--dd-green-ink);
   --color-yellow-soft: var(--dd-yellow-soft);
   --color-yellow-ink: var(--dd-yellow-ink);
+  --color-orange-soft: var(--dd-orange-soft);
+  --color-orange-ink: var(--dd-orange-ink);
+  --color-purple-soft: var(--dd-purple-soft);
+  --color-purple-ink: var(--dd-purple-ink);
+  --color-pink-soft: var(--dd-pink-soft);
+  --color-pink-ink: var(--dd-pink-ink);
+  --color-teal-soft: var(--dd-teal-soft);
+  --color-teal-ink: var(--dd-teal-ink);
 }
 
 @theme {
