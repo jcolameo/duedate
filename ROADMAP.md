@@ -243,7 +243,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 **C3 — Wiedervorlage**: Feld „wieder zeigen am“ → Aufgabe verschwindet bis zum Datum, erscheint dann oben. Für Follow-ups (Bewerbungen, Offerten). Dateien: `useTasks.js`, `TaskDetail.vue`, Listen-Filter. Akzeptanz: Schnellwahl „morgen / in 3 Tagen / nächste Woche“. Test: Unit mit fixem Datum.
 
-**C4 — Wiederkehrende Aufgaben**: Regel „wöchentlich an Mo/Mi/Fr“ oder „monatlich am X.“; beim Abhaken entsteht die nächste Instanz. Deckt Routinen mit festen Tagen ab; Gewohnheiten mit Wochenzielen („3× pro Woche“) und Serien kommen als Habit-Tracker in F3.js`, neu `utils/recurrence.js`. Akzeptanz: Abhaken → nächster Termin korrekt (inkl. Monatsende, Jahreswechsel). Test: Unit-Tests für Wiederholungsregeln.
+**C4 — Wiederkehrende Aufgaben**: Regel „wöchentlich an Mo/Mi/Fr“ oder „monatlich am X.“; beim Abhaken entsteht die nächste Instanz. Deckt Routinen mit festen Tagen ab; Gewohnheiten mit Wochenzielen („3× pro Woche“) und Serien kommen als Habit-Tracker in F3. Dateien: `useTasks.js`, neu `utils/recurrence.js`. Akzeptanz: Abhaken → nächster Termin korrekt (inkl. Monatsende, Jahreswechsel). Test: Unit-Tests für Wiederholungsregeln.
 
 **C5 — Wochenrückblick**: Geführter 5-Min.-Dialog (Sonntag/Montag angeboten): erledigt diese Woche, liegengeblieben (verschieben / löschen / zerlegen), Top 3 nächste Woche. Unterstützende Sprache, keine Vorwürfe. Dateien: neu `views/ReviewView.vue`. Akzeptanz: Durchlauf in < 5 Min. möglich. Test: manuell mit Testdaten.
 
