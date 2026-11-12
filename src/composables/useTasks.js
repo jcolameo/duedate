@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import { detectColumns } from '../utils/columnDetector.js'
 import { isSavedMappingUsable } from '../utils/mapping.js'
-import { migrateLegacy, mergeImport, rowsToTasks, withStatus, createManualTask, upgradeToV3 } from '../utils/taskModel.js'
+import { migrateLegacy, mergeImport, rowsToTasks, withStatus, createManualTask, upgradeToV3, SCHEMA_VERSION } from '../utils/taskModel.js'
 
 /**
  * The task store (since B1): every task is its own object, persisted in
@@ -13,7 +13,7 @@ import { migrateLegacy, mergeImport, rowsToTasks, withStatus, createManualTask, 
  */
 const STORE_KEY = 'duedate.taskStore.v1'
 const SCHEMA_KEY = 'duedate.schemaVersion'
-export const SCHEMA_VERSION = 3
+export { SCHEMA_VERSION }
 
 const LEGACY = {
   rows: 'duedate.tasks.v1',

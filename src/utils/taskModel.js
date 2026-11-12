@@ -19,6 +19,8 @@ import { taskId } from './taskId.js'
 import { AREAS, DEFAULT_AREA, normalizeArea } from './areas.js'
 import { checklistProgress, checklistTextOf } from './checklist.js'
 
+/** Version of the stored data shape (3 since B5b); backups carry it. */
+export const SCHEMA_VERSION = 3
 export const TASK_STATUS = ['open', 'done']
 export { AREAS }
 

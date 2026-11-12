@@ -25,6 +25,8 @@ import AreaTag from '../components/ui/AreaTag.vue'
 import ChecklistBadge from '../components/ui/ChecklistBadge.vue'
 import ProgressBar from '../components/ui/ProgressBar.vue'
 import DoneOverlay from '../components/ui/DoneOverlay.vue'
+import InlineNotice from '../components/ui/InlineNotice.vue'
+import { useBackup } from '../composables/useBackup.js'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
 import { useTaskDetail } from '../composables/useTaskDetail.js'
 import { useToday } from '../composables/useToday.js'
@@ -38,6 +40,7 @@ const { areaFilter } = useAreaFilter()
 const { tagFilter } = useTagFilter()
 const { tagsById } = useTags()
 const quickAdd = useQuickAdd()
+const { showHint, lastBackup, exportBackup, snoozeHint } = useBackup()
 const { openTask, openFromClick } = useTaskDetail()
 const { complete, toggleDone, toggleStep } = useTaskActions()
 const { todayIds, skippedIds, setToday, addToday, swapToday } = useToday()
@@ -410,6 +413,17 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
         </template>
       </template>
     </div>
+
+    <!-- Quiet reminder: the data only lives in this browser -->
+    <InlineNotice v-if="showHint" class="mt-10">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p>{{ lastBackup ? t('backup.hintOld') : t('backup.hintNever') }}</p>
+        <div class="flex items-center gap-2">
+          <BaseButton size="sm" variant="primary" @click="exportBackup">{{ t('backup.hintDownload') }}</BaseButton>
+          <BaseButton size="sm" variant="ghost" @click="snoozeHint()">{{ t('backup.hintLater') }}</BaseButton>
+        </div>
+      </div>
+    </InlineNotice>
   </div>
 </template>
 

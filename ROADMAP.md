@@ -93,7 +93,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B5c | ✅ | `feat:` Eigene Tags mit Farbe + Filter |
 | B6 | ✅ | `feat:` Heute-Ansicht |
 | C1 | ✅ | `feat:` Checkliste in der Beschreibung (vorgezogen, siehe Phase C) |
-| B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
+| B7 | ✅ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 | B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
 | B10 | ⬜ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
@@ -159,6 +159,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Dateien: `SettingsView.vue`, neu `utils/backup.js`.
 - Akzeptanz: Export aller Daten als `duedate-backup-JJJJ-MM-TT.json`; Import prüft Schema/Version, zeigt Vorschau („42 Aufgaben, 3 Kunden …“), ersetzt erst nach Bestätigung; „Alle Daten löschen“ mit Bestätigung.
 - Test: Unit: Export → Import ergibt identischen Zustand; kaputte Datei → verständliche Fehlermeldung.
+- Umgesetzt (**MVP erreicht**): Einstellungen → „Daten und Backup“: Download `duedate-backup-JJJJ-MM-TT.json` (Aufgaben, Tags, Blockzeiten, Heute, CSV-Zuordnung + letzte CSV, Theme/Sprache), „Backup einspielen“ mit Prüfung (8 verständliche Fehlercodes, bei Fehler bleibt alles unverändert), Vorschau „Jetzt → Aus Datei“, optional Sicherheitskopie vorher, ersetzt erst nach Bestätigung (danach Neuladen + Meldung); „Alle Daten löschen“ (Theme/Sprache bleiben). Ältere Datenformate werden beim Import hochgezogen. Ruhiger Hinweis auf der Startseite, wenn noch nie oder seit 14 Tagen nicht gesichert (ab 3 Aufgaben, „In 7 Tagen erinnern“). `navigator.storage.persist()` wird angefragt. Format dokumentiert in `docs/BACKUP_FORMAT.md`. Nebenbei: `ics`-Bibliothek wird nur beim Export nachgeladen → Haupt-Bundle 501 → 452 kB, Warnung weg.
 
 **B8 — Planer v2** (aus Nutzer-Feedback; baut auf A6 auf, braucht B1/B2)
 - Ziel: Kein Abgabestress mehr. Grosse Aufgaben werden früh und verteilt eingeplant statt als ein Block am letzten Tag.

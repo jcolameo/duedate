@@ -6,9 +6,12 @@ import TaskDetail from './components/TaskDetail.vue'
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useLocale } from './composables/useLocale.js'
 import { useQuickAdd, isTypingTarget } from './composables/useQuickAdd.js'
+import { takeAfterReloadNotice } from './composables/useBackup.js'
+import { useToast } from './composables/useToast.js'
 
 const { t } = useLocale()
 const quickAdd = useQuickAdd()
+const toast = useToast()
 
 // "N" opens quick capture from anywhere, unless the user is typing or a dialog is open
 function onGlobalKeydown(e) {
@@ -18,7 +21,13 @@ function onGlobalKeydown(e) {
   e.preventDefault()
   quickAdd.open()
 }
-onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
+onMounted(() => {
+  window.addEventListener('keydown', onGlobalKeydown)
+  // After "restore backup" / "delete all data" the page reloads: say what happened
+  const notice = takeAfterReloadNotice()
+  if (notice?.kind === 'restored') toast.show(t('backup.restored', { count: notice.count }), { tone: 'success' })
+  if (notice?.kind === 'wiped') toast.show(t('backup.wiped'), { tone: 'success' })
+})
 onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
 </script>
 
