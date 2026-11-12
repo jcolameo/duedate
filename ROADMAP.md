@@ -259,7 +259,8 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | KI: Aufgaben zerlegen | Kleiner Server für den API-Key (z. B. Cloudflare Worker) mit Zugangsschutz; Fallback = manuelle Mikroschritte (C1) |
 | KI: Kunden-Briefing → Scope, Rückfragen, Kalkulationsentwurf | Wie oben; Ergebnis landet in Kalkulation (D4) |
 | MCP: Claude verbinden | Variante A (JSON-Backup) ab B7 nutzbar. Lokaler MCP-Server (Mac) oder Remote-MCP erst nach Entscheid über Sync |
-| Sync Desktop ↔ Mobile | Nur falls Mobile-Nutzung täglich wird; braucht Backend + Login |
+| Speicher: IndexedDB (Dexie.js) | Statt localStorage (≈ 5 MB), sobald Zeiterfassung (C2/D3) viele Einträge erzeugt. Alles läuft über `useTasks`/Stores → Umbau ist lokal begrenzt. B7-Backup vorher. |
+| Sync Desktop ↔ Mobile | Mit Phase E: Supabase (Postgres, EU-Region Frankfurt, Login). Alternative: PocketBase selbst gehostet. Firebase verworfen (Lock-in, NoSQL passt schlecht zu Kunden → Projekte → Zeiten). |
 | Rechnungen inkl. QR-Rechnung | Erst wenn regelmässig Aufträge laufen |
 | Streak (ohne Strafe), Hintergrundgeräusche | Nice-to-have |
 | Ausbau Wochenplan-Generator | Eingefroren, bis Nutzung im Alltag belegt ist |
