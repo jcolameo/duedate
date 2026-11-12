@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { PhTray, PhArrowRight, PhUploadSimple, PhCheck, PhCheckCircle, PhFunnel } from '@phosphor-icons/vue'
+import { PhTray, PhArrowRight, PhUploadSimple, PhCheck, PhCheckCircle, PhFunnel, PhPlus } from '@phosphor-icons/vue'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useLocale } from '../composables/useLocale.js'
 import { usePageEyebrow } from '../composables/usePageEyebrow.js'
@@ -16,9 +16,11 @@ import { useAreaFilter } from '../composables/useAreaFilter.js'
 import { filterByArea } from '../utils/areas.js'
 import AreaFilter from '../components/AreaFilter.vue'
 import AreaTag from '../components/ui/AreaTag.vue'
+import { useQuickAdd } from '../composables/useQuickAdd.js'
 
 const { enrichedTasks, openTasks: allOpen, doneTasks: allDone } = useTaskEnrichment()
 const { areaFilter } = useAreaFilter()
+const quickAdd = useQuickAdd()
 // Everything below follows the area filter (shared with Deadlines)
 const openTasks = computed(() => filterByArea(allOpen.value, areaFilter.value))
 const doneTasks = computed(() => filterByArea(allDone.value, areaFilter.value))
@@ -54,7 +56,10 @@ const summary = computed(() =>
 
     <div :class="allOpen.length ? 'mt-4' : 'mt-10'">
       <EmptyState v-if="enrichedTasks.length === 0" :icon="PhTray" :title="t('home.emptyTitle')" :description="t('home.emptyState')">
-        <BaseButton :as="RouterLink" to="/deadlines" variant="primary" :icon="PhUploadSimple">{{ t('home.importCta') }}</BaseButton>
+        <div class="flex flex-wrap justify-center gap-2">
+          <BaseButton variant="primary" :icon="PhPlus" @click="quickAdd.open()">{{ t('quickAdd.title') }}</BaseButton>
+          <BaseButton :as="RouterLink" to="/deadlines" :icon="PhUploadSimple">{{ t('home.importCta') }}</BaseButton>
+        </div>
       </EmptyState>
 
       <template v-else>

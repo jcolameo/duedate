@@ -102,6 +102,16 @@ export function createTask(fields, now = new Date()) {
   }
 }
 
+/** Unique ID for tasks the user creates (CSV tasks use taskId instead). */
+export function manualTaskId(now = new Date()) {
+  return `m-${now.getTime().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+/** A task created in the app (quick capture, later the detail panel). */
+export function createManualTask(fields, now = new Date()) {
+  return createTask({ ...fields, id: manualTaskId(now), source: 'manual', sourceKey: null }, now)
+}
+
 /**
  * CSV rows -> tasks. ID = sourceKey = taskId(title, dueRaw), as before B1.
  * A repeated title + date within one file gets "-2", "-3" … so two rows

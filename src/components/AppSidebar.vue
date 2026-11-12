@@ -1,14 +1,17 @@
 <script setup>
 import { computed } from 'vue'
 import {
-  PhHouse, PhCalendarCheck, PhClock, PhCalendarDots, PhFolders, PhHeartbeat, PhTray,
-  PhBriefcase, PhIdentificationCard, PhSun, PhMoon, PhGear,
+  PhHouse, PhCalendarCheck, PhClock, PhCalendarDots, PhFolders, PhHeartbeat,
+  PhBriefcase, PhIdentificationCard, PhSun, PhMoon, PhGear, PhPlus,
 } from '@phosphor-icons/vue'
 import { useTheme } from '../composables/useTheme.js'
 import { useLocale } from '../composables/useLocale.js'
+import { useQuickAdd } from '../composables/useQuickAdd.js'
+import BaseKbd from './ui/BaseKbd.vue'
 
 const { theme, toggleTheme } = useTheme()
 const { t } = useLocale()
+const quickAdd = useQuickAdd()
 
 const NAV_ITEMS = computed(() => [
   { path: '/', label: t('nav.home'), icon: PhHouse },
@@ -22,7 +25,6 @@ const PLANNED_ITEMS = computed(() => [
   { label: t('nav.projects'), icon: PhFolders },
   { label: t('nav.freelance'), icon: PhBriefcase },
   { label: t('nav.jobs'), icon: PhIdentificationCard },
-  { label: t('nav.capture'), icon: PhTray },
   { label: t('nav.lifePlanner'), icon: PhHeartbeat },
 ])
 
@@ -43,6 +45,18 @@ const themeLabel = computed(() => (theme.value === 'dark' ? t('nav.lightMode') :
         <span class="mt-1.5 block font-mono text-[11px] text-ink-muted">{{ t('nav.subtitle') }}</span>
       </a>
     </RouterLink>
+
+    <!-- Quick capture: always one click (or "N") away -->
+    <button
+      type="button"
+      :class="[itemClass, 'mb-4 w-full border border-line bg-surface text-left text-ink hover:border-line-strong']"
+      aria-keyshortcuts="N"
+      @click="quickAdd.open()"
+    >
+      <PhPlus class="size-[18px] shrink-0 text-blue-ink" aria-hidden="true" />
+      <span class="flex-1">{{ t('quickAdd.title') }}</span>
+      <BaseKbd aria-hidden="true">N</BaseKbd>
+    </button>
 
     <nav :aria-label="t('nav.main')" class="flex flex-1 flex-col">
       <ul class="space-y-0.5">

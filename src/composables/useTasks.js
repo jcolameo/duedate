@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import { detectColumns } from '../utils/columnDetector.js'
 import { isSavedMappingUsable } from '../utils/mapping.js'
-import { migrateLegacy, mergeImport, rowsToTasks, withStatus } from '../utils/taskModel.js'
+import { migrateLegacy, mergeImport, rowsToTasks, withStatus, createManualTask } from '../utils/taskModel.js'
 
 /**
  * The task store (since B1): every task is its own object, persisted in
@@ -87,10 +87,34 @@ function setStatus(id, status) {
   tasks.value = tasks.value.map(t => (t.id === id ? withStatus(t, status, now) : t))
 }
 
+/** Creates a manual task and returns it. */
+function addTask(fields) {
+  const task = createManualTask(fields)
+  tasks.value = [...tasks.value, task]
+  return task
+}
+
+/** Removes a task; returns it (and its position) so it can be restored. */
+function removeTask(id) {
+  const index = tasks.value.findIndex(t => t.id === id)
+  if (index === -1) return null
+  const task = tasks.value[index]
+  tasks.value = tasks.value.filter(t => t.id !== id)
+  return { task, index }
+}
+
+/** Puts a removed task back where it was (undo). */
+function restoreTask({ task, index }) {
+  if (tasks.value.some(t => t.id === task.id)) return
+  const next = [...tasks.value]
+  next.splice(Math.min(index, next.length), 0, task)
+  tasks.value = next
+}
+
 function getTask(id) {
   return tasks.value.find(t => t.id === id) || null
 }
 
 export function useTasks() {
-  return { tasks, applyCsvImport, updateTask, setStatus, getTask }
+  return { tasks, applyCsvImport, updateTask, setStatus, getTask, addTask, removeTask, restoreTask }
 }

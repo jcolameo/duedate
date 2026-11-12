@@ -195,3 +195,20 @@ describe('done state (B2)', () => {
   })
 })
 
+
+describe('manual tasks (B4)', () => {
+  it('createManualTask gives a unique manual ID and keeps given fields', async () => {
+    const { createManualTask } = await import('../taskModel.js')
+    const a = createManualTask({ title: 'Offerte', area: 'freelance', due: '2026-11-13', priority: 'high' }, NOW)
+    const b = createManualTask({ title: 'Offerte' }, NOW)
+    expect(a).toMatchObject({ title: 'Offerte', area: 'freelance', due: '2026-11-13', priority: 'high', source: 'manual', sourceKey: null, status: 'open' })
+    expect(a.id).toMatch(/^m-/)
+    expect(a.id).not.toBe(b.id)
+  })
+
+  it('survives a CSV re-import untouched', async () => {
+    const { createManualTask } = await import('../taskModel.js')
+    const m = createManualTask({ title: 'Training' }, NOW)
+    expect(mergeImport([m], rowsToTasks(ROWS, MAPPING, NOW), NOW)[0]).toBe(m)
+  })
+})
