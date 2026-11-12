@@ -188,6 +188,23 @@ export function migrateLegacy({ rows, mapping, planning }, now = new Date()) {
 }
 
 /**
+ * Schema 3 (B5b): manual tasks keep their text in `description` (Markdown);
+ * `notes` is only used for the user's own notes on CSV tasks, whose
+ * description belongs to the CSV. Moves B5 notes of manual tasks over.
+ * Idempotent, returns the same array when nothing changes.
+ */
+export function upgradeToV3(tasks) {
+  let changed = false
+  const next = tasks.map((task) => {
+    if (task.source === 'csv' || !task.notes) return task
+    changed = true
+    const description = task.description ? `${task.description}\n\n${task.notes}` : task.notes
+    return { ...task, description, notes: '' }
+  })
+  return changed ? next : tasks
+}
+
+/**
  * Adds the derived, underscore-prefixed fields the views, scheduler and
  * exports already use. Status label translation happens in the composable.
  */

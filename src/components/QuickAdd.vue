@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { PhFlag, PhKeyReturn, PhX } from '@phosphor-icons/vue'
+import { PhFlag, PhKeyReturn, PhX, PhTextAlignLeft } from '@phosphor-icons/vue'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
 import { useTasks } from '../composables/useTasks.js'
 import { useAreaFilter } from '../composables/useAreaFilter.js'
@@ -16,6 +16,7 @@ import BaseDialog from './ui/BaseDialog.vue'
 import BaseButton from './ui/BaseButton.vue'
 import BaseKbd from './ui/BaseKbd.vue'
 import SegmentedControl from './ui/SegmentedControl.vue'
+import MarkdownEditor from './ui/MarkdownEditor.vue'
 
 /**
  * Quick capture (B4): one line of text, parsed live into title, date, area
@@ -40,6 +41,8 @@ const parsed = computed(() => parseQuickAdd(text.value))
 const pickedArea = ref(null)
 const pickedDue = ref(null) // '' = explicitly no date
 const pickedPriority = ref(null)
+const description = ref('')
+const showDescription = ref(false)
 watch(() => parsed.value.area, (v) => { if (v) pickedArea.value = null })
 watch(() => parsed.value.due, (v) => { if (v) pickedDue.value = null })
 watch(() => parsed.value.priority, (v) => { if (v) pickedPriority.value = null })
@@ -82,13 +85,15 @@ function reset() {
   pickedArea.value = null
   pickedDue.value = null
   pickedPriority.value = null
+  description.value = ''
+  showDescription.value = false
 }
 
 function save(keepOpen) {
   triedSubmit.value = true
   if (titleMissing.value) return
   const title = parsed.value.title
-  const task = addTask({ title, due: due.value || null, priority: important.value ? 'high' : null, area: area.value })
+  const task = addTask({ title, description: description.value.trim(), due: due.value || null, priority: important.value ? 'high' : null, area: area.value })
   toast.show(t('quickAdd.saved', { title }), {
     tone: 'success',
     action: { label: t('ui.undo'), onClick: () => removeTask(task.id) },
@@ -170,6 +175,27 @@ function onKeydown(e) {
       >
         <PhFlag :weight="important ? 'fill' : 'bold'" class="size-3.5" aria-hidden="true" />{{ t('quickAdd.important') }}
       </button>
+    </div>
+
+    <!-- Optional description (Markdown), hidden by default to keep capture fast -->
+    <div class="mt-4">
+      <button
+        v-if="!showDescription"
+        type="button"
+        class="inline-flex h-7 items-center gap-1.5 rounded-md px-1.5 -mx-1.5 text-[13px] text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-ink"
+        @click="showDescription = true"
+      >
+        <PhTextAlignLeft class="size-3.5" aria-hidden="true" />{{ t('quickAdd.addDescription') }}
+      </button>
+      <MarkdownEditor
+        v-else
+        v-model="description"
+        start-editing
+        :rows="4"
+        :label="t('detail.description')"
+        :placeholder="t('detail.descriptionPlaceholder')"
+        @submit="save(false)"
+      />
     </div>
 
     <p id="quick-add-help" class="mt-4 border-t border-line pt-3 text-[13px] leading-6 text-ink-muted">

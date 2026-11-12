@@ -14,6 +14,7 @@ import TaskCheckbox from '../components/ui/TaskCheckbox.vue'
 import { useTaskActions } from '../composables/useTaskActions.js'
 import { useAreaFilter } from '../composables/useAreaFilter.js'
 import { filterByArea } from '../utils/areas.js'
+import { markdownSummary } from '../utils/markdown.js'
 import AreaFilter from '../components/AreaFilter.vue'
 import AreaTag from '../components/ui/AreaTag.vue'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
@@ -22,11 +23,13 @@ import { useTaskDetail } from '../composables/useTaskDetail.js'
 const { enrichedTasks, openTasks: allOpen, doneTasks: allDone } = useTaskEnrichment()
 const { areaFilter } = useAreaFilter()
 const quickAdd = useQuickAdd()
-const { openTask } = useTaskDetail()
+const { openTask, openFromClick } = useTaskDetail()
 // Everything below follows the area filter (shared with Deadlines)
 const openTasks = computed(() => filterByArea(allOpen.value, areaFilter.value))
 const doneTasks = computed(() => filterByArea(allDone.value, areaFilter.value))
 const showAreaTags = computed(() => areaFilter.value === 'all')
+// One line about what the task is: BBNet subject, else the description
+const subline = (task) => task._category || markdownSummary(task.description)
 const { complete, toggleDone } = useTaskActions()
 const { t } = useLocale()
 const eyebrow = usePageEyebrow()
@@ -71,7 +74,12 @@ const summary = computed(() =>
         <EmptyState v-else-if="openTasks.length === 0" class="mb-6" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
 
         <!-- Focus: the single next action -->
-        <BaseCard v-if="focusTask" padding="lg" class="mb-6">
+        <BaseCard
+          v-if="focusTask"
+          padding="lg"
+          class="mb-6 cursor-pointer transition-colors duration-150 hover:border-line-strong"
+          @click="openFromClick($event, focusTask)"
+        >
           <p class="font-mono text-[12px] uppercase tracking-[0.06em] text-ink-muted">{{ t('home.focus') }}</p>
           <div class="mt-3 flex flex-wrap items-end justify-between gap-6">
             <div class="min-w-0">
@@ -80,7 +88,7 @@ const summary = computed(() =>
               </p>
               <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-ink-muted">
                 <AreaTag v-if="showAreaTags" :area="focusTask._area" />
-                <span v-if="focusTask._category">{{ focusTask._category }}</span>
+                <span v-if="subline(focusTask)" class="max-w-md truncate">{{ subline(focusTask) }}</span>
                 <DueBadge :code="focusTask._status.code" :days="focusTask._days" />
               </div>
             </div>
@@ -117,13 +125,18 @@ const summary = computed(() =>
           </div>
           <BaseCard padding="none">
             <ul class="divide-y divide-line">
-              <li v-for="task in upcoming" :key="task._id" class="flex items-center gap-3 px-4 py-2.5">
+              <li
+                v-for="task in upcoming"
+                :key="task._id"
+                class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-surface-muted/50"
+                @click="openFromClick($event, task)"
+              >
                 <TaskCheckbox :done="task._isDone" :title="task._title || t('common.untitled')" @toggle="toggleDone(task)" />
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-sm font-medium">
                     <button type="button" class="rounded-sm text-left underline-offset-4 decoration-line-strong hover:underline" aria-haspopup="dialog" @click="openTask(task)">{{ task._title || t('common.untitled') }}</button>
                   </p>
-                  <p v-if="task._category" class="truncate text-[13px] text-ink-muted">{{ task._category }}</p>
+                  <p v-if="subline(task)" class="truncate text-[13px] text-ink-muted">{{ subline(task) }}</p>
                 </div>
                 <AreaTag v-if="showAreaTags" :area="task._area" class="hidden sm:inline-flex" />
                 <DueBadge :code="task._status.code" :days="task._days" />

@@ -89,7 +89,10 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B3 | ✅ | `feat:` Bereiche Studium / Freelance / Privat |
 | B4 | ✅ | `feat:` Schnellerfassung (< 5 s) |
 | B5 | ✅ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
+| B5b | ✅ | `feat:` Beschreibung (Markdown) + ganze Karte klickbar |
+| B5c | ⬜ | `feat:` Eigene Tags mit Farbe + Filter |
 | B6 | ⬜ | `feat:` Heute-Ansicht |
+| C1 | ⬜ | `feat:` Checkliste / Mikroschritte (vorgezogen, siehe Phase C) |
 | B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 | B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
@@ -130,6 +133,17 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Akzeptanz: Klick/Enter auf Aufgabe öffnet Panel; `Esc` schliesst; Fokus wird korrekt zurückgegeben.
 - Test: Manuell inkl. Tastatur + Screenreader (VoiceOver).
 - Umgesetzt: Seitenpanel (natives `<dialog>`, `BaseDialog placement="right"`), öffnet per Klick/Enter auf den Titel (Deadlines, Überblick). Speichert sofort; leerer Titel wird nicht gespeichert. CSV-Felder (Titel, Datum, Fach …) nur lesbar mit Hinweis, weil der nächste Import sie überschreiben würde. Löschen mit Rückgängig (CSV-Aufgaben: Hinweis, dass sie beim Import zurückkommen). VoiceOver-Test steht noch aus (nur auf dem Mac möglich).
+
+**B5b — Beschreibung + Karten** ✅
+- Beschreibung in Markdown (Listen, fett, kursiv, Überschrift, Links, Code) mit Werkzeugleiste, Kürzeln (Ctrl+B/I/K, Enter setzt Listen fort, Ctrl+Enter speichert) und formatierter Ansicht. Eigener kleiner Renderer, keine Abhängigkeit, HTML wird immer escaped, Links nur http(s)/mailto.
+- „Neue Aufgabe“: optionales Feld „Beschreibung hinzufügen“. Detail-Panel: eigene Aufgaben → Beschreibung; BBNet-Aufgaben → „Eigene Notizen“ (BBNet-Beschreibung bleibt nur lesbar).
+- Ganze Karte/Zeile öffnet das Detail (Maus); Titel-Button bleibt der Tastaturweg. Überblick zeigt die erste Zeile der Beschreibung.
+- Migration Schema 3: Notizen eigener Aufgaben (aus B5) → Beschreibung.
+
+**B5c — Eigene Tags**
+- Ziel: Freie Etiketten (Name + Farbe aus ~8 kontrastgeprüften Farben), zusätzlich zu Bereich/Priorität/Aufwand.
+- Schnellerfassung: `#wort`, das kein Bereich ist, wird zum Tag. Detail-Panel: Tags hinzufügen/entfernen. Filter nach Tag. Tags umbenennen/Farbe ändern/löschen.
+- Abgrenzung: Projekte (D2) sind eigene Objekte mit Kunde, Budget, Zeit; Aufgaben werden ihnen später zugeordnet.
 
 **B6 — Heute-Ansicht**
 - Ziel: Die Startseite beantwortet nur: „Was mache ich jetzt?“
@@ -262,12 +276,15 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | MCP: Claude verbinden | Variante A (JSON-Backup) ab B7 nutzbar. Lokaler MCP-Server (Mac) oder Remote-MCP erst nach Entscheid über Sync |
 | Speicher: IndexedDB (Dexie.js) | Statt localStorage (≈ 5 MB), sobald Zeiterfassung (C2/D3) viele Einträge erzeugt. Alles läuft über `useTasks`/Stores → Umbau ist lokal begrenzt. B7-Backup vorher. |
 | Sync Desktop ↔ Mobile | Mit Phase E: Supabase (Postgres, EU-Region Frankfurt, Login). Alternative: PocketBase selbst gehostet. Firebase verworfen (Lock-in, NoSQL passt schlecht zu Kunden → Projekte → Zeiten). |
+| Kanban-Board (Modul) | Nach B7, zusammen mit Projekten (D2): Spalten Offen → In Arbeit → Erledigt, zweite Ansicht derselben Aufgaben, filterbar nach Bereich/Projekt. Braucht Status „In Arbeit“ (Migration). Aus „verworfen“ zurückgeholt, weil DueDate Hauptarbeitsort werden soll. |
+| Module ein/aus | Einstellungen-Schalter pro Modul (z. B. Kanban, Freelance). Mit dem ersten optionalen Modul. |
+| SaaS | Login, Server-DB (Supabase), Bezahlung, Datenschutz/AGB, Support. Nichts bauen, was das verbaut. |
 | Rechnungen inkl. QR-Rechnung | Erst wenn regelmässig Aufträge laufen |
 | Streak (ohne Strafe), Hintergrundgeräusche | Nice-to-have |
 | Ausbau Wochenplan-Generator | Eingefroren, bis Nutzung im Alltag belegt ist |
 
 ## Bewusst verworfen
-Notion-artiger Block-Editor · Kanban-Board · Karteikarten/Quiz · XP/Level/Badges · KI-Priorisierung ·
+Notion-artiger Block-Editor (stattdessen Markdown, B5b) · Karteikarten/Quiz · XP/Level/Badges · KI-Priorisierung ·
 „Cloud Vault“ ohne Login · Beispieldaten beim ersten Start.
 
 ---

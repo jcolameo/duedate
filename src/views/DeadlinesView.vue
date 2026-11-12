@@ -38,7 +38,7 @@ const {
 const { enrichedTasks, openTasks, doneTasks, exportableCount } = useTaskEnrichment()
 const { toggleDone, changeArea } = useTaskActions()
 const { areaFilter } = useAreaFilter()
-const { openTask } = useTaskDetail()
+const { openTask, openFromClick } = useTaskDetail()
 
 // Completed tasks are hidden by default; open ones first, then done (newest first)
 const showDone = ref(false)
@@ -179,7 +179,8 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
             <tr
               v-for="task in visibleTasks"
               :key="task._id"
-              :class="['transition-colors duration-150 hover:bg-surface-muted/50', task._isDone && 'text-ink-muted']"
+              :class="['cursor-pointer transition-colors duration-150 hover:bg-surface-muted/50', task._isDone && 'text-ink-muted']"
+              @click="openFromClick($event, task)"
             >
               <td class="py-2.5 pl-4 pr-0 align-middle">
                 <TaskCheckbox :done="task._isDone" :title="task._title || t('common.untitled')" @toggle="toggleDone(task)" />

@@ -212,3 +212,23 @@ describe('manual tasks (B4)', () => {
     expect(mergeImport([m], rowsToTasks(ROWS, MAPPING, NOW), NOW)[0]).toBe(m)
   })
 })
+
+describe('upgradeToV3 (B5b: notes -> description for manual tasks)', () => {
+  it('moves notes of manual tasks into the description', async () => {
+    const { upgradeToV3 } = await import('../taskModel.js')
+    const m = createTask({ id: 'm', source: 'manual', notes: 'Stundensatz klären' }, NOW)
+    expect(upgradeToV3([m])[0]).toMatchObject({ description: 'Stundensatz klären', notes: '' })
+  })
+
+  it('appends to an existing description', async () => {
+    const { upgradeToV3 } = await import('../taskModel.js')
+    const m = createTask({ id: 'm', source: 'manual', description: 'A', notes: 'B' }, NOW)
+    expect(upgradeToV3([m])[0].description).toBe('A\n\nB')
+  })
+
+  it('leaves CSV tasks and empty notes alone (same array)', async () => {
+    const { upgradeToV3 } = await import('../taskModel.js')
+    const list = [createTask({ id: 'c', source: 'csv', notes: 'eigene Notiz', description: 'aus CSV' }, NOW), createTask({ id: 'm' }, NOW)]
+    expect(upgradeToV3(list)).toBe(list)
+  })
+})

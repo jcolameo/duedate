@@ -15,6 +15,7 @@ import BaseDialog from './ui/BaseDialog.vue'
 import BaseButton from './ui/BaseButton.vue'
 import SegmentedControl from './ui/SegmentedControl.vue'
 import DueBadge from './ui/DueBadge.vue'
+import MarkdownEditor from './ui/MarkdownEditor.vue'
 
 /**
  * Side panel to edit one task (B5). Changes are saved immediately, the
@@ -179,17 +180,15 @@ const readOnly = 'text-sm text-ink'
         <SegmentedControl :model-value="task.effort" mono :label="t('stundenplan.effort')" :options="effortOptions" @update:model-value="set('effort', $event)" />
       </div>
 
-      <div class="space-y-1.5">
-        <label for="detail-notes" :class="fieldLabel">{{ t('detail.notes') }}</label>
-        <textarea
-          id="detail-notes"
-          :value="task.notes"
-          rows="4"
-          :placeholder="t('detail.notesPlaceholder')"
-          class="w-full resize-y rounded-md border border-line-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted transition-colors duration-150 hover:border-ink-muted"
-          @input="set('notes', $event.target.value)"
-        ></textarea>
-      </div>
+      <!-- Manual tasks: own description. CSV tasks: the description belongs
+           to BBNet (shown below), the user writes notes instead. -->
+      <MarkdownEditor
+        :key="task.id + (isCsv ? '-notes' : '-desc')"
+        :model-value="isCsv ? task.notes : task.description"
+        :label="isCsv ? t('detail.notes') : t('detail.description')"
+        :placeholder="t('detail.descriptionPlaceholder')"
+        @update:model-value="set(isCsv ? 'notes' : 'description', $event)"
+      />
 
       <!-- Read-only details from BBNet -->
       <div v-if="isCsv" class="rounded-lg border border-line bg-surface-muted/50 p-4">
