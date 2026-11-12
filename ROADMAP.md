@@ -318,3 +318,5 @@ Notion-artiger Block-Editor (stattdessen Markdown, B5b) · Karteikarten/Quiz · 
 
 ## Changelog
 - 2026-11 — Roadmap erstellt (Phasen 1–4 der Planung abgeschlossen).
+
+**Deployment**: `.github/workflows/deploy.yml` tests, builds and publishes to GitHub Pages on every push to `main` (Pages source = GitHub Actions). `npm run deploy` stays as a manual fallback.
