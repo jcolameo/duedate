@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { useTasks } from './useTasks.js'
 import { usePlanState } from './usePlanState.js'
 import { useAvailability } from './useAvailability.js'
@@ -18,7 +19,7 @@ import { checkSlot } from '../utils/slotCheck.js'
  * after the deadline, …) is allowed but the toast says so.
  */
 export function usePlanEdit() {
-  const { getTask, updateTask } = useTasks()
+  const { tasks, getTask, updateTask } = useTasks()
   const { plan } = usePlanState()
   const { blocks } = useAvailability()
   const { plannerOptions } = usePlannerSettings()
@@ -75,7 +76,33 @@ export function usePlanEdit() {
     return { ok: true }
   }
 
-  return { moveSession, unpinSession }
+  /** Releases every pinned work time that is still ahead; one undo restores all. */
+  function unpinAll() {
+    const now = new Date()
+    const today = dateToISO(now)
+    const before = tasks.value.filter(task => pinsOf(task).some(p => p.date >= today)).map(task => ({ id: task.id, pinned: task.pinned }))
+    if (before.length === 0) return { ok: false, count: 0 }
+    let count = 0
+    for (const { id } of before) {
+      const task = getTask(id)
+      const keep = pinsOf(task).filter(p => p.date < today)
+      count += pinsOf(task).length - keep.length
+      updateTask(id, { pinned: keep })
+    }
+    toast.show(t('planEdit.unpinnedAll', { count }), {
+      duration: 8000,
+      action: { label: t('ui.undo'), onClick: () => before.forEach(({ id, pinned }) => updateTask(id, { pinned })) },
+    })
+    return { ok: true, count }
+  }
+
+  /** How many pinned work times are still ahead (for enabling the button). */
+  const pinnedAhead = computed(() => {
+    const today = dateToISO(new Date())
+    return tasks.value.reduce((sum, task) => sum + (task.status === 'done' ? 0 : pinsOf(task).filter(p => p.date >= today).length), 0)
+  })
+
+  return { moveSession, unpinSession, unpinAll, pinnedAhead }
 }
 
 const hhmm = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`

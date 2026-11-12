@@ -4,6 +4,7 @@ import { PhCalendarPlus, PhDownloadSimple, PhCaretLeft, PhCaretRight, PhFlag } f
 import { useAvailability } from '../composables/useAvailability.js'
 import { usePlanState } from '../composables/usePlanState.js'
 import { usePlanEdit } from '../composables/usePlanEdit.js'
+import { usePlannerSettings, PLAN_MODES } from '../composables/usePlannerSettings.js'
 import { useCombinedExport } from '../composables/useCombinedExport.js'
 import { useLocale } from '../composables/useLocale.js'
 import { useToast } from '../composables/useToast.js'
@@ -34,7 +35,13 @@ import YearGrid from '../components/calendar/YearGrid.vue'
  */
 const { blocks } = useAvailability()
 const { plan, generate: handleGeneratePlan, enrichedTasks } = usePlanState()
-const { moveSession } = usePlanEdit()
+const { moveSession, unpinAll, pinnedAhead } = usePlanEdit()
+const { settings } = usePlannerSettings()
+const modeOptions = computed(() => PLAN_MODES.map(v => ({ value: v, label: t('stundenplan.mode_' + v) })))
+function replan() {
+  handleGeneratePlan()
+  toast.show(t('planEdit.replanned'), { tone: 'success' })
+}
 const onMoveSession = ({ session, date, startMin }) => moveSession(session, date, startMin)
 const { exportMessage, exportError, exportWeekToICS } = useCombinedExport()
 const { openTask } = useTaskDetail()
@@ -117,7 +124,10 @@ function handleExport() {
     <PageHeader :eyebrow="eyebrow" :title="t('calendar.title')" accent="." :description="t('calendar.subtitle')">
       <template #actions>
         <BaseButton :icon="PhDownloadSimple" @click="handleExport">{{ t('calendar.exportPlan') }}</BaseButton>
-        <BaseButton variant="primary" :icon="PhCalendarPlus" @click="handleGeneratePlan">{{ t('calendar.generatePlan') }}</BaseButton>
+        <SegmentedControl v-if="plan" v-model="settings.mode" :label="t('stundenplan.mode')" :options="modeOptions" />
+        <BaseButton v-if="pinnedAhead > 0" @click="unpinAll">{{ t('planEdit.unpinAll') }}</BaseButton>
+        <BaseButton v-if="plan" variant="primary" :icon="PhCalendarPlus" @click="replan">{{ t('planEdit.replan') }}</BaseButton>
+        <BaseButton v-else variant="primary" :icon="PhCalendarPlus" @click="handleGeneratePlan">{{ t('calendar.generatePlan') }}</BaseButton>
       </template>
     </PageHeader>
 

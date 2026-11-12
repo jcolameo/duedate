@@ -25,6 +25,8 @@ export const PLANNER_DEFAULTS = {
   defaultEstimateMin: 60,
   /** Weekdays the planner may use (B11); the others stay free */
   workDays: WORK_DAYS,
+  /** How sessions are spread (B13): 'even' | 'early' | 'bundled' */
+  mode: 'even',
 }
 
 const SLOT_MINUTES = 30
@@ -119,6 +121,8 @@ function* nearestOffsets(max) {
  *   one on the free day nearest to its target; at most 3 h of a task and
  *   6 h in total per day; busy blocks (availability) are respected; today
  *   only uses the time from now on
+ * - `mode` decides where in that range: 'even' spreads them evenly, 'early'
+ *   starts as soon as possible, 'bundled' packs them into few, fuller days
  * - only `workDays` are used; free weekdays stay empty (deadlines on them
  *   are still shown, the work moves to the days before)
  * - sessions the user pinned (`task.pinned`, B12) are placed first and count
@@ -222,7 +226,14 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
 
     const sizes = splitIntoSessions(needed, rules.sessionMin)
     // Even spread over the available days; overdue tasks go as early as possible
-    const pieces = sizes.map((minutes, i) => ({ minutes, target: overdue ? 0 : Math.floor((i * dayCount) / sizes.length) }))
+    const perDay = Math.max(1, Math.floor(rules.maxPerTaskPerDayMin / rules.sessionMin))
+    const bundleDays = Math.ceil(sizes.length / perDay)
+    const targetOf = (i) => {
+      if (overdue || rules.mode === 'early') return 0
+      if (rules.mode === 'bundled') return Math.floor((Math.floor(i / perDay) * dayCount) / bundleDays)
+      return Math.floor((i * dayCount) / sizes.length)
+    }
+    const pieces = sizes.map((minutes, i) => ({ minutes, target: targetOf(i) }))
 
     let placedMin = 0
     for (let p = 0; p < pieces.length; p++) {

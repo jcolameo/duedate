@@ -384,3 +384,45 @@ describe('generatePlan: working days (B11)', () => {
     for (const s of plan.sessions) expect(['Mon', 'Wed']).toContain(s.day)
   })
 })
+
+describe('generatePlan: planning modes (B13)', () => {
+  const run = (mode, hours = 12, n = 20) => generatePlan([due('a', n)], planning({ a: { hours } }), [], NOW, { mode })
+  const dayIdx = (plan) => plan.sessions.map(s => dayIndex(s.date))
+  const distinctDays = (plan) => new Set(dayIdx(plan)).size
+
+  it('every mode plans the full effort', () => {
+    for (const mode of ['even', 'early', 'bundled']) {
+      const plan = run(mode)
+      expect(total(plan.sessions)).toBe(720)
+      expect(plan.shortfalls).toEqual([])
+    }
+  })
+
+  it('even is the default', () => {
+    const a = generatePlan([due('a', 20)], planning({ a: { hours: 12 } }), [], NOW)
+    expect(dayIdx(a)).toEqual(dayIdx(run('even')))
+  })
+
+  it('early starts at once and finishes sooner than even', () => {
+    const early = run('early')
+    const even = run('even')
+    expect(Math.min(...dayIdx(early))).toBe(0)
+    expect(Math.max(...dayIdx(early))).toBeLessThan(Math.max(...dayIdx(even)))
+  })
+
+  it('bundled uses fewer days than even, with fuller days', () => {
+    const bundled = run('bundled')
+    expect(distinctDays(bundled)).toBeLessThan(distinctDays(run('even')))
+    expect(Math.max(...dayIdx(bundled))).toBeLessThanOrEqual(19 - PLANNER_DEFAULTS.bufferDays)
+  })
+
+  it('never plans after the buffer, whatever the mode', () => {
+    for (const mode of ['even', 'early', 'bundled']) {
+      expect(Math.max(...dayIdx(run(mode)))).toBeLessThanOrEqual(19)
+    }
+  })
+
+  it('is deterministic', () => {
+    expect(dayIdx(run('bundled'))).toEqual(dayIdx(run('bundled')))
+  })
+})

@@ -10,7 +10,7 @@ import { formatDays, isValidTimeRange } from '../utils/availability.js'
 import { usePlanExport } from '../composables/usePlanExport.js'
 import { usePlanState } from '../composables/usePlanState.js'
 import { usePlanEdit } from '../composables/usePlanEdit.js'
-import { usePlannerSettings, BUFFER_OPTIONS, MAX_HOURS_OPTIONS } from '../composables/usePlannerSettings.js'
+import { usePlannerSettings, BUFFER_OPTIONS, MAX_HOURS_OPTIONS, PLAN_MODES } from '../composables/usePlannerSettings.js'
 import { summarizePlan, summarizeByTask, sessionsInWeek, shortDate } from '../utils/planSummary.js'
 import { formatMinutes } from '../utils/estimate.js'
 import { useLocale } from '../composables/useLocale.js'
@@ -51,6 +51,7 @@ const priorityOptions = computed(() =>
 )
 
 const bufferOptions = BUFFER_OPTIONS.map(v => ({ value: v, label: String(v) }))
+const modeOptions = computed(() => PLAN_MODES.map(v => ({ value: v, label: t('stundenplan.mode_' + v) })))
 const maxHoursOptions = MAX_HOURS_OPTIONS.map(v => ({ value: v, label: `${v} h` }))
 
 const decimal = computed(() => (locale.value === 'de' ? ',' : '.'))
@@ -186,6 +187,13 @@ function handleExportPlan() {
             <SegmentedControl v-model="settings.bufferDays" mono :label="t('stundenplan.buffer')" :options="bufferOptions" />
             <span class="text-[13px] text-ink-muted" aria-hidden="true">{{ t('stundenplan.bufferUnit') }}</span>
           </span>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-line px-5 py-4">
+          <div class="min-w-0 flex-1 basis-64">
+            <p class="text-sm font-medium">{{ t('stundenplan.mode') }}</p>
+            <p class="text-[13px] text-ink-muted">{{ t('stundenplan.modeHint') }}</p>
+          </div>
+          <SegmentedControl v-model="settings.mode" :label="t('stundenplan.mode')" :options="modeOptions" />
         </div>
         <div class="flex flex-wrap items-center justify-between gap-4 border-t border-line px-5 py-4">
           <div class="min-w-0 flex-1 basis-64">
