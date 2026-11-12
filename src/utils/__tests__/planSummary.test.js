@@ -52,11 +52,13 @@ describe('summaries', () => {
 
 describe('planner settings', () => {
   it('defaults: 1 day buffer, 6 h per day', () => {
-    expect(normalizeSettings(null)).toEqual({ bufferDays: 1, maxPerDayHours: 6 })
+    expect(normalizeSettings(null)).toEqual({ bufferDays: 1, maxPerDayHours: 6, workDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] })
   })
 
   it('keeps valid values and replaces invalid ones', () => {
-    expect(normalizeSettings({ bufferDays: 3, maxPerDayHours: 8 })).toEqual({ bufferDays: 3, maxPerDayHours: 8 })
-    expect(normalizeSettings({ bufferDays: 99, maxPerDayHours: 'x' })).toEqual({ bufferDays: 1, maxPerDayHours: 6 })
+    expect(normalizeSettings({ bufferDays: 3, maxPerDayHours: 8 })).toEqual({ bufferDays: 3, maxPerDayHours: 8, workDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] })
+    expect(normalizeSettings({ workDays: ['Fri', 'Mon', 'Mon', 'xx'] }).workDays).toEqual(['Mon', 'Fri'])
+    expect(normalizeSettings({ workDays: [] }).workDays).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
+    expect(normalizeSettings({ bufferDays: 99, maxPerDayHours: 'x' })).toEqual({ bufferDays: 1, maxPerDayHours: 6, workDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] })
   })
 })

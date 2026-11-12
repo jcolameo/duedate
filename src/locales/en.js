@@ -362,6 +362,8 @@ export const en = {
     buffer: 'Buffer before the deadline',
     bufferHint: 'A task should be finished this many days before its deadline.',
     bufferUnit: 'days',
+    workDays: 'Working days',
+    workDaysHint: 'DueDate only plans work on these days. Add one-off days off under "Busy times".',
     maxPerDay: 'Maximum per day',
     maxPerDayHint: 'DueDate plans no more work than this on one day.',
     plannedFor: 'Planned: work sessions {count} · {time} · until {date}',

@@ -97,7 +97,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B8 | ✅ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 | B9 | ✅ | `feat:` Kalender: Wochen blättern + Monatsansicht |
 | B10 | ✅ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
-| B11 | ⬜ | `feat:` Arbeitstage / arbeitsfreie Wochentage (B8b, Teil 1) |
+| B11 | ✅ | `feat:` Arbeitstage / arbeitsfreie Wochentage (B8b, Teil 1) |
 | B12 | ⬜ | `feat:` Arbeitszeiten verschieben und fixieren (Drag & Drop, Panel-Alternative, Rückgängig) |
 | B13 | ⬜ | `feat:` Planungsmodus + „Neu planen“ (B8b, Teil 2) |
 
@@ -198,6 +198,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 **B11–B13 — Plan anpassen** (Nutzerwunsch: Plan neu aussortieren oder Einträge selbst verschieben; Release-Ziel v0.2.3)
 - **B11 Arbeitstage**: Einstellung in den Planer-Einstellungen, Wochentage an/abwählen (Standard Mo–So, damit sich nichts ändert; Beispiel Sa/So frei). Neues Feld in `duedate.plannerSettings.v1` mit Standardwert, keine Migration nötig. Der Planer legt nichts auf freie Tage; Deadlines an freien Tagen bleiben sichtbar. Einmalige Abwesenheit bleibt bei Belegte Zeiten.
+  - Umgesetzt: Planungsregeln → „Arbeitstage“ (DayPicker Mo–So, mindestens ein Tag bleibt gewählt). `workDays` in `duedate.plannerSettings.v1` (normalisiert, Standard alle Tage, also ohne Migration; gehört zum Backup). `generatePlan` verteilt nur über Arbeitstage; liegt die Abgabe auf einem freien Tag, rückt die Arbeit auf die Tage davor; ohne Arbeitstag vor der Abgabe gibt es eine Lücke (Shortfall). 5 neue Tests.
 - **B12 Verschieben + Fixieren**: Arbeitszeit in Woche/Tag per Drag & Drop auf anderen Tag/Zeit (Raster 15 min), Monat: auf anderes Tagesfeld. Tastatur-Alternative: im Aufgaben-Panel „Verschieben“ (Datum + Start). Eine verschobene Sitzung wird **fixiert** (Schloss-Symbol, per Klick lösbar) und gespeichert. Speicherort: Feld `pinned: [{n, date, start}]` an der Aufgabe, Schema 5 mit Migration (leeres Array). Der Planer plant fixierte Sitzungen zuerst ein und verteilt den Rest um sie herum; Rückgängig per Toast. Warnung bei Konflikt (Belegtes, Tageslimit überschritten, nach der Deadline) statt stillem Ablehnen.
 - **B13 Planungsmodus + Neu planen**: Schalter in den Planer-Einstellungen: „Gleichmässig“ (heute), „So früh wie möglich“, „Gebündelt“ (wenige, längere Tage). Kein Zufall. Button „Neu planen“ im Kalender wendet den Modus an und lässt Fixiertes stehen; „Fixierungen aufheben“ als zweite Aktion mit Bestätigung.
 - Test: Unit für Arbeitstage, fixierte Sitzungen (bleiben, Rest verteilt sich neu, Konflikte), jeden Modus; Browser: Drag & Drop, Tastatur-Verschieben, axe.

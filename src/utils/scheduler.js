@@ -22,6 +22,8 @@ export const PLANNER_DEFAULTS = {
   maxPerDayMin: 360,
   /** Used when a task has no estimate yet */
   defaultEstimateMin: 60,
+  /** Weekdays the planner may use (B11); the others stay free */
+  workDays: WORK_DAYS,
 }
 
 const SLOT_MINUTES = 30
@@ -116,6 +118,8 @@ function* nearestOffsets(max) {
  *   one on the free day nearest to its target; at most 3 h of a task and
  *   6 h in total per day; busy blocks (availability) are respected; today
  *   only uses the time from now on
+ * - only `workDays` are used; free weekdays stay empty (deadlines on them
+ *   are still shown, the work moves to the days before)
  * - overdue tasks are placed as early as possible
  * - what does not fit is reported as a shortfall, never squeezed in silently
  *
@@ -175,8 +179,10 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
 
   for (const entry of eligible) {
     const { task, needed, last, overdue } = entry
-    const dayCount = Math.round((last - todayStart) / 86400000) + 1
-    const days = Array.from({ length: dayCount }, (_, i) => addDays(todayStart, i))
+    const span = Math.round((last - todayStart) / 86400000) + 1
+    const days = Array.from({ length: span }, (_, i) => addDays(todayStart, i))
+      .filter(d => rules.workDays.includes(weekdayLabel(d)))
+    const dayCount = days.length
     if (last > horizonEnd) horizonEnd = last
 
     const sizes = splitIntoSessions(needed, rules.sessionMin)
@@ -196,7 +202,7 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
           const key = dayKey(date)
           if ((plannedPerDay.get(key) || 0) + length > rules.maxPerDayMin) continue
           if ((taskPerDay.get(`${task._id}|${key}`) || 0) + length > rules.maxPerTaskPerDayMin) continue
-          const earliest = index === 0 ? todayEarliest : 0
+          const earliest = key === dayKey(todayStart) ? todayEarliest : 0
           const slot = findFreeSlot(length, busyOf(date), earliest, DAY_START_MIN, DAY_END_MIN)
           if (!slot) continue
           busyOf(date).push(slot)

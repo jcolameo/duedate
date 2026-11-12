@@ -362,6 +362,8 @@ export const de = {
     buffer: 'Puffer vor der Abgabe',
     bufferHint: 'So viele Tage vor der Abgabe soll eine Aufgabe fertig sein.',
     bufferUnit: 'Tage',
+    workDays: 'Arbeitstage',
+    workDaysHint: 'Nur an diesen Tagen plant DueDate Arbeitszeit ein. Einmalige freie Tage trägst du bei „Belegte Zeiten“ ein.',
     maxPerDay: 'Höchstens pro Tag',
     maxPerDayHint: 'Mehr Arbeitszeit plant DueDate an einem Tag nicht ein.',
     plannedFor: 'Geplant: Arbeitszeiten {count} · {time} · bis {date}',

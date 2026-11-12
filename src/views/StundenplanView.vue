@@ -34,6 +34,11 @@ const { plan, generate: handleGeneratePlan } = usePlanState()
 const { t, locale } = useLocale()
 const toast = useToast()
 const { settings } = usePlannerSettings()
+// At least one working day stays selected (an empty choice is ignored)
+const workDays = computed({
+  get: () => settings.value.workDays,
+  set: (days) => { if (days.length) settings.value.workDays = days },
+})
 const { openTask } = useTaskDetail()
 
 watch(exportMessage, (msg) => { if (msg) toast.show(msg, { tone: 'success' }) })
@@ -178,6 +183,13 @@ function handleExportPlan() {
             <SegmentedControl v-model="settings.bufferDays" mono :label="t('stundenplan.buffer')" :options="bufferOptions" />
             <span class="text-[13px] text-ink-muted" aria-hidden="true">{{ t('stundenplan.bufferUnit') }}</span>
           </span>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-line px-5 py-4">
+          <div class="min-w-0 flex-1 basis-64">
+            <p class="text-sm font-medium">{{ t('stundenplan.workDays') }}</p>
+            <p class="text-[13px] text-ink-muted">{{ t('stundenplan.workDaysHint') }}</p>
+          </div>
+          <DayPicker v-model="workDays" label-hidden :label="t('stundenplan.workDays')" />
         </div>
         <div class="flex flex-wrap items-center justify-between gap-4 border-t border-line px-5 py-4">
           <div class="min-w-0 flex-1 basis-64">

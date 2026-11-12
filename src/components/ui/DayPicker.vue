@@ -10,6 +10,8 @@ import { useLocale } from '../../composables/useLocale.js'
 const props = defineProps({
   label: { type: String, required: true },
   error: { type: String, default: '' },
+  /** Keep the label for screen readers only (when a heading already names the field) */
+  labelHidden: { type: Boolean, default: false },
 })
 
 const model = defineModel({ type: Array, default: () => [] })
@@ -26,7 +28,7 @@ function toggle(day) {
 
 <template>
   <div class="flex flex-col gap-1.5">
-    <span :id="labelId" class="text-sm font-medium text-ink">{{ label }}</span>
+    <span :id="labelId" :class="labelHidden ? 'sr-only' : 'text-sm font-medium text-ink'">{{ label }}</span>
     <div
       role="group"
       :aria-labelledby="labelId"
