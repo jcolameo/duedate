@@ -86,7 +86,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 |---|---|---|
 | B1 | ✅ | `feat:` Aufgaben-Store + Datenmigration |
 | B2 | ✅ | `feat:` Erledigt-Status mit Rückgängig |
-| B3 | ⬜ | `feat:` Bereiche Studium / Freelance / Privat |
+| B3 | ✅ | `feat:` Bereiche Studium / Freelance / Privat |
 | B4 | ⬜ | `feat:` Schnellerfassung (< 5 s) |
 | B5 | ⬜ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
 | B6 | ⬜ | `feat:` Heute-Ansicht |
@@ -114,6 +114,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Dateien: `useTasks.js`, Locale-Dateien, Views, Tokens in `style.css`.
 - Akzeptanz: Jede Aufgabe hat Bereich + Farbe (nicht nur Farbe, auch Label/Icon für Farbenblinde); Filter auf allen Listen.
 - Test: Manuell; Kontrastprüfung der Bereichsfarben.
+- Umgesetzt: Bereich-Tag mit Icon in Tabelle (direkt änderbar, mit Rückgängig) und Überblick; Filter mit Zählern auf Überblick und Deadlines, gemeinsam und gespeichert. Bereich überlebt CSV-Re-Import.
 
 **B4 — Schnellerfassung**
 - Ziel: Aufgabe in unter 5 Sekunden, von überall.

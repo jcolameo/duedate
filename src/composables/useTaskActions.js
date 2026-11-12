@@ -7,7 +7,7 @@ import { useLocale } from './useLocale.js'
  * views so completing a task feels the same everywhere.
  */
 export function useTaskActions() {
-  const { setStatus } = useTasks()
+  const { setStatus, updateTask } = useTasks()
   const toast = useToast()
   const { t } = useLocale()
 
@@ -29,5 +29,16 @@ export function useTaskActions() {
     else complete(task)
   }
 
-  return { complete, reopen, toggleDone }
+  /** Moves a task to another area; undo restores the previous one. */
+  function changeArea(task, area) {
+    const id = task.id ?? task._id
+    const previous = task.area
+    if (area === previous) return
+    updateTask(id, { area })
+    toast.show(t('areas.changed', { title: task.title || task._title || t('common.untitled'), area: t('areas.' + area) }), {
+      action: { label: t('ui.undo'), onClick: () => updateTask(id, { area: previous }) },
+    })
+  }
+
+  return { complete, reopen, toggleDone, changeArea }
 }

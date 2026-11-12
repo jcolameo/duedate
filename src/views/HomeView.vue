@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { PhTray, PhArrowRight, PhUploadSimple, PhCheck, PhCheckCircle } from '@phosphor-icons/vue'
+import { PhTray, PhArrowRight, PhUploadSimple, PhCheck, PhCheckCircle, PhFunnel } from '@phosphor-icons/vue'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useLocale } from '../composables/useLocale.js'
 import { usePageEyebrow } from '../composables/usePageEyebrow.js'
@@ -12,8 +12,17 @@ import EmptyState from '../components/ui/EmptyState.vue'
 import DueBadge from '../components/ui/DueBadge.vue'
 import TaskCheckbox from '../components/ui/TaskCheckbox.vue'
 import { useTaskActions } from '../composables/useTaskActions.js'
+import { useAreaFilter } from '../composables/useAreaFilter.js'
+import { filterByArea } from '../utils/areas.js'
+import AreaFilter from '../components/AreaFilter.vue'
+import AreaTag from '../components/ui/AreaTag.vue'
 
-const { enrichedTasks, openTasks, doneTasks } = useTaskEnrichment()
+const { enrichedTasks, openTasks: allOpen, doneTasks: allDone } = useTaskEnrichment()
+const { areaFilter } = useAreaFilter()
+// Everything below follows the area filter (shared with Deadlines)
+const openTasks = computed(() => filterByArea(allOpen.value, areaFilter.value))
+const doneTasks = computed(() => filterByArea(allDone.value, areaFilter.value))
+const showAreaTags = computed(() => areaFilter.value === 'all')
 const { complete, toggleDone } = useTaskActions()
 const { t } = useLocale()
 const eyebrow = usePageEyebrow()
@@ -39,13 +48,20 @@ const summary = computed(() =>
       :description="openTasks.length ? summary : t('home.subtitle')"
     />
 
-    <div class="mt-10">
+    <div v-if="allOpen.length" class="mt-8 flex justify-end">
+      <AreaFilter :tasks="allOpen" />
+    </div>
+
+    <div :class="allOpen.length ? 'mt-4' : 'mt-10'">
       <EmptyState v-if="enrichedTasks.length === 0" :icon="PhTray" :title="t('home.emptyTitle')" :description="t('home.emptyState')">
         <BaseButton :as="RouterLink" to="/deadlines" variant="primary" :icon="PhUploadSimple">{{ t('home.importCta') }}</BaseButton>
       </EmptyState>
 
       <template v-else>
-        <EmptyState v-if="openTasks.length === 0" class="mb-6" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
+        <EmptyState v-if="openTasks.length === 0 && allOpen.length" class="mb-6" :icon="PhFunnel" :title="t('areas.emptyTitle', { area: t('areas.' + areaFilter) })" :description="t('areas.emptyText')">
+          <BaseButton variant="secondary" @click="areaFilter = 'all'">{{ t('areas.showAll') }}</BaseButton>
+        </EmptyState>
+        <EmptyState v-else-if="openTasks.length === 0" class="mb-6" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
 
         <!-- Focus: the single next action -->
         <BaseCard v-if="focusTask" padding="lg" class="mb-6">
@@ -56,6 +72,7 @@ const summary = computed(() =>
                 {{ focusTask._title || t('common.untitled') }}
               </p>
               <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-ink-muted">
+                <AreaTag v-if="showAreaTags" :area="focusTask._area" />
                 <span v-if="focusTask._category">{{ focusTask._category }}</span>
                 <DueBadge :code="focusTask._status.code" :days="focusTask._days" />
               </div>
@@ -99,6 +116,7 @@ const summary = computed(() =>
                   <p class="truncate text-sm font-medium">{{ task._title || t('common.untitled') }}</p>
                   <p v-if="task._category" class="truncate text-[13px] text-ink-muted">{{ task._category }}</p>
                 </div>
+                <AreaTag v-if="showAreaTags" :area="task._area" class="hidden sm:inline-flex" />
                 <DueBadge :code="task._status.code" :days="task._days" />
               </li>
             </ul>

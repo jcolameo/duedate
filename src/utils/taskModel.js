@@ -16,9 +16,10 @@
  */
 import { parseGermanDate, daysUntil } from './dateParser.js'
 import { taskId } from './taskId.js'
+import { AREAS, DEFAULT_AREA, normalizeArea } from './areas.js'
 
 export const TASK_STATUS = ['open', 'done']
-export const AREAS = ['study', 'freelance', 'personal']
+export { AREAS }
 
 /** Local calendar date -> 'YYYY-MM-DD' (no UTC shift, unlike toISOString). */
 export function toISODate(date) {
@@ -79,7 +80,7 @@ export function createTask(fields, now = new Date()) {
   return {
     id: fields.id,
     title: '',
-    area: 'study',
+    area: DEFAULT_AREA,
     status: 'open',
     due: null,
     dueRaw: null,
@@ -126,7 +127,7 @@ const CSV_FIELDS = ['title', 'dueRaw', 'due', 'start', 'category', 'description'
 /** Has the user changed anything on this task that a re-import must not lose? */
 export function isTouched(task) {
   return task.status !== 'open' || !!task.priority || !!task.effort || !!task.notes ||
-    (task.steps && task.steps.length > 0) || task.area !== 'study'
+    (task.steps && task.steps.length > 0) || normalizeArea(task.area) !== DEFAULT_AREA
 }
 
 /**
@@ -203,6 +204,7 @@ export function enrichTask(task) {
     _days: days,
     _statusCode: code,
     _isDone: task.status === 'done',
+    _area: normalizeArea(task.area),
   }
 }
 

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { PhUploadSimple, PhCalendarBlank, PhSlidersHorizontal, PhCaretDown, PhStar, PhLock, PhFileCsv, PhEye, PhEyeSlash, PhCheckCircle } from '@phosphor-icons/vue'
+import { PhUploadSimple, PhCalendarBlank, PhSlidersHorizontal, PhCaretDown, PhStar, PhLock, PhFileCsv, PhEye, PhEyeSlash, PhCheckCircle, PhFunnel } from '@phosphor-icons/vue'
 import { useCSVImport } from '../composables/useCSVImport.js'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useICSExport } from '../composables/useICSExport.js'
@@ -16,6 +16,10 @@ import InlineNotice from '../components/ui/InlineNotice.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import TaskCheckbox from '../components/ui/TaskCheckbox.vue'
 import { useTaskActions } from '../composables/useTaskActions.js'
+import { useAreaFilter } from '../composables/useAreaFilter.js'
+import { filterByArea } from '../utils/areas.js'
+import AreaFilter from '../components/AreaFilter.vue'
+import AreaSelect from '../components/ui/AreaSelect.vue'
 
 // CSV import: drag & drop, parsing, file state
 const {
@@ -31,11 +35,14 @@ const {
 } = useColumnMapping()
 
 const { enrichedTasks, openTasks, doneTasks, exportableCount } = useTaskEnrichment()
-const { toggleDone } = useTaskActions()
+const { toggleDone, changeArea } = useTaskActions()
+const { areaFilter } = useAreaFilter()
 
 // Completed tasks are hidden by default; open ones first, then done (newest first)
 const showDone = ref(false)
-const visibleTasks = computed(() => (showDone.value ? [...openTasks.value, ...doneTasks.value] : openTasks.value))
+const areaOpen = computed(() => filterByArea(openTasks.value, areaFilter.value))
+const areaDone = computed(() => filterByArea(doneTasks.value, areaFilter.value))
+const visibleTasks = computed(() => (showDone.value ? [...areaOpen.value, ...areaDone.value] : areaOpen.value))
 const { exportMessage, exportError, exportToICS } = useICSExport(enrichedTasks)
 const { locale, t } = useLocale()
 const toast = useToast()
@@ -138,14 +145,20 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
     <section v-if="enrichedTasks.length > 0 && !needsConfirmation" class="mt-12" aria-labelledby="h-tasks">
       <div class="mb-3 flex flex-wrap items-baseline justify-between gap-3">
         <h2 id="h-tasks" class="font-display text-[22px] font-bold tracking-[-0.01em]">
-          {{ t('deadlines.yourTasks') }} <span class="font-mono text-[15px] font-normal text-ink-muted">{{ openTasks.length }}</span>
+          {{ t('deadlines.yourTasks') }} <span class="font-mono text-[15px] font-normal text-ink-muted">{{ areaOpen.length }}</span>
         </h2>
-        <BaseButton v-if="doneTasks.length" variant="ghost" size="sm" :icon="showDone ? PhEyeSlash : PhEye" :aria-pressed="showDone" @click="showDone = !showDone">
-          {{ showDone ? t('tasks.hideDone') : t('tasks.showDone', { count: doneTasks.length }) }}
-        </BaseButton>
+        <div class="flex flex-wrap items-center gap-3">
+          <AreaFilter :tasks="openTasks" />
+          <BaseButton v-if="areaDone.length" variant="ghost" size="sm" :icon="showDone ? PhEyeSlash : PhEye" :aria-pressed="showDone" @click="showDone = !showDone">
+            {{ showDone ? t('tasks.hideDone') : t('tasks.showDone', { count: areaDone.length }) }}
+          </BaseButton>
+        </div>
       </div>
 
-      <EmptyState v-if="visibleTasks.length === 0" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
+      <EmptyState v-if="visibleTasks.length === 0 && areaFilter !== 'all' && openTasks.length" :icon="PhFunnel" :title="t('areas.emptyTitle', { area: t('areas.' + areaFilter) })" :description="t('areas.emptyText')">
+        <BaseButton variant="secondary" @click="areaFilter = 'all'">{{ t('areas.showAll') }}</BaseButton>
+      </EmptyState>
+      <EmptyState v-else-if="visibleTasks.length === 0" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
 
       <BaseCard v-else padding="none" class="overflow-x-auto">
         <table class="w-full text-left text-sm">
@@ -154,6 +167,7 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
               <th scope="col" class="w-12 py-3 pl-4 pr-0 font-normal"><span class="sr-only">{{ t('tasks.markDone') }}</span></th>
               <th scope="col" class="px-4 py-3 font-normal">{{ t('deadlines.colDays') }}</th>
               <th scope="col" class="px-4 py-3 font-normal">{{ userMapping.title || t('deadlines.colTitle') }}</th>
+              <th scope="col" class="px-4 py-3 font-normal">{{ t('areas.colArea') }}</th>
               <th scope="col" class="px-4 py-3 font-normal">{{ userMapping.category || t('deadlines.colSubject') }}</th>
               <th scope="col" class="px-4 py-3 font-normal">{{ userMapping.deadline || t('deadlines.colDue') }}</th>
               <th scope="col" class="px-4 py-3 font-normal">{{ userMapping.graded || t('deadlines.colGraded') }}</th>
@@ -173,6 +187,9 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
                 <DueBadge v-else :code="task._status.code" :days="task._days" />
               </td>
               <td :class="['max-w-xs px-4 py-3 align-middle font-medium', task._isDone ? 'text-ink-muted line-through decoration-line-strong' : 'text-ink']">{{ task._title || t('common.dash') }}</td>
+              <td class="whitespace-nowrap px-4 py-3 align-middle">
+                <AreaSelect :area="task._area" :title="task._title || t('common.untitled')" @change="changeArea(task, $event)" />
+              </td>
               <td class="px-4 py-3 align-middle text-ink-muted">{{ task._category || t('common.dash') }}</td>
               <td class="whitespace-nowrap px-4 py-3 align-middle font-mono text-[13px] text-ink-muted">{{ task._deadline || t('common.dash') }}</td>
               <td class="px-4 py-3 align-middle">
