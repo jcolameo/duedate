@@ -122,10 +122,28 @@ function restoreTask({ task, index }) {
   tasks.value = next
 }
 
+/** Removes several tasks at once (cleanup); returns what is needed to put them back. */
+function removeTasks(ids) {
+  const gone = new Set(ids)
+  const removed = tasks.value.map((task, index) => ({ task, index })).filter(e => gone.has(e.task.id))
+  tasks.value = tasks.value.filter(t => !gone.has(t.id))
+  return removed
+}
+
+/** Undo of removeTasks: every task returns to its old position. */
+function restoreTasks(removed) {
+  const have = new Set(tasks.value.map(t => t.id))
+  const next = [...tasks.value]
+  for (const { task, index } of [...removed].sort((a, b) => a.index - b.index)) {
+    if (!have.has(task.id)) next.splice(Math.min(index, next.length), 0, task)
+  }
+  tasks.value = next
+}
+
 function getTask(id) {
   return tasks.value.find(t => t.id === id) || null
 }
 
 export function useTasks() {
-  return { tasks, applyCsvImport, updateTask, setStatus, getTask, addTask, removeTask, restoreTask }
+  return { tasks, applyCsvImport, updateTask, setStatus, getTask, addTask, removeTask, restoreTask, removeTasks, restoreTasks }
 }

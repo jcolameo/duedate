@@ -96,7 +96,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B7 | ✅ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ✅ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 | B9 | ✅ | `feat:` Kalender: Wochen blättern + Monatsansicht |
-| B10 | 🟡 | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
+| B10 | ✅ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -186,6 +186,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Begründung „ausblenden statt sofort löschen“: Die Historie wird für C2b (Schätzung lernt aus erfasster Zeit) gebraucht.
 - Test: Unit für Aufräum-Regel (nur erledigt + älter als X); Browser-Test Jahresansicht.
 - Umgesetzt (Nutzerwunsch „wie ein echter Kalender, Jahr/Woche/Tag wählbar“): „Meine Woche“ heisst jetzt **Kalender** (`/calendar`, `/my-week` leitet um) mit Umschalter **Tag · Woche · Monat · Jahr** (Auswahl wird gemerkt), Zurück/Heute/Vor je Ansicht und Titel des Zeitraums. Tag = Zeitraster + Liste (Deadlines, Arbeitszeiten, Belegtes). Woche wie bisher. Monat = 6 Wochen mit KW, Deadlines (max. 2, dann „+n“) und geplante Zeit pro Tag. Jahr = 12 Monate, Deadline-Punkt, Arbeitslast in 3 Stufen. Klick auf einen Tag öffnet ihn, auf einen Monatsnamen den Monat. Tastatur: Pfeile, Pos1/Ende, Bild auf/ab; ein einziger Tab-Stopp pro Raster. `utils/calendar.js` (38 Tests), `components/calendar/MonthGrid.vue`, `YearGrid.vue`, `WeekGrid` jetzt für 1–7 Spalten. Export heisst `duedate-plan.ics`.
+- Aufräumen umgesetzt: Einstellungen → „Erledigtes aufräumen“ (3/6/12 Monate, Vorschau „Wird gelöscht: n“, Bestätigung mit optionaler Backup-Datei vorher, danach „Rückgängig“). Nur eigene erledigte Aufgaben; BBNet-Aufgaben bleiben, weil sie beim nächsten CSV-Import als offen zurückkämen (Archiv-Flag wäre die Alternative, später falls gewünscht). Vergangenes wird im Kalender nicht angezeigt, soweit erledigt.
 
 
 ### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
