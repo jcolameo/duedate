@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { renderMarkdown as md, markdownSummary } from '../markdown.js'
 import { wrapSelection, toggleLinePrefix, insertLink, continueList } from '../markdownEdit.js'
+import { parseChecklist, toggleChecklistItem, checklistProgress, checklistFieldOf, checklistTextOf } from '../checklist.js'
 
 describe('renderMarkdown', () => {
   it('empty input renders nothing', () => {
@@ -108,5 +109,96 @@ describe('markdownEdit', () => {
 
   it('continueList ignores normal lines', () => {
     expect(continueList({ value: 'Text', start: 4, end: 4 })).toBeNull()
+  })
+})
+
+describe('checklists (C1)', () => {
+  const TEXT = 'Ziel: Logo\n\n- [ ] Moodboard\n- [x] Skizzen\n- [ ] **Entwurf** senden'
+
+  it('renders checklist items as checkboxes numbered in document order', () => {
+    const html = md(TEXT)
+    expect(html).toContain('<input type="checkbox" data-check="0">')
+    expect(html).toContain('<input type="checkbox" data-check="1" checked>')
+    expect(html).toContain('<strong>Entwurf</strong> senden')
+    expect(html.match(/data-check=/g)).toHaveLength(3)
+  })
+
+  it('mixes with normal bullets in one list', () => {
+    const html = md('- Notiz\n- [ ] Schritt')
+    expect(html).toBe('<ul><li>Notiz</li><li class="dd-task"><label><input type="checkbox" data-check="0"><span>Schritt</span></label></li></ul>')
+  })
+
+  it('escapes item text and keeps empty items accessible', () => {
+    expect(md('- [ ] <b>x</b>')).toContain('&lt;b&gt;x&lt;/b&gt;')
+    expect(md('- [ ]', { emptyItemLabel: 'Punkt' })).toContain('aria-label="Punkt"')
+    expect(md('- [ ] a', { emptyItemLabel: 'Punkt' })).not.toContain('aria-label')
+  })
+
+  it('"[ ]" without a list marker or space is plain text', () => {
+    expect(md('[ ] kein Punkt')).toBe('<p>[ ] kein Punkt</p>')
+    expect(md('- [ ]x')).not.toContain('checkbox')
+  })
+
+  it('summary skips checklist steps (they are not a description)', () => {
+    expect(markdownSummary('- [ ] Moodboard bauen')).toBe('')
+    expect(markdownSummary('- [ ] Moodboard bauen\nZiel: neues Logo')).toBe('Ziel: neues Logo')
+  })
+
+  it('parseChecklist lists steps with state and line', () => {
+    expect(parseChecklist(TEXT)).toEqual([
+      { index: 0, text: 'Moodboard', checked: false, line: 2 },
+      { index: 1, text: 'Skizzen', checked: true, line: 3 },
+      { index: 2, text: '**Entwurf** senden', checked: false, line: 4 },
+    ])
+    expect(parseChecklist('')).toEqual([])
+    expect(parseChecklist(null)).toEqual([])
+  })
+
+  it('toggleChecklistItem flips only that item, both ways', () => {
+    const once = toggleChecklistItem(TEXT, 0)
+    expect(once).toBe(TEXT.replace('- [ ] Moodboard', '- [x] Moodboard'))
+    expect(toggleChecklistItem(once, 0)).toBe(TEXT)
+    expect(toggleChecklistItem(TEXT, 1)).toContain('- [ ] Skizzen')
+    expect(toggleChecklistItem(TEXT, 9)).toBe(TEXT)
+  })
+
+  it('checkbox numbers in the HTML match parseChecklist indexes', () => {
+    const html = md(TEXT)
+    parseChecklist(TEXT).forEach(({ index, checked }) => {
+      expect(html.includes(`data-check="${index}"${checked ? ' checked' : '>'}`)).toBe(true)
+    })
+  })
+
+  it('checklistProgress: null, partial, complete; next step as plain text', () => {
+    expect(checklistProgress('nur Text')).toBeNull()
+    expect(checklistProgress(TEXT)).toEqual({ done: 1, total: 3, complete: false, next: { index: 0, text: 'Moodboard' } })
+    const all = '- [x] a\n- [X] b'
+    expect(checklistProgress(all)).toEqual({ done: 2, total: 2, complete: true, next: null })
+    expect(checklistProgress('- [x] a\n- [ ] **Fett** b').next).toEqual({ index: 1, text: 'Fett b' })
+  })
+
+  it('steps of CSV tasks live in the notes, others in the description', () => {
+    expect(checklistFieldOf({ source: 'csv' })).toBe('notes')
+    expect(checklistFieldOf({ source: 'manual' })).toBe('description')
+    expect(checklistTextOf({ source: 'csv', notes: '- [ ] a', description: '- [ ] BBNet' })).toBe('- [ ] a')
+  })
+
+  it('toolbar: checklist prefix on/off and not confused with bullets', () => {
+    const on = toggleLinePrefix({ value: 'A\nB', start: 0, end: 3 }, 'check')
+    expect(on.value).toBe('- [ ] A\n- [ ] B')
+    expect(toggleLinePrefix(on, 'check').value).toBe('A\nB')
+    expect(toggleLinePrefix({ value: '- [x] A', start: 0, end: 7 }, 'bullet').value).toBe('- A')
+    expect(toggleLinePrefix({ value: '- A', start: 0, end: 3 }, 'check').value).toBe('- [ ] A')
+  })
+
+  it('toolbar with the caret only: caret goes to the line end, not a selected line', () => {
+    expect(toggleLinePrefix({ value: 'A\n', start: 2, end: 2 }, 'check')).toEqual({ value: 'A\n- [ ] ', start: 8, end: 8 })
+    expect(toggleLinePrefix({ value: 'Text', start: 2, end: 2 }, 'bullet')).toEqual({ value: '- Text', start: 6, end: 6 })
+  })
+
+  it('Enter in a checklist adds a new unchecked step; an empty step ends the list', () => {
+    expect(continueList({ value: '- [x] A', start: 7, end: 7 })).toEqual({ value: '- [x] A\n- [ ] ', start: 14, end: 14 })
+    expect(continueList({ value: '- [ ] A\n- [ ] ', start: 14, end: 14 })).toEqual({ value: '- [ ] A\n', start: 8, end: 8 })
+    expect(continueList({ value: '- [ ]', start: 5, end: 5 })).toEqual({ value: '', start: 0, end: 0 })
   })
 })

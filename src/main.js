@@ -13,3 +13,7 @@ const app = createApp(App)
 // Phosphor defaults: one icon weight across the app (DESIGN.md §8)
 app.provide('weight', 'bold')
 app.use(router).mount('#app')
+
+// Ask the browser not to clear our data under storage pressure. Granted or
+// not, nothing visible happens; the backup (Settings) remains the real safety net.
+navigator.storage?.persist?.().catch(() => {})

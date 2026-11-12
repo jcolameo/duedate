@@ -1,5 +1,3 @@
-import { createEvents } from 'ics'
-
 /**
  * Shared calendar (.ics) building for all exports.
  *
@@ -66,7 +64,10 @@ export function ensureUniqueUids(events) {
 }
 
 /** Builds the .ics text. Resolves with the string, rejects with the ics error. */
-export function buildIcs(events) {
+export async function buildIcs(events) {
+  // Loaded on demand: the library (with its dependencies) is only needed when
+  // exporting, so it stays out of the main bundle
+  const { createEvents } = await import('ics')
   return new Promise((resolve, reject) => {
     createEvents(ensureUniqueUids(events), (error, value) => (error ? reject(error) : resolve(value)))
   })

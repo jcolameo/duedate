@@ -1,9 +1,10 @@
 <script setup>
 import { ref, computed, nextTick, onMounted, useId } from 'vue'
-import { PhTextB, PhTextItalic, PhTextH, PhListBullets, PhListNumbers, PhLink, PhCode } from '@phosphor-icons/vue'
+import { PhTextB, PhTextItalic, PhTextH, PhListBullets, PhListNumbers, PhListChecks, PhLink, PhCode } from '@phosphor-icons/vue'
 import { useLocale } from '../../composables/useLocale.js'
 import { renderMarkdown } from '../../utils/markdown.js'
 import { wrapSelection, toggleLinePrefix, insertLink, continueList } from '../../utils/markdownEdit.js'
+import { checklistProgress, toggleChecklistItem } from '../../utils/checklist.js'
 
 /**
  * Description field with Markdown (B5b): toolbar + shortcuts while writing,
@@ -19,14 +20,16 @@ const props = defineProps({
   /** Start in write mode (e.g. right after "+ Beschreibung") */
   startEditing: { type: Boolean, default: false },
 })
-const emit = defineEmits(['submit'])
+const emit = defineEmits(['submit', 'checklist-toggled'])
 const model = defineModel({ type: String, default: '' })
 const { t } = useLocale()
 
 const id = `md-${useId()}`
 const textarea = ref(null)
 const editing = ref(props.startEditing || !model.value)
-const html = computed(() => renderMarkdown(model.value))
+const html = computed(() => renderMarkdown(model.value, { emptyItemLabel: t('checklist.emptyItem') }))
+const progress = computed(() => checklistProgress(model.value))
+const view = ref(null)
 
 // Opened on purpose ("+ Beschreibung"): the user wants to type right away
 onMounted(() => { if (props.startEditing) textarea.value?.focus() })
@@ -35,6 +38,20 @@ async function startEdit() {
   editing.value = true
   await nextTick()
   textarea.value?.focus()
+}
+
+// Checkboxes in the formatted text: flip the matching "[ ]" in the source.
+// The view re-renders, so focus is put back on the same box afterwards.
+async function onViewChange(e) {
+  const box = e.target.closest?.('input[data-check]')
+  if (!box) return
+  const index = Number(box.dataset.check)
+  // Use the new text directly: model.value only updates after the parent re-renders
+  const next = toggleChecklistItem(model.value, index)
+  model.value = next
+  emit('checklist-toggled', next)
+  await nextTick()
+  view.value?.querySelector(`input[data-check="${index}"]`)?.focus()
 }
 
 // Leaving the field shows the formatted text again (unless it is empty or
@@ -62,6 +79,7 @@ const tools = computed(() => [
   { key: 'heading', icon: PhTextH, label: t('markdown.heading'), run: () => apply(toggleLinePrefix, 'heading') },
   { key: 'bullet', icon: PhListBullets, label: t('markdown.bullet'), run: () => apply(toggleLinePrefix, 'bullet') },
   { key: 'numbered', icon: PhListNumbers, label: t('markdown.numbered'), run: () => apply(toggleLinePrefix, 'numbered') },
+  { key: 'check', icon: PhListChecks, label: t('markdown.checklist'), run: () => apply(toggleLinePrefix, 'check') },
   { key: 'link', icon: PhLink, label: t('markdown.link'), kbd: 'K', run: () => apply(insertLink, t('markdown.linkText')) },
   { key: 'code', icon: PhCode, label: t('markdown.code'), run: () => apply(wrapSelection, '`', 'code') },
 ])
@@ -94,12 +112,21 @@ async function onKeydown(e) {
   <div class="flex flex-col gap-1.5">
     <div class="flex items-center justify-between gap-2">
       <label :for="id" :class="['text-[13px] font-medium text-ink', hideLabel && 'sr-only']" @click="startEdit">{{ label }}</label>
-      <button
-        v-if="!editing"
-        type="button"
-        class="rounded px-1 text-[13px] text-ink-muted underline-offset-4 hover:text-ink hover:underline"
-        @click="startEdit"
-      >{{ t('markdown.edit') }}</button>
+      <span class="flex items-center gap-3">
+        <span v-if="progress" class="flex items-center gap-2 font-mono text-[12px] text-ink-muted">
+          <span class="sr-only">{{ t('checklist.progressLabel', { done: progress.done, total: progress.total }) }}</span>
+          <span aria-hidden="true">{{ progress.done }}/{{ progress.total }}</span>
+          <span class="h-1.5 w-16 overflow-hidden rounded-full bg-line-strong/40" aria-hidden="true">
+            <span class="block h-full rounded-full bg-green-ink transition-[width] duration-200" :style="{ width: `${(progress.done / progress.total) * 100}%` }"></span>
+          </span>
+        </span>
+        <button
+          v-if="!editing"
+          type="button"
+          class="rounded px-1 text-[13px] text-ink-muted underline-offset-4 hover:text-ink hover:underline"
+          @click="startEdit"
+        >{{ t('markdown.edit') }}</button>
+      </span>
     </div>
 
     <div v-if="editing" class="rounded-md border border-line-strong bg-surface transition-colors duration-150 focus-within:border-ink-muted" @focusout="onFocusOut">
@@ -132,8 +159,10 @@ async function onKeydown(e) {
     <!-- Formatted view; clicking anywhere (except a link) starts editing -->
     <div
       v-else
+      ref="view"
       class="dd-prose cursor-text rounded-md border border-transparent px-3 py-2 -mx-3 text-sm text-ink transition-colors duration-150 hover:border-line"
-      @click="(e) => !e.target.closest('a') && startEdit()"
+      @click="(e) => !e.target.closest('a, label, input') && startEdit()"
+      @change="onViewChange"
       v-html="html"
     ></div>
   </div>
@@ -162,6 +191,28 @@ async function onKeydown(e) {
 }
 .dd-prose :deep(li::marker) {
   color: var(--dd-ink-muted);
+}
+.dd-prose :deep(li.dd-task) {
+  margin-left: -1.25em;
+  list-style: none;
+}
+.dd-prose :deep(li.dd-task label) {
+  display: flex;
+  cursor: pointer;
+  align-items: flex-start;
+  gap: 0.6em;
+}
+.dd-prose :deep(li.dd-task input) {
+  margin-top: 0.3em;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  accent-color: var(--dd-green-ink);
+}
+.dd-prose :deep(li.dd-task input:checked + span) {
+  color: var(--dd-ink-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--dd-line-strong);
 }
 .dd-prose :deep(h3),
 .dd-prose :deep(h4),

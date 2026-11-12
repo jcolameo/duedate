@@ -91,9 +91,9 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B5 | ✅ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
 | B5b | ✅ | `feat:` Beschreibung (Markdown) + ganze Karte klickbar |
 | B5c | ✅ | `feat:` Eigene Tags mit Farbe + Filter |
-| B6 | ⬜ | `feat:` Heute-Ansicht |
-| C1 | ⬜ | `feat:` Checkliste / Mikroschritte (vorgezogen, siehe Phase C) |
-| B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
+| B6 | ✅ | `feat:` Heute-Ansicht |
+| C1 | ✅ | `feat:` Checkliste in der Beschreibung (vorgezogen, siehe Phase C) |
+| B7 | ✅ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 | B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
 | B10 | ⬜ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
@@ -152,12 +152,14 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Inhalt: Max. 3 Aufgaben für heute (selbst gewählt oder Vorschlag: überfällig → dringend → Priorität); grosse „Nächste Aktion“-Karte; kurzes Morgen-Ritual beim ersten Öffnen am Tag („Was sind heute deine 3?“); Empty State „Alles erledigt 🎉“ ohne Druck.
 - Akzeptanz: Kein Scrollen nötig; erledigte Heute-Aufgaben zeigen Fortschritt (z. B. 2/3).
 - Test: Unit-Test für Vorschlagslogik; manuell über 2 Tage (Tageswechsel).
+- Umgesetzt: Morgen-Auswahl „Was sind heute deine 3?“ (Vorschlag vorausgewählt, max. 3, Filter nach Bereich/Tag), danach grosse Karte „Nächste Aktion“ mit Erledigt und „Andere vorschlagen“, Fortschritt „Heute 1/3“ (3 Segmente), restliche Tagesaufgaben als Liste (erledigte bleiben stehen), „Tag ändern“, „Noch eine Aufgabe“ nach 3/3, Restzeit aus Aufwand („Noch ca. 3,5 h“, nur wenn alle Aufwände bekannt). Alles Übrige unter „Nicht heute“. Neuer Tag (auch bei offener App um Mitternacht) = neue Auswahl, gestern nicht erledigte Aufgaben erscheinen wieder als Vorschlag. Ranking: überfällig → dringend (<3 Tage) → bald (<7) → später → ohne Datum; innerhalb Stufe Priorität (benotet = hoch), dann Datum. Ohne Emoji (bewusst, Roadmap-Text war überholt). Speicher: `duedate.today.v1` `{date, ids, skipped}`.
 
 **B7 — JSON-Backup**
 - Ziel: Daten gehören dir. Grundlage für spätere MCP-Variante A.
 - Dateien: `SettingsView.vue`, neu `utils/backup.js`.
 - Akzeptanz: Export aller Daten als `duedate-backup-JJJJ-MM-TT.json`; Import prüft Schema/Version, zeigt Vorschau („42 Aufgaben, 3 Kunden …“), ersetzt erst nach Bestätigung; „Alle Daten löschen“ mit Bestätigung.
 - Test: Unit: Export → Import ergibt identischen Zustand; kaputte Datei → verständliche Fehlermeldung.
+- Umgesetzt (**MVP erreicht**): Einstellungen → „Daten und Backup“: Download `duedate-backup-JJJJ-MM-TT.json` (Aufgaben, Tags, Blockzeiten, Heute, CSV-Zuordnung + letzte CSV, Theme/Sprache), „Backup einspielen“ mit Prüfung (8 verständliche Fehlercodes, bei Fehler bleibt alles unverändert), Vorschau „Jetzt → Aus Datei“, optional Sicherheitskopie vorher, ersetzt erst nach Bestätigung (danach Neuladen + Meldung); „Alle Daten löschen“ (Theme/Sprache bleiben). Ältere Datenformate werden beim Import hochgezogen. Ruhiger Hinweis auf der Startseite, wenn noch nie oder seit 14 Tagen nicht gesichert (ab 3 Aufgaben, „In 7 Tagen erinnern“). `navigator.storage.persist()` wird angefragt. Format dokumentiert in `docs/BACKUP_FORMAT.md`. Nebenbei: `ics`-Bibliothek wird nur beim Export nachgeladen → Haupt-Bundle 501 → 452 kB, Warnung weg.
 
 **B8 — Planer v2** (aus Nutzer-Feedback; baut auf A6 auf, braucht B1/B2)
 - Ziel: Kein Abgabestress mehr. Grosse Aufgaben werden früh und verteilt eingeplant statt als ein Block am letzten Tag.
@@ -199,7 +201,8 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | C5 | ⬜ | `feat:` Wochenrückblick |
 | C6 | ⬜ | `feat:` Erinnerungen via Kalender |
 
-**C1 — Mikroschritte**: Checkliste pro Aufgabe (manuell, 10–20-Min.-Schritte); Heute-Ansicht zeigt nur den *nächsten* Schritt. Dateien: `TaskDetail.vue`, `useTasks.js`, `HomeView.vue`. Akzeptanz: Schritte hinzufügen/abhaken/sortieren per Tastatur. Test: Unit für Fortschritt; manuell.
+**C1 — Checkliste in der Beschreibung** ✅: Schritte stehen direkt im Markdown-Text als `- [ ] Schritt` / `- [x] erledigt` (ein Text = eine Wahrheit, kein separates Feld; das alte `steps`-Array im Modell bleibt ungenutzt). Werkzeugleiste „Checkliste“, Enter setzt die Liste fort, leerer Punkt beendet sie; Kästchen sind in der formatierten Ansicht direkt anklickbar (Fokus bleibt auf dem Kästchen). Fortschritt „2/4“ mit Balken im Editor und als Badge in Deadlines/Überblick. Überblick: Karte „Nächste Aktion“ zeigt den **nächsten offenen Schritt** zum direkten Abhaken. Letzter Schritt → Angebot „Aufgabe erledigen“ (Toast auf der Startseite, im modalen Panel inline, weil ein Toast dahinter unerreichbar wäre); es wird nie automatisch erledigt. BBNet-Aufgaben: Schritte stehen in „Eigene Notizen“ (BBNet-Beschreibung bleibt unberührt). Utils: `utils/checklist.js`.
+  - Tagesfortschritt (Nutzerwunsch): Balken mit Prozentzahl statt „1/3“, oben rechts in der Karte „Nächste Aktion“ (bei „Heute geschafft“ an derselben Stelle im Feld); zählt in **Schritten** (jeder Checklistenschritt + 1 für „Aufgabe erledigen“, Aufgabe ohne Liste = 1 Schritt), Balken wächst per Transition, Zahl zählt hoch, bei 100 % grün. Beim Erledigen von der Karte aus: kurze Rückmeldung „Diese Aufgabe wurde erledigt“ über der Karte (`DoneOverlay`, ~1,3 s; entfällt bei „Bewegung reduzieren“), der nächste Schritt blendet weich ein. Hat der Tag Aufgaben, bleibt die Tagesansicht mit 100 % stehen statt des allgemeinen „Alles erledigt“.
 
 **C2b — Schätzung lernt mit** (ohne KI): Vergleich Schätzung vs. erfasste Zeit pro Bereich/Fach → Vorschlag „Du brauchst im Schnitt 1.6× so lange wie geschätzt: 19 h statt 12 h?“. Nur Vorschlag, nie automatisch überschreiben. Braucht C2 (und später D3).
 
@@ -276,7 +279,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | KI: Kunden-Briefing → Scope, Rückfragen, Kalkulationsentwurf | Wie oben; Ergebnis landet in Kalkulation (D4) |
 | MCP: Claude verbinden | Variante A (JSON-Backup) ab B7 nutzbar. Lokaler MCP-Server (Mac) oder Remote-MCP erst nach Entscheid über Sync |
 | Speicher: IndexedDB (Dexie.js) | Statt localStorage (≈ 5 MB), sobald Zeiterfassung (C2/D3) viele Einträge erzeugt. Alles läuft über `useTasks`/Stores → Umbau ist lokal begrenzt. B7-Backup vorher. |
-| Sync Desktop ↔ Mobile | Mit Phase E: Supabase (Postgres, EU-Region Frankfurt, Login). Alternative: PocketBase selbst gehostet. Firebase verworfen (Lock-in, NoSQL passt schlecht zu Kunden → Projekte → Zeiten). |
+| Datenbank / Sync Desktop ↔ Mobile | **Entscheid des Nutzers: eigenes Backend** (statt Supabase), erst später (frühestens mit Phase E). Offen: API und Login des Backends. Vorgehen dann: Sync-Schicht hinter den Stores (alle Zugriffe laufen schon über `useTasks`, `useTags` …), Austauschformat = JSON-Backup (`docs/BACKUP_FORMAT.md`), App bleibt local-first und funktioniert offline. Alternativen, falls nötig: Supabase (EU), PocketBase. Firebase verworfen. |
 | Kanban-Board (Modul) | Nach B7, zusammen mit Projekten (D2): Spalten Offen → In Arbeit → Erledigt, zweite Ansicht derselben Aufgaben, filterbar nach Bereich/Projekt. Braucht Status „In Arbeit“ (Migration). Aus „verworfen“ zurückgeholt, weil DueDate Hauptarbeitsort werden soll. |
 | Module ein/aus | Einstellungen-Schalter pro Modul (z. B. Kanban, Freelance). Mit dem ersten optionalen Modul. |
 | SaaS | Login, Server-DB (Supabase), Bezahlung, Datenschutz/AGB, Support. Nichts bauen, was das verbaut. |

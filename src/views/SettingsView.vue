@@ -6,6 +6,7 @@ import { useLocale } from '../composables/useLocale.js'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
 import SegmentedControl from '../components/ui/SegmentedControl.vue'
+import DataSettings from '../components/DataSettings.vue'
 
 const { theme, setTheme } = useTheme()
 const { locale, setLocale, t } = useLocale()
@@ -45,5 +46,9 @@ const localeOptions = [
       </BaseCard>
     </section>
 
+    <section class="mt-10" aria-labelledby="h-data">
+      <h2 id="h-data" class="mb-3 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('backup.title') }}</h2>
+      <DataSettings />
+    </section>
   </div>
 </template>

@@ -4,7 +4,9 @@
  * links are limited to http(s) and mailto. The output can go into v-html.
  *
  * Blocks: "# / ## / ###" headings, "- " / "* " lists, "1. " lists,
- * paragraphs (single line breaks kept). Inline: **bold**, *italic* / _italic_,
+ * checklist items "- [ ] todo" / "- [x] done" (rendered as checkboxes with
+ * data-check="<n>", n = position among all checklist items; the editor
+ * flips the matching "[ ]" in the source), paragraphs (single line breaks kept). Inline: **bold**, *italic* / _italic_,
  * `code`, [text](https://…), bare https:// URLs.
  */
 
@@ -46,15 +48,21 @@ function inline(escaped) {
 }
 
 const BULLET = /^\s*[-*]\s+(.*)$/
+/** "- [ ] text" / "- [x] text" (text may be empty): 1 = box, 2 = text */
+export const CHECK_ITEM = /^\s*[-*]\s+\[([ xX])\](?:\s+(.*))?$/
 const NUMBERED = /^\s*\d+[.)]\s+(.*)$/
 const HEADING = /^(#{1,3})\s+(.*)$/
 
-/** Markdown text -> safe HTML string. */
-export function renderMarkdown(text) {
+/**
+ * Markdown text -> safe HTML string.
+ * options.emptyItemLabel: accessible name for checklist items without text.
+ */
+export function renderMarkdown(text, { emptyItemLabel = '' } = {}) {
   const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n')
   const out = []
   let list = null // 'ul' | 'ol'
   let paragraph = []
+  let checkIndex = 0
 
   const flushParagraph = () => {
     if (paragraph.length) out.push(`<p>${paragraph.map(l => inline(escapeHtml(l))).join('<br>')}</p>`)
@@ -66,6 +74,17 @@ export function renderMarkdown(text) {
   }
 
   for (const line of lines) {
+    const check = CHECK_ITEM.exec(line)
+    if (check) {
+      flushParagraph()
+      if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul' }
+      const label = check[2] ? '' : ` aria-label="${escapeHtml(emptyItemLabel)}"`
+      out.push(
+        `<li class="dd-task"><label><input type="checkbox" data-check="${checkIndex++}"${label}${check[1] === ' ' ? '' : ' checked'}>` +
+        `<span>${check[2] ? inline(escapeHtml(check[2])) : '&nbsp;'}</span></label></li>`,
+      )
+      continue
+    }
     const bullet = BULLET.exec(line)
     const numbered = !bullet && NUMBERED.exec(line)
     const heading = HEADING.exec(line)
@@ -90,11 +109,16 @@ export function renderMarkdown(text) {
   return out.join('')
 }
 
-/** First meaningful line without Markdown syntax, for list previews. */
+/**
+ * First meaningful line without Markdown syntax, for list previews.
+ * Checklist steps are skipped: they are shown as steps (next step, progress),
+ * not as a description of the task.
+ */
 export function markdownSummary(text, max = 120) {
   const line = String(text || '')
     .split('\n')
-    .map(l => l.replace(HEADING, '$2').replace(BULLET, '$1').replace(NUMBERED, '$1').trim())
+    .filter(l => !CHECK_ITEM.test(l))
+    .map(l => l.replace(HEADING, '$2').replace(BULLET, '$1').replace(NUMBERED, '$1').replace(/^\[[ xX]\]\s*/, '').trim())
     .find(Boolean)
   if (!line) return ''
   const plain = line

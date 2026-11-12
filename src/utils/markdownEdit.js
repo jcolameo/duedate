@@ -28,24 +28,34 @@ function lineRange(value, start, end) {
 }
 
 /**
- * Adds a prefix to every selected line ("- ", "1. ", "## "), or removes it
+ * Adds a prefix to every selected line ("- ", "- [ ] ", "1. ", "## "), or removes it
  * when all lines already have it. Numbered lists count up.
  */
 export function toggleLinePrefix({ value, start, end }, kind) {
   const [from, to] = lineRange(value, start, end)
   const lines = value.slice(from, to).split('\n')
-  const patterns = { bullet: /^[-*]\s+/, numbered: /^\d+[.)]\s+/, heading: /^#{1,3}\s+/ }
+  // A checklist line ("- [ ] x") is not a plain bullet
+  const patterns = {
+    check: /^[-*]\s+\[[ xX]\]\s?/,
+    bullet: /^[-*]\s+(?!\[[ xX]\](?:\s|$))/,
+    numbered: /^\d+[.)]\s+/,
+    heading: /^#{1,3}\s+/,
+  }
   const pattern = patterns[kind]
   const allHave = lines.every(l => pattern.test(l))
   const changed = lines.map((l, i) => {
-    const bare = l.replace(patterns.bullet, '').replace(patterns.numbered, '').replace(patterns.heading, '')
+    const bare = l.replace(patterns.check, '').replace(patterns.bullet, '').replace(patterns.numbered, '').replace(patterns.heading, '')
     if (allHave) return bare
+    if (kind === 'check') return `- [ ] ${bare}`
     if (kind === 'bullet') return `- ${bare}`
     if (kind === 'numbered') return `${i + 1}. ${bare}`
     return `## ${bare}`
   }).join('\n')
   const next = value.slice(0, from) + changed + value.slice(to)
-  return { value: next, start: from, end: from + changed.length }
+  // Nothing selected: put the caret at the end so typing continues the line
+  // (a selected line would be replaced by the first typed character)
+  const collapsed = start === end
+  return { value: next, start: collapsed ? from + changed.length : from, end: from + changed.length }
 }
 
 /** [text](https://) with the URL part selected for typing. */
@@ -67,11 +77,14 @@ export function continueList({ value, start, end }) {
   const line = value.slice(from, start)
   const m = /^(\s*)([-*]|\d+[.)])\s+(.*)$/.exec(line)
   if (!m) return null
-  if (!m[3].trim()) {
+  // A checklist item continues as a new, unchecked one
+  const check = /^\[[ xX]\](?:\s+(.*))?$/.exec(m[3])
+  const content = check ? check[1] || '' : m[3]
+  if (!content.trim()) {
     // Empty item: remove the marker and end the list
     return { value: value.slice(0, from) + value.slice(start), start: from, end: from }
   }
-  const marker = /\d/.test(m[2]) ? `${parseInt(m[2], 10) + 1}${m[2].slice(-1)}` : m[2]
+  const marker = /\d/.test(m[2]) ? `${parseInt(m[2], 10) + 1}${m[2].slice(-1)}` : check ? `${m[2]} [ ]` : m[2]
   const insert = `\n${m[1]}${marker} `
   const pos = start + insert.length
   return { value: value.slice(0, start) + insert + value.slice(end), start: pos, end: pos }
