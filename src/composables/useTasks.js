@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import { detectColumns } from '../utils/columnDetector.js'
 import { isSavedMappingUsable } from '../utils/mapping.js'
-import { migrateLegacy, mergeImport, rowsToTasks, withStatus, createManualTask, upgradeToV3, upgradeToV4, SCHEMA_VERSION } from '../utils/taskModel.js'
+import { migrateLegacy, mergeImport, rowsToTasks, withStatus, createManualTask, upgradeToV3, upgradeToV4, upgradeToV5, SCHEMA_VERSION } from '../utils/taskModel.js'
 
 /**
  * The task store (since B1): every task is its own object, persisted in
@@ -60,6 +60,7 @@ function loadTasks() {
       let upgraded = stored.tasks
       if (version < 3) upgraded = upgradeToV3(upgraded)
       if (version < 4) upgraded = upgradeToV4(upgraded)
+      if (version < 5) upgraded = upgradeToV5(upgraded)
       writeJSON(STORE_KEY, { tasks: upgraded })
       writeJSON(SCHEMA_KEY, SCHEMA_VERSION)
       return upgraded

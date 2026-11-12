@@ -21,7 +21,7 @@ import { checklistProgress, checklistTextOf } from './checklist.js'
 import { LEGACY_EFFORT_MINUTES } from './estimate.js'
 
 /** Version of the stored data shape (3 since B5b, 4 since B8); backups carry it. */
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 export const TASK_STATUS = ['open', 'done']
 export { AREAS }
 
@@ -98,6 +98,7 @@ export function createTask(fields, now = new Date()) {
     notes: '',
     steps: [],
     tags: [],
+    pinned: [],
     source: 'manual',
     sourceKey: null,
     createdAt: ts,
@@ -142,7 +143,7 @@ const CSV_FIELDS = ['title', 'dueRaw', 'due', 'start', 'category', 'description'
 /** Has the user changed anything on this task that a re-import must not lose? */
 export function isTouched(task) {
   return task.status !== 'open' || !!task.priority || !!task.estimateMin || !!task.notes ||
-    (task.steps && task.steps.length > 0) || (task.tags && task.tags.length > 0) || normalizeArea(task.area) !== DEFAULT_AREA
+    (task.steps && task.steps.length > 0) || (task.tags && task.tags.length > 0) || (task.pinned && task.pinned.length > 0) || normalizeArea(task.area) !== DEFAULT_AREA
 }
 
 /**
@@ -224,6 +225,16 @@ export function upgradeToV4(tasks) {
     return { ...rest, estimateMin: known ?? null }
   })
   return changed ? next : tasks
+}
+
+/**
+ * Schema 5 (B12): every task gets `pinned: []` (work sessions the user moved
+ * and fixed in the calendar). Idempotent, returns the same array when nothing
+ * changes.
+ */
+export function upgradeToV5(tasks) {
+  if (tasks.every(task => Array.isArray(task.pinned))) return tasks
+  return tasks.map(task => (Array.isArray(task.pinned) ? task : { ...task, pinned: [] }))
 }
 
 /**

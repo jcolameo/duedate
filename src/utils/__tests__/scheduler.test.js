@@ -345,3 +345,84 @@ describe('rules that stayed', () => {
     expect(generatePlan([], planning(), [], NOW).days).toEqual(getWeekDays(NOW))
   })
 })
+
+describe('generatePlan: working days (B11)', () => {
+  const WEEKDAYS_ONLY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+  // Wed 11 Nov 2026 + 3 = Sat 14 Nov, +4 = Sun 15 Nov
+
+  it('puts no session on a free weekday', () => {
+    const plan = generatePlan([due('a', 20)], planning({ a: { hours: 12 } }), [], NOW, { workDays: WEEKDAYS_ONLY })
+    expect(plan.sessions.length).toBeGreaterThan(0)
+    for (const s of plan.sessions) expect(['Sat', 'Sun']).not.toContain(s.day)
+  })
+
+  it('still uses every day by default', () => {
+    const plan = generatePlan([due('a', 20)], planning({ a: { hours: 12 } }), [], NOW)
+    expect(plan.sessions.some(s => ['Sat', 'Sun'].includes(s.day))).toBe(true)
+  })
+
+  it('moves work from a free deadline day to the days before it', () => {
+    // Due Sunday 15 Nov, no buffer: the work lands on Friday or earlier
+    const plan = generatePlan([due('a', 4)], planning({ a: { hours: 1 } }), [], NOW, { workDays: WEEKDAYS_ONLY, bufferDays: 0 })
+    expect(of(plan, 'a')).toHaveLength(1)
+    expect(of(plan, 'a')[0].date.getDay()).not.toBe(0)
+    expect(of(plan, 'a')[0].date.getDay()).not.toBe(6)
+    expect(plan.shortfalls).toEqual([])
+  })
+
+  it('reports a shortfall when no working day is left before the deadline', () => {
+    // Due Fri 13 Nov, only Monday is a working day: no day left before the deadline
+    const plan = generatePlan([due('a', 2)], planning({ a: { hours: 1 } }), [], NOW, { workDays: ['Mon'], bufferDays: 0 })
+    expect(plan.sessions).toHaveLength(0)
+    expect(plan.shortfalls).toHaveLength(1)
+    expect(plan.shortfalls[0].missingMin).toBe(60)
+  })
+
+  it('spreads sessions over the working days only', () => {
+    const plan = generatePlan([due('a', 15)], planning({ a: { hours: 6 } }), [], NOW, { workDays: ['Mon', 'Wed'], bufferDays: 0 })
+    expect(plan.shortfalls).toEqual([])
+    for (const s of plan.sessions) expect(['Mon', 'Wed']).toContain(s.day)
+  })
+})
+
+describe('generatePlan: planning modes (B13)', () => {
+  const run = (mode, hours = 12, n = 20) => generatePlan([due('a', n)], planning({ a: { hours } }), [], NOW, { mode })
+  const dayIdx = (plan) => plan.sessions.map(s => dayIndex(s.date))
+  const distinctDays = (plan) => new Set(dayIdx(plan)).size
+
+  it('every mode plans the full effort', () => {
+    for (const mode of ['even', 'early', 'bundled']) {
+      const plan = run(mode)
+      expect(total(plan.sessions)).toBe(720)
+      expect(plan.shortfalls).toEqual([])
+    }
+  })
+
+  it('even is the default', () => {
+    const a = generatePlan([due('a', 20)], planning({ a: { hours: 12 } }), [], NOW)
+    expect(dayIdx(a)).toEqual(dayIdx(run('even')))
+  })
+
+  it('early starts at once and finishes sooner than even', () => {
+    const early = run('early')
+    const even = run('even')
+    expect(Math.min(...dayIdx(early))).toBe(0)
+    expect(Math.max(...dayIdx(early))).toBeLessThan(Math.max(...dayIdx(even)))
+  })
+
+  it('bundled uses fewer days than even, with fuller days', () => {
+    const bundled = run('bundled')
+    expect(distinctDays(bundled)).toBeLessThan(distinctDays(run('even')))
+    expect(Math.max(...dayIdx(bundled))).toBeLessThanOrEqual(19 - PLANNER_DEFAULTS.bufferDays)
+  })
+
+  it('never plans after the buffer, whatever the mode', () => {
+    for (const mode of ['even', 'early', 'bundled']) {
+      expect(Math.max(...dayIdx(run(mode)))).toBeLessThanOrEqual(19)
+    }
+  })
+
+  it('is deterministic', () => {
+    expect(dayIdx(run('bundled'))).toEqual(dayIdx(run('bundled')))
+  })
+})

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { PhTrash, PhCheck, PhCheckCircle, PhArrowCounterClockwise, PhX, PhFileCsv, PhStar } from '@phosphor-icons/vue'
+import { PhTrash, PhCheck, PhCheckCircle, PhArrowCounterClockwise, PhX, PhFileCsv, PhStar, PhLockSimple } from '@phosphor-icons/vue'
 import { useTaskDetail } from '../composables/useTaskDetail.js'
 import { useTasks } from '../composables/useTasks.js'
 import { useTaskActions } from '../composables/useTaskActions.js'
@@ -20,6 +20,8 @@ import MarkdownEditor from './ui/MarkdownEditor.vue'
 import TagPicker from './TagPicker.vue'
 import ProgressBar from './ui/ProgressBar.vue'
 import { usePlanState } from '../composables/usePlanState.js'
+import { usePlanEdit } from '../composables/usePlanEdit.js'
+import { dateToISO } from '../utils/pins.js'
 import { taskProgress, plannedSessions, taskTimeline } from '../utils/taskProgress.js'
 import { shortDate } from '../utils/planSummary.js'
 
@@ -58,6 +60,30 @@ const progressLabel = computed(() =>
 )
 // The session the panel was opened from, only while it belongs to this task
 const fromSession = computed(() => (context.value && task.value && context.value.taskId === task.value.id ? context.value : null))
+
+// Moving the work session the panel was opened from (keyboard alternative to dragging in the calendar)
+const { moveSession, unpinSession } = usePlanEdit()
+const moveDate = ref('')
+const moveStart = ref('')
+watch(fromSession, (s) => {
+  if (s) { moveDate.value = dateToISO(s.date); moveStart.value = s.startTime }
+}, { immediate: true })
+const canMove = computed(() => !!fromSession.value && !view.value?._isDone)
+async function applyMove() {
+  const date = fromISODate(moveDate.value)
+  const [h, m] = (moveStart.value || '').split(':').map(Number)
+  if (!date || Number.isNaN(h)) return
+  const result = moveSession(fromSession.value, date, h * 60 + (m || 0))
+  if (!result.ok) return
+  // The plan follows the change on the next ticks; keep the panel on the moved session
+  await nextTick()
+  await nextTick()
+  const moved = plan.value?.sessions.find(s => s.pinId === result.pinId)
+  if (moved) context.value = moved
+}
+function unpin() {
+  if (unpinSession(fromSession.value).ok) context.value = null
+}
 
 const open = computed({
   get: () => !!task.value,
@@ -134,6 +160,7 @@ async function completeFromOffer() {
 
 const fieldLabel = 'text-[13px] font-medium text-ink'
 const readOnly = 'text-sm text-ink'
+const timeField = 'h-9 rounded-md border border-line-strong bg-surface px-2 font-mono text-[13px] text-ink transition-colors duration-150 hover:border-ink-muted [color-scheme:dark] light:[color-scheme:light]'
 </script>
 
 <template>
@@ -175,7 +202,30 @@ const readOnly = 'text-sm text-ink'
         <p v-if="fromSession.of > 1" class="text-sm font-medium">{{ t('detail.sessionOf', { n: fromSession.n, of: fromSession.of }) }}</p>
         <p v-else class="text-sm font-medium">{{ t('calendar.legendSession') }}</p>
         <p class="font-mono text-[13px]">{{ dayText(fromSession.date) }} · {{ fromSession.startTime }}–{{ fromSession.endTime }}</p>
+        <p v-if="fromSession.pinned" class="mt-1 inline-flex items-center gap-1 text-[13px] text-ink-muted">
+          <PhLockSimple class="size-3.5" aria-hidden="true" />{{ t('planEdit.pinned') }}
+        </p>
       </div>
+
+      <!-- Move or pin this work session -->
+      <section v-if="canMove" aria-labelledby="detail-move">
+        <h3 id="detail-move" class="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('planEdit.move') }}</h3>
+        <form class="mt-2 flex flex-wrap items-end gap-2" @submit.prevent="applyMove">
+          <label class="space-y-1 text-[13px] text-ink-muted">
+            <span>{{ t('planEdit.moveDate') }}</span>
+            <input v-model="moveDate" type="date" required :class="timeField" />
+          </label>
+          <label class="space-y-1 text-[13px] text-ink-muted">
+            <span>{{ t('planEdit.moveStart') }}</span>
+            <input v-model="moveStart" type="time" step="900" min="08:00" max="20:45" required :class="timeField" />
+          </label>
+          <BaseButton type="submit" variant="secondary">{{ t('planEdit.moveApply') }}</BaseButton>
+        </form>
+        <div v-if="fromSession.pinned" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <BaseButton variant="ghost" @click="unpin">{{ t('planEdit.unpin') }}</BaseButton>
+          <span class="text-[13px] text-ink-muted">{{ t('planEdit.unpinHint') }}</span>
+        </div>
+      </section>
 
       <!-- How far are we -->
       <section aria-labelledby="detail-progress">
@@ -293,6 +343,7 @@ const readOnly = 'text-sm text-ink'
             >
               <span class="w-24 shrink-0 font-mono text-[13px] text-ink-muted">{{ dayText(s.date) }}</span>
               <span class="font-mono text-[13px]">{{ s.startTime }}–{{ s.endTime }}</span>
+              <PhLockSimple v-if="s.pinned" class="size-3.5 shrink-0 text-ink-muted" :aria-label="t('planEdit.pinned')" role="img" />
               <span v-if="s.of > 1" class="ml-auto font-mono text-[12px] text-ink-muted">{{ s.n }}/{{ s.of }}</span>
             </li>
           </ul>

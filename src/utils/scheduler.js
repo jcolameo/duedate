@@ -1,4 +1,5 @@
 import { expandBlocksByDay } from './availability.js'
+import { pinsOf } from './pins.js'
 
 export const WORK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 export const DAY_START_MIN = 8 * 60   // 08:00
@@ -22,6 +23,10 @@ export const PLANNER_DEFAULTS = {
   maxPerDayMin: 360,
   /** Used when a task has no estimate yet */
   defaultEstimateMin: 60,
+  /** Weekdays the planner may use (B11); the others stay free */
+  workDays: WORK_DAYS,
+  /** How sessions are spread (B13): 'even' | 'early' | 'bundled' */
+  mode: 'even',
 }
 
 const SLOT_MINUTES = 30
@@ -116,6 +121,12 @@ function* nearestOffsets(max) {
  *   one on the free day nearest to its target; at most 3 h of a task and
  *   6 h in total per day; busy blocks (availability) are respected; today
  *   only uses the time from now on
+ * - `mode` decides where in that range: 'even' spreads them evenly, 'early'
+ *   starts as soon as possible, 'bundled' packs them into few, fuller days
+ * - only `workDays` are used; free weekdays stay empty (deadlines on them
+ *   are still shown, the work moves to the days before)
+ * - sessions the user pinned (`task.pinned`, B12) are placed first and count
+ *   towards the task's time; only the rest is planned around them
  * - overdue tasks are placed as early as possible
  * - what does not fit is reported as a shortfall, never squeezed in silently
  *
@@ -146,6 +157,38 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
   const plannedPerDay = new Map()
   const taskPerDay = new Map()
 
+  // Pinned sessions (B12): fixed slots the user chose. They reserve their time
+  // first; a pin may exceed the daily limits, the user decided so.
+  const sessions = []
+  const pinnedMin = new Map()
+  const parseISO = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d) }
+  for (const task of enrichedTasks) {
+    if (task.status === 'done') continue
+    for (const pin of pinsOf(task)) {
+      const date = parseISO(pin.date)
+      if (date < todayStart || (date.getTime() === todayStart.getTime() && pin.endMin <= nowMin)) continue
+      const key = dayKey(date)
+      const length = pin.endMin - pin.startMin
+      busyOf(date).push([pin.startMin, pin.endMin])
+      plannedPerDay.set(key, (plannedPerDay.get(key) || 0) + length)
+      taskPerDay.set(`${task._id}|${key}`, (taskPerDay.get(`${task._id}|${key}`) || 0) + length)
+      pinnedMin.set(task._id, (pinnedMin.get(task._id) || 0) + length)
+      sessions.push({
+        taskId: task._id,
+        title: task._title || 'Aufgabe',
+        area: task._area || task.area || 'study',
+        day: weekdayLabel(date),
+        date,
+        startMin: pin.startMin,
+        endMin: pin.endMin,
+        startTime: toTimeLabel(pin.startMin),
+        endTime: toTimeLabel(pin.endMin),
+        pinned: true,
+        pinId: pin.id,
+      })
+    }
+  }
+
   const eligible = enrichedTasks
     .filter(t => t._deadlineDate && t.status !== 'done')
     .map((task) => {
@@ -155,33 +198,42 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
     })
     .filter(e => e.remaining === null || e.remaining > 0)
     .map((e) => {
-      const needed = e.remaining ?? rules.defaultEstimateMin
+      const needed = roundUp(e.remaining ?? rules.defaultEstimateMin) - (pinnedMin.get(e.task._id) || 0)
       const deadline = startOfDay(e.task._deadlineDate)
       const overdue = deadline < todayStart
       let last = overdue ? addDays(todayStart, 6) : addDays(deadline, -rules.bufferDays)
       if (last < todayStart) last = deadline >= todayStart ? deadline : todayStart // no room for a buffer
       const horizon = addDays(todayStart, PLANNING_HORIZON_DAYS)
       if (last > horizon) last = horizon
-      return { ...e, needed: roundUp(needed), deadline, overdue, last }
+      return { ...e, needed, deadline, overdue, last }
     })
+    .filter(e => e.needed > 0)
     .sort((a, b) =>
       a.last - b.last ||
       PRIORITY_RANK[a.planning.priority] - PRIORITY_RANK[b.planning.priority] ||
       String(a.task._title).localeCompare(String(b.task._title), 'de-CH'))
 
-  const sessions = []
   const shortfalls = []
   let horizonEnd = todayStart
 
   for (const entry of eligible) {
     const { task, needed, last, overdue } = entry
-    const dayCount = Math.round((last - todayStart) / 86400000) + 1
-    const days = Array.from({ length: dayCount }, (_, i) => addDays(todayStart, i))
+    const span = Math.round((last - todayStart) / 86400000) + 1
+    const days = Array.from({ length: span }, (_, i) => addDays(todayStart, i))
+      .filter(d => rules.workDays.includes(weekdayLabel(d)))
+    const dayCount = days.length
     if (last > horizonEnd) horizonEnd = last
 
     const sizes = splitIntoSessions(needed, rules.sessionMin)
     // Even spread over the available days; overdue tasks go as early as possible
-    const pieces = sizes.map((minutes, i) => ({ minutes, target: overdue ? 0 : Math.floor((i * dayCount) / sizes.length) }))
+    const perDay = Math.max(1, Math.floor(rules.maxPerTaskPerDayMin / rules.sessionMin))
+    const bundleDays = Math.ceil(sizes.length / perDay)
+    const targetOf = (i) => {
+      if (overdue || rules.mode === 'early') return 0
+      if (rules.mode === 'bundled') return Math.floor((Math.floor(i / perDay) * dayCount) / bundleDays)
+      return Math.floor((i * dayCount) / sizes.length)
+    }
+    const pieces = sizes.map((minutes, i) => ({ minutes, target: targetOf(i) }))
 
     let placedMin = 0
     for (let p = 0; p < pieces.length; p++) {
@@ -196,7 +248,7 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
           const key = dayKey(date)
           if ((plannedPerDay.get(key) || 0) + length > rules.maxPerDayMin) continue
           if ((taskPerDay.get(`${task._id}|${key}`) || 0) + length > rules.maxPerTaskPerDayMin) continue
-          const earliest = index === 0 ? todayEarliest : 0
+          const earliest = key === dayKey(todayStart) ? todayEarliest : 0
           const slot = findFreeSlot(length, busyOf(date), earliest, DAY_START_MIN, DAY_END_MIN)
           if (!slot) continue
           busyOf(date).push(slot)
