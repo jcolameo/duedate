@@ -7,7 +7,7 @@ const NOW = new Date('2026-11-12T09:00:00Z')
 describe('tags', () => {
   it('has 8 colors', () => expect(TAG_COLORS).toHaveLength(8))
 
-  it.each([['  #Foto ', 'Foto'], ['Kunde A', 'Kunde-A'], ['##x', 'x'], ['', ''], [null, '']])(
+  it.each([['  #Foto ', 'Foto'], ['Kunde  A', 'Kunde A'], ['##x', 'x'], ['', ''], [null, '']])(
     'normalizeTagName(%j) -> %j', (input, out) => expect(normalizeTagName(input)).toBe(out))
 
   it('cuts long names', () => expect(normalizeTagName('a'.repeat(50))).toHaveLength(30))

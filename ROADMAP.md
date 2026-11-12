@@ -144,7 +144,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Ziel: Freie Etiketten (Name + Farbe aus ~8 kontrastgeprüften Farben), zusätzlich zu Bereich/Priorität/Aufwand.
 - Schnellerfassung: `#wort`, das kein Bereich ist, wird zum Tag. Detail-Panel: Tags hinzufügen/entfernen. Filter nach Tag. Tags umbenennen/Farbe ändern/löschen.
 - Abgrenzung: Projekte (D2) sind eigene Objekte mit Kunde, Budget, Zeit; Aufgaben werden ihnen später zugeordnet.
-- Umgesetzt: `utils/tags.js`, `useTags` (`duedate.tags.v1`), `useTagFilter` (`duedate.tagFilter.v1`), TagChip/TagPicker/TagFilter/TagSettings. 8 Farben (4 neue Tokens, alle AA). Filter kombiniert mit Bereich. Verwaltung in Einstellungen (umbenennen, Farbe, löschen mit Rückgängig). Tags bleiben beim CSV-Re-Import erhalten.
+- Umgesetzt: `utils/tags.js`, `useTags` (`duedate.tags.v1`), `useTagFilter` (`duedate.tagFilter.v1`), TagChip/TagPicker/TagFilter/TagSettings. 8 Farben (4 neue Tokens, alle AA). Filter kombiniert mit Bereich. Verwaltung direkt im Detail-Panel wie bei Trello: Menü „+ Tag“ mit Suche, Häkchen, Stift (Name, Farbe, löschen mit Rückgängig) und „Neuen Tag erstellen“ (Nutzer-Feedback: Einstellungen waren der falsche Ort). Tags bleiben beim CSV-Re-Import erhalten.
 
 **B6 — Heute-Ansicht**
 - Ziel: Die Startseite beantwortet nur: „Was mache ich jetzt?“

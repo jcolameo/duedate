@@ -6,12 +6,12 @@
 export const TAG_COLORS = ['gray', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink', 'teal']
 export const TAG_NAME_MAX = 30
 
-/** "  #Foto grafie " -> "Foto-grafie"; empty string when nothing usable is left. */
+/** "  #Foto  grafie " -> "Foto grafie"; empty string when nothing usable is left. */
 export function normalizeTagName(name) {
   return String(name || '')
     .trim()
     .replace(/^#+/, '')
-    .replace(/\s+/g, '-')
+    .replace(/\s+/g, ' ')
     .slice(0, TAG_NAME_MAX)
 }
 
