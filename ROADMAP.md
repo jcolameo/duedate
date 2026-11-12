@@ -100,6 +100,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B11 | ✅ | `feat:` Arbeitstage / arbeitsfreie Wochentage (B8b, Teil 1) |
 | B12 | ✅ | `feat:` Arbeitszeiten verschieben und fixieren (Drag & Drop, Panel-Alternative, Rückgängig) |
 | B13 | ✅ | `feat:` Planungsmodus + „Neu planen“ (B8b, Teil 2) |
+| B14 | ⬜ | `feat:` CSV-Import mit Auswahl (Zeilen abwählen, Altes ausblenden, Auswahl merken) |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -207,6 +208,16 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Offen: Touch-Drag später mit Phase E.
 
 
+**B14 — CSV-Import mit Auswahl** (Nutzerwunsch: Dozenten vergessen alte Projekte in der Liste zu entfernen, DueDate importiert sie trotzdem)
+- Ziel: Beim Import einer CSV (Deadlines-Seite und Abkürzung in „Neue Aufgabe“ / Datei auf das Fenster ziehen) kann man vor dem Übernehmen auswählen, was rein soll: **alle** oder nur einzelne Zeilen.
+- Vorschau-Schritt mit Liste und Häkchen pro Zeile (Titel, Datum, Kategorie), „Alle / Keine“ und Suche. Schon vorhandene Aufgaben sind als „bereits drin“ markiert und zählen nicht.
+- **Vorauswahl gegen Altlasten:** Zeilen mit sehr altem Datum (z. B. Abgabe vor mehr als 30 Tagen, einstellbar) sind standardmässig abgewählt, mit Hinweis „12 alte Einträge nicht ausgewählt“ und einem Knopf „Alte trotzdem übernehmen“.
+- **Auswahl merken:** Abgewählte Zeilen werden als „ignoriert“ gespeichert (pro `sourceKey`, Schema-Migration), damit sie beim nächsten Import derselben Datei nicht wiederkommen. Das löst auch das bekannte Problem aus dem Aufräumen (BBNet-Aufgaben kämen sonst als offen zurück). In den Einstellungen gibt es „Ignorierte Einträge“ zum Zurückholen (Rückgängig inklusive).
+- Die Abkürzung aus „Neue Aufgabe“ zeigt die Vorschau nur, wenn es etwas zu entscheiden gibt (alte oder viele neue Zeilen); sonst bleibt es ein Klick mit Toast und Rückgängig wie heute.
+- Dateien (Vorschlag): `composables/useFileImport.js`, `useTasks.applyCsvImport` / `mergeImport` (ignorierte Keys überspringen), neu `components/ImportPreview.vue`, Backup-Format um die Ignorierliste erweitern.
+- Akzeptanz: CSV mit 3 alten und 5 aktuellen Zeilen → Vorschau, alte abgewählt; Import → nur 5 Aufgaben; erneuter Import derselben Datei → keine alten, kein Duplikat; Ignorierte lassen sich zurückholen.
+- Test: Unit für Vorauswahl nach Alter, Merge mit Ignorierliste, Migration, Backup-Round-Trip; Browser-Test Vorschau, Tastatur, axe.
+
 ### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
 
 ---
@@ -232,7 +243,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 **C3 — Wiedervorlage**: Feld „wieder zeigen am“ → Aufgabe verschwindet bis zum Datum, erscheint dann oben. Für Follow-ups (Bewerbungen, Offerten). Dateien: `useTasks.js`, `TaskDetail.vue`, Listen-Filter. Akzeptanz: Schnellwahl „morgen / in 3 Tagen / nächste Woche“. Test: Unit mit fixem Datum.
 
-**C4 — Wiederkehrende Aufgaben**: Regel „wöchentlich an Mo/Mi/Fr“ oder „monatlich am X.“; beim Abhaken entsteht die nächste Instanz. Deckt Training und Routinen ab, ohne eigenes Habit-Modul. Dateien: `useTasks.js`, neu `utils/recurrence.js`. Akzeptanz: Abhaken → nächster Termin korrekt (inkl. Monatsende, Jahreswechsel). Test: Unit-Tests für Wiederholungsregeln.
+**C4 — Wiederkehrende Aufgaben**: Regel „wöchentlich an Mo/Mi/Fr“ oder „monatlich am X.“; beim Abhaken entsteht die nächste Instanz. Deckt Routinen mit festen Tagen ab; Gewohnheiten mit Wochenzielen („3× pro Woche“) und Serien kommen als Habit-Tracker in F3.js`, neu `utils/recurrence.js`. Akzeptanz: Abhaken → nächster Termin korrekt (inkl. Monatsende, Jahreswechsel). Test: Unit-Tests für Wiederholungsregeln.
 
 **C5 — Wochenrückblick**: Geführter 5-Min.-Dialog (Sonntag/Montag angeboten): erledigt diese Woche, liegengeblieben (verschieben / löschen / zerlegen), Top 3 nächste Woche. Unterstützende Sprache, keine Vorwürfe. Dateien: neu `views/ReviewView.vue`. Akzeptanz: Durchlauf in < 5 Min. möglich. Test: manuell mit Testdaten.
 
@@ -321,6 +332,9 @@ Entstanden im Gespräch mit dem Nutzer; der Figma-Prototyp (Seite 2) zeigt Struk
 |---|---|---|
 | F1 | ⬜ | `feat:` Bewerbungs-Tracker |
 | F2 | ⬜ | `feat:` Monatsexport der Bewerbungen (CSV) |
+| F3 | ⬜ | `feat:` Habit-Tracker (Gewohnheiten, Wochenziele, Serien) |
+
+**F3 — Habit-Tracker** (Nutzerwunsch): Gewohnheiten wie Training (3× Kraft, 2× Boxen pro Woche) abhaken und über die Zeit sehen. Anders als wiederkehrende Aufgaben (C4, feste Tage, eine Instanz pro Termin) zählt eine Gewohnheit **Wochenziele** („3× pro Woche“, ohne festen Tag): ein Tipp pro Durchführung, Fortschritt der Woche („2 von 3“), Wochen- und Monatsübersicht, ruhige Serien-Anzeige ohne Vorwürfe (verpasste Wochen werden neutral gezeigt, keine rote Warnung). Eigene Daten (`duedate.habits.v1`, Schema-Migration, Backup-Format), Karte „Heute“ auf dem Überblick für Gewohnheiten, die diese Woche noch offen sind. Offen zu klären: mit C4 zusammenlegen oder getrennt bauen; ob eine Gewohnheit im Kalender erscheint (Vorschlag: nein, nur als Wochenfortschritt). Reihenfolge noch offen, nach Phase K bzw. C4.
 
 **F1**: Firma, Stelle, Link, Datum, Status (geplant → beworben → Gespräch → Zusage/Absage), automatische Wiedervorlage zum Nachfassen. Daten bleiben lokal. **F2**: Export aller Bewerbungen eines Monats als CSV für Nachweise.
 
