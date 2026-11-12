@@ -51,6 +51,12 @@ needed; the app proposes a mapping and you confirm or correct it once (it is rem
 Vue 3 (Composition API) · Vite · Tailwind CSS 4 · vue-router (hash history) ·
 [PapaParse](https://www.papaparse.com/) · [ics](https://github.com/adamgibbons/ics) · Storybook
 
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): architecture, data model, planned features and the spec-driven workflow (German)
+- [docs/BACKUP_FORMAT.md](docs/BACKUP_FORMAT.md): backup file format
+- [ROADMAP.md](ROADMAP.md), [DESIGN.md](DESIGN.md)
+
 ## Privacy
 
 Everything runs in the browser. Imported files and all data are stored only in your browser's
