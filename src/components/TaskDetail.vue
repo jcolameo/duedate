@@ -6,7 +6,8 @@ import { useTasks } from '../composables/useTasks.js'
 import { useTaskActions } from '../composables/useTaskActions.js'
 import { useLocale } from '../composables/useLocale.js'
 import { useToast } from '../composables/useToast.js'
-import { EFFORT_OPTIONS } from '../composables/useTaskPlanning.js'
+import EffortInput from './ui/EffortInput.vue'
+import { remainingMinutes, formatMinutes } from '../utils/estimate.js'
 import { enrichTask, fromISODate } from '../utils/taskModel.js'
 import { AREAS, normalizeArea } from '../utils/areas.js'
 import { dueLabel } from '../utils/dueLabel.js'
@@ -83,10 +84,12 @@ const priorityOptions = computed(() => [
   { value: 'medium', label: t('stundenplan.priorityMedium') },
   { value: 'low', label: t('stundenplan.priorityLow') },
 ])
-const effortOptions = computed(() => [
-  { value: null, label: t('common.dash') },
-  ...EFFORT_OPTIONS.map(e => ({ value: e, label: e })),
-])
+// Time left after finished checklist steps, shown only when it differs from the estimate
+const remaining = computed(() => {
+  const left = task.value ? remainingMinutes(task.value) : null
+  if (left === null || left === task.value.estimateMin) return ''
+  return t('estimate.remaining', { time: formatMinutes(left, locale.value === 'de' ? ',' : '.') })
+})
 
 function remove() {
   const removed = removeTask(task.value.id)
@@ -185,8 +188,9 @@ const readOnly = 'text-sm text-ink'
       </div>
 
       <div class="space-y-1.5">
-        <p :class="fieldLabel">{{ t('stundenplan.effort') }}</p>
-        <SegmentedControl :model-value="task.effort" mono :label="t('stundenplan.effort')" :options="effortOptions" @update:model-value="set('effort', $event)" />
+        <p :class="fieldLabel">{{ t('estimate.label') }}</p>
+        <EffortInput :key="task.id" :model-value="task.estimateMin" :label="t('estimate.label')" @update:model-value="set('estimateMin', $event)" />
+        <p class="text-[13px] text-ink-muted">{{ remaining || t('estimate.hint') }}</p>
       </div>
 
       <TagPicker :model-value="task.tags || []" @update:model-value="set('tags', $event)" />

@@ -156,7 +156,6 @@ export const en = {
     swapped: 'New suggestion: “{title}”',
     editDay: 'Change day',
     effort: 'About {time} left',
-    effortAtLeast: 'At least {time} left',
     allDoneTitle: 'Done for today',
     allDoneText: '{count} of {count} done. The rest can wait until tomorrow.',
     oneMore: 'One more task',
@@ -214,6 +213,14 @@ export const en = {
     error_duplicate_ids: 'The file is damaged: some tasks appear twice. Nothing was changed.',
     error_invalid_tags: 'The file is damaged: the tags are incomplete. Nothing was changed.',
     error_invalid_availability: 'The file is damaged: the busy times are incomplete. Nothing was changed.',
+  },
+  estimate: {
+    label: 'Effort (total)',
+    hours: 'Hours',
+    free: 'free',
+    error: 'Please enter hours, e.g. 6 or 2.5.',
+    hint: 'How long will it take in total? The planner spreads it over several days.',
+    remaining: 'Left: {time} (after checklist)',
   },
   tags: {
     title: 'Tags',

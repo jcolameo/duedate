@@ -3,7 +3,8 @@ import { ref, computed, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { PhTray, PhUploadSimple, PhPlus, PhTrash, PhCalendarPlus, PhDownloadSimple, PhWarning } from '@phosphor-icons/vue'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
-import { useTaskPlanning, EFFORT_OPTIONS, PRIORITY_OPTIONS } from '../composables/useTaskPlanning.js'
+import { useTaskPlanning, PRIORITY_OPTIONS } from '../composables/useTaskPlanning.js'
+import EffortInput from '../components/ui/EffortInput.vue'
 import { useAvailability } from '../composables/useAvailability.js'
 import { formatDays, isValidTimeRange } from '../utils/availability.js'
 import { usePlanExport } from '../composables/usePlanExport.js'
@@ -22,7 +23,7 @@ import WeekGrid from '../components/WeekGrid.vue'
 import DayPicker from '../components/ui/DayPicker.vue'
 
 const { openTasks: enrichedTasks } = useTaskEnrichment()
-const { getPlanningFor, setEffort, setPriority } = useTaskPlanning()
+const { getPlanningFor, setEstimate, setPriority } = useTaskPlanning()
 const { blocks, addBlock, removeBlock, restoreBlock } = useAvailability()
 const { exportMessage, exportError, exportPlanToICS } = usePlanExport()
 const { plan, generate: handleGeneratePlan } = usePlanState()
@@ -34,7 +35,6 @@ watch(exportMessage, (msg) => { if (msg) toast.show(msg, { tone: 'success' }) })
 const priorityOptions = computed(() =>
   PRIORITY_OPTIONS.map(p => ({ value: p, label: t('stundenplan.priority' + p[0].toUpperCase() + p.slice(1)) })),
 )
-const effortOptions = EFFORT_OPTIONS.map(e => ({ value: e, label: e }))
 
 const reasonLabel = { noFreeSlot: 'stundenplan.reasonNoFreeSlot', noFreeSlotDefaultEffort: 'stundenplan.reasonNoFreeSlotDefaultEffort' }
 
@@ -101,13 +101,11 @@ function handleExportPlan() {
               :model-value="getPlanningFor(task).priority"
               @update:model-value="setPriority(task._id, $event)"
             />
-            <SegmentedControl
+            <EffortInput
               size="sm"
-              mono
-              :label="`${t('stundenplan.effort')}: ${task._title}`"
-              :options="effortOptions"
-              :model-value="getPlanningFor(task).effort"
-              @update:model-value="setEffort(task._id, $event)"
+              :label="`${t('estimate.label')}: ${task._title}`"
+              :model-value="task.estimateMin"
+              @update:model-value="setEstimate(task._id, $event)"
             />
           </li>
         </ul>

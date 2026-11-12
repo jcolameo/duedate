@@ -156,7 +156,6 @@ export const de = {
     swapped: 'Neuer Vorschlag: „{title}“',
     editDay: 'Tag ändern',
     effort: 'Noch ca. {time}',
-    effortAtLeast: 'Noch mind. {time}',
     allDoneTitle: 'Heute geschafft',
     allDoneText: '{count} von {count} erledigt. Der Rest kann bis morgen warten.',
     oneMore: 'Noch eine Aufgabe',
@@ -214,6 +213,14 @@ export const de = {
     error_duplicate_ids: 'Die Datei ist beschädigt: Manche Aufgaben kommen doppelt vor. Es wurde nichts geändert.',
     error_invalid_tags: 'Die Datei ist beschädigt: Die Tags sind unvollständig. Es wurde nichts geändert.',
     error_invalid_availability: 'Die Datei ist beschädigt: Die Blockzeiten sind unvollständig. Es wurde nichts geändert.',
+  },
+  estimate: {
+    label: 'Aufwand (gesamt)',
+    hours: 'Stunden',
+    free: 'frei',
+    error: 'Bitte Stunden angeben, z. B. 6 oder 2,5.',
+    hint: 'Wie lange brauchst du insgesamt? Der Planer verteilt es auf mehrere Tage.',
+    remaining: 'Offen: {time} (nach Checkliste)',
   },
   tags: {
     title: 'Tags',

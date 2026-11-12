@@ -97,6 +97,17 @@ describe('older and sloppy backups', () => {
     expect(JSON.parse(target.getItem('duedate.taskStore.v1')).tasks[0]).toMatchObject({ description: 'alte Notiz', notes: '' })
   })
 
+  it('upgrades schema 3 (old effort values become minutes)', () => {
+    const old = { ...createBackup(fakeStorage(), NOW), schema: 3 }
+    const { estimateMin, ...rest } = createTask({ id: 'e', title: 'X' }, NOW)
+    old.data.tasks = [{ ...rest, effort: '2h' }, { ...rest, id: 'f', effort: '3h+' }, { ...rest, id: 'g', effort: null }]
+    const target = fakeStorage()
+    applyBackup(old, target)
+    const stored = JSON.parse(target.getItem('duedate.taskStore.v1')).tasks
+    expect(stored.map(t => t.estimateMin)).toEqual([120, 180, null])
+    expect(stored.every(t => !('effort' in t))).toBe(true)
+  })
+
   it('fills missing task fields with defaults', () => {
     const b = createBackup(fakeStorage(), NOW)
     b.data.tasks = [{ id: 'bare', title: 'Nur Titel' }]

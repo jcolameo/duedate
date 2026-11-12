@@ -10,7 +10,7 @@ function task(id, deadline, days, extra = {}) {
 }
 
 function planning(map = {}) {
-  return (t) => ({ effort: null, priority: 'medium', ...map[t._id] })
+  return (t) => ({ estimateMin: null, remainingMin: null, priority: 'medium', ...map[t._id] })
 }
 
 describe('getWeekDays', () => {
@@ -36,7 +36,7 @@ describe('generatePlan', () => {
   })
 
   it('uses the stored effort estimate', () => {
-    const plan = generatePlan([task('A', new Date(2026, 10, 13), 2)], planning({ A: { effort: '2h' } }), [], NOW)
+    const plan = generatePlan([task('A', new Date(2026, 10, 13), 2)], planning({ A: { estimateMin: 120, remainingMin: 120 } }), [], NOW)
     expect(plan.sessions[0].endMin - plan.sessions[0].startMin).toBe(120)
   })
 

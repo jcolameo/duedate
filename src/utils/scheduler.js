@@ -8,7 +8,6 @@ export const DAY_END_MIN = 21 * 60    // 21:00
 export const PLANNING_HORIZON_DAYS = 14
 const SLOT_MINUTES = 30
 
-const EFFORT_MINUTES = { '30m': 30, '1h': 60, '2h': 120, '3h+': 180 }
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 }
 
 function startOfDay(date) {
@@ -76,7 +75,7 @@ function findFreeSlot(durationMin, busyIntervals, earliestMin = DAY_START_MIN) {
  * time from now on.
  *
  * @param {Array} enrichedTasks - from useTaskEnrichment
- * @param {(task) => {effort: string|null, priority: string}} getPlanningFor - from useTaskPlanning
+ * @param {(task) => {estimateMin: number|null, remainingMin: number|null, priority: string}} getPlanningFor - from useTaskPlanning
  * @param {Array<{days: string[], startTime: string, endTime: string}>} availabilityBlocks - from useAvailability
  * @param {Date} today
  */
@@ -112,7 +111,8 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
   const unscheduled = []
 
   for (const { task, planning } of eligible) {
-    const durationMin = EFFORT_MINUTES[planning.effort] || EFFORT_MINUTES['1h']
+    // One session per task for now (replaced by the multi-day planner next)
+    const durationMin = Math.min(planning.remainingMin || 60, 180)
     const isOverdue = task._days !== null && task._days < 0
     let placed = false
 
@@ -145,7 +145,7 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
         title: task._title || 'Aufgabe',
         // Reason code, not prose — the UI layer translates it (scheduler.js
         // stays locale-agnostic/pure)
-        reason: planning.effort ? 'noFreeSlot' : 'noFreeSlotDefaultEffort',
+        reason: planning.estimateMin ? 'noFreeSlot' : 'noFreeSlotDefaultEffort',
       })
     }
   }

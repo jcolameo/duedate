@@ -66,7 +66,7 @@ describe('isTouched', () => {
     [{}, false],
     [{ status: 'done' }, true],
     [{ priority: 'high' }, true],
-    [{ effort: '2h' }, true],
+    [{ estimateMin: 120 }, true],
     [{ notes: 'x' }, true],
     [{ steps: [{ id: 1 }] }, true],
     [{ area: 'freelance' }, true],
@@ -83,11 +83,11 @@ describe('mergeImport (re-importing a CSV)', () => {
   })
 
   it('refreshes CSV fields but keeps what the user changed', () => {
-    const edited = first.map(t => (t.title === 'Plakat' ? { ...t, priority: 'low', effort: '3h+', status: 'done' } : t))
+    const edited = first.map(t => (t.title === 'Plakat' ? { ...t, priority: 'low', estimateMin: 480, status: 'done' } : t))
     const changedRows = [{ ...ROWS[0], Beschreibung: 'A2 statt A3' }, ROWS[1]]
     const merged = mergeImport(edited, rowsToTasks(changedRows, MAPPING, NOW), NOW)
     const plakat = merged.find(t => t.title === 'Plakat')
-    expect(plakat).toMatchObject({ description: 'A2 statt A3', priority: 'low', effort: '3h+', status: 'done' })
+    expect(plakat).toMatchObject({ description: 'A2 statt A3', priority: 'low', estimateMin: 480, status: 'done' })
   })
 
   it('adds new rows and never duplicates existing ones', () => {
@@ -120,18 +120,18 @@ describe('migrateLegacy (pre-B1 storage -> tasks)', () => {
     expect(migrateLegacy({ rows: [], mapping: {}, planning: {} }, NOW)).toEqual([])
   })
 
-  it('converts rows and keeps priority and effort from the old planning store', () => {
+  it('converts rows and keeps priority and effort (as minutes) from the old planning store', () => {
     const id = taskId('Plakat', '20. November 2026')
     const tasks = migrateLegacy({ rows: ROWS, mapping: MAPPING, planning: { [id]: { effort: '2h', priority: 'low' } } }, NOW)
     expect(tasks).toHaveLength(2)
-    expect(tasks[0]).toMatchObject({ id, effort: '2h', priority: 'low' })
-    expect(tasks[1]).toMatchObject({ effort: null, priority: null })
+    expect(tasks[0]).toMatchObject({ id, estimateMin: 120, priority: 'low' })
+    expect(tasks[1]).toMatchObject({ estimateMin: null, priority: null })
   })
 
   it('gives former duplicates the planning they used to share', () => {
     const id = taskId('Plakat', '20. November 2026')
     const tasks = migrateLegacy({ rows: [ROWS[0], ROWS[0]], mapping: MAPPING, planning: { [id]: { effort: '1h' } } }, NOW)
-    expect(tasks.map(t => t.effort)).toEqual(['1h', '1h'])
+    expect(tasks.map(t => t.estimateMin)).toEqual([60, 60])
   })
 
   it('survives corrupt input', () => {
@@ -230,5 +230,28 @@ describe('upgradeToV3 (B5b: notes -> description for manual tasks)', () => {
     const { upgradeToV3 } = await import('../taskModel.js')
     const list = [createTask({ id: 'c', source: 'csv', notes: 'eigene Notiz', description: 'aus CSV' }, NOW), createTask({ id: 'm' }, NOW)]
     expect(upgradeToV3(list)).toBe(list)
+  })
+})
+
+describe('upgradeToV4 (B8: effort -> estimateMin)', () => {
+  it('maps the old effort values to minutes and drops the old field', async () => {
+    const { upgradeToV4 } = await import('../taskModel.js')
+    const old = ['30m', '1h', '2h', '3h+', null].map((effort, i) => ({ ...createTask({ id: `t${i}` }, NOW), effort }))
+    delete old[0].estimateMin
+    const next = upgradeToV4(old.map(({ estimateMin, ...rest }) => rest))
+    expect(next.map(t => t.estimateMin)).toEqual([30, 60, 120, 180, null])
+    expect(next.every(t => !('effort' in t))).toBe(true)
+  })
+
+  it('is idempotent and returns the same array when nothing changes', async () => {
+    const { upgradeToV4 } = await import('../taskModel.js')
+    const fresh = [createTask({ id: 'a', estimateMin: 240 }, NOW)]
+    expect(upgradeToV4(fresh)).toBe(fresh)
+  })
+
+  it('keeps an estimate that is already there', async () => {
+    const { upgradeToV4 } = await import('../taskModel.js')
+    const mixed = [{ ...createTask({ id: 'a', estimateMin: 480 }, NOW), effort: '1h' }]
+    expect(upgradeToV4(mixed)[0]).toMatchObject({ estimateMin: 480 })
   })
 })

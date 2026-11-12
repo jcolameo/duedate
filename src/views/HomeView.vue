@@ -77,7 +77,7 @@ const effort = computed(() => {
   const total = totalEffort(todayOpen.value)
   if (!total) return ''
   const time = formatMinutes(total.minutes, locale.value === 'de' ? ',' : '.')
-  return t(total.atLeast ? 'today.effortAtLeast' : 'today.effort', { time })
+  return t('today.effort', { time })
 })
 
 // Whole day in steps: checklist steps count, finishing a task is one more

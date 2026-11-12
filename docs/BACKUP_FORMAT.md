@@ -9,7 +9,7 @@ browser (nothing is sent anywhere). The file is plain JSON, so other tools
 {
   "format": "duedate-backup",   // fixed
   "version": 1,                 // file format; the app refuses newer versions
-  "schema": 3,                  // shape of the stored data; older ones are upgraded on import
+  "schema": 4,                  // shape of the stored data; older ones are upgraded on import
   "exportedAt": "2026-11-12T08:51:00.000Z",
   "app": "DueDate",
   "data": {
@@ -34,7 +34,7 @@ browser (nothing is sent anywhere). The file is plain JSON, so other tools
 | `status` | `open` or `done` (`completedAt` is set when done) |
 | `due` | `YYYY-MM-DD` or `null` |
 | `priority` | `high`, `medium`, `low` or `null` (= automatic) |
-| `effort` | `30m`, `1h`, `2h`, `3h+` or `null` |
+| `estimateMin` | total effort in minutes (multiples of 30) or `null`. Backups with schema 3 have `effort` (`30m`, `1h`, `2h`, `3h+`); it is converted on import |
 | `tags` | tag IDs |
 | `notes` | own notes on CSV tasks (their `description` belongs to the CSV) |
 | `source` | `csv` or `manual` |
