@@ -79,6 +79,7 @@ const effort = computed(() => {
 
 // Whole day in steps: checklist steps count, finishing a task is one more
 const day = computed(() => dayProgress(todayTasks.value))
+const dayLabel = computed(() => t('today.dayProgressLabel', { percent: day.value.percent, done: day.value.done, total: day.value.total }))
 
 const replacement = computed(() =>
   pickReplacement(allOpen.value, { exclude: todayIds.value, skipped: skippedIds.value }),
@@ -269,7 +270,10 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
             class="cursor-pointer transition-colors duration-150 hover:border-line-strong"
             @click="openFromClick($event, focusTask)"
           >
-            <p class="font-mono text-[12px] uppercase tracking-[0.06em] text-ink-muted">{{ t('today.nextAction') }}</p>
+            <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+              <p class="font-mono text-[12px] uppercase tracking-[0.06em] text-ink-muted">{{ t('today.nextAction') }}</p>
+              <ProgressBar :value="day.percent" :label="dayLabel" />
+            </div>
             <div class="mt-3 flex flex-wrap items-end justify-between gap-6">
               <div class="min-w-0">
                 <p class="font-display text-[28px] font-bold leading-tight tracking-[-0.02em]">
@@ -307,18 +311,17 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
             <BaseButton v-if="replacement" :icon="PhPlus" @click="oneMore">{{ t('today.oneMore') }}</BaseButton>
           </EmptyState>
 
+          <!-- No card left: the day progress keeps its place in the top right -->
+          <div v-if="!focusTask" class="absolute right-8 top-[33px]">
+            <ProgressBar :value="day.percent" :label="dayLabel" />
+          </div>
+
           <DoneOverlay :title="celebrating ? t('today.taskDone') : null" :subtitle="celebrating || ''" />
           </div>
 
-          <!-- Day progress (in steps) + effort left + edit -->
-          <div class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-            <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
-              <div class="flex items-center gap-3">
-                <span class="font-mono text-[12px] uppercase tracking-[0.06em] text-ink-muted">{{ t('today.dayLabel') }}</span>
-                <ProgressBar :value="day.percent" :label="t('today.dayProgressLabel', { percent: day.percent, done: day.done, total: day.total })" />
-              </div>
-              <p v-if="effort" class="font-mono text-[13px] text-ink-muted">{{ effort }}</p>
-            </div>
+          <!-- Effort left + edit -->
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <p class="font-mono text-[13px] text-ink-muted">{{ effort }}</p>
             <BaseButton v-if="limit > 0" variant="ghost" size="sm" :icon="PhPencilSimple" @click="editDay">{{ t('today.editDay') }}</BaseButton>
           </div>
 

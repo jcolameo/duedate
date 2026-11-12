@@ -148,7 +148,6 @@ export const de = {
     limitHint: 'Drei sind genug. Entferne eine, um eine andere zu wählen.',
     start: 'Das ist mein Tag',
     saveEdit: 'Übernehmen',
-    dayLabel: 'Heute',
     dayProgressLabel: 'Tagesfortschritt: {percent} Prozent, {done} von {total} Schritten',
     taskDone: 'Diese Aufgabe wurde erledigt',
     nextAction: 'Nächste Aktion',
