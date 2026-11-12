@@ -98,3 +98,21 @@ export function normalizeToday(stored) {
   }
   return { date: stored.date, ids: strings(stored.ids), skipped: strings(stored.skipped) }
 }
+
+/**
+ * Progress of the whole day in steps (not tasks): every checklist step counts,
+ * and finishing the task is one more step. A task without a checklist is a
+ * single step. A task marked done counts completely, whatever its boxes say.
+ * { done, total, percent } with percent rounded, 0 for an empty day.
+ */
+export function dayProgress(tasks) {
+  let done = 0
+  let total = 0
+  for (const task of tasks) {
+    const list = task._checklist
+    const steps = list ? list.total + 1 : 1
+    total += steps
+    done += task._isDone ? steps : list ? list.done : 0
+  }
+  return { done, total, percent: total ? Math.round((done / total) * 100) : 0 }
+}

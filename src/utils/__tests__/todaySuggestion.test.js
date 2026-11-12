@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   TODAY_LIMIT, effectivePriority, rankCandidates, suggestToday, pickReplacement,
-  effortMinutes, totalEffort, formatMinutes, normalizeToday,
+  effortMinutes, totalEffort, formatMinutes, normalizeToday, dayProgress,
 } from '../todaySuggestion.js'
 
 const task = (id, days, extra = {}) => ({ _id: id, _title: id, _days: days, ...extra })
@@ -115,5 +115,32 @@ describe('normalizeToday', () => {
     const r = normalizeToday(value)
     expect(Array.isArray(r.ids) && Array.isArray(r.skipped)).toBe(true)
     expect(r.skipped).toEqual([])
+  })
+})
+
+describe('dayProgress', () => {
+  const open = (steps) => ({ _isDone: false, _checklist: steps ? { done: steps[0], total: steps[1] } : null })
+  const done = (steps) => ({ _isDone: true, _checklist: steps ? { done: steps[0], total: steps[1] } : null })
+
+  it('empty day is 0 %', () => expect(dayProgress([])).toEqual({ done: 0, total: 0, percent: 0 }))
+
+  it('tasks without a checklist are one step each', () => {
+    expect(dayProgress([done(null), open(null), open(null)])).toEqual({ done: 1, total: 3, percent: 33 })
+  })
+
+  it('checklist steps count, and finishing the task is one more step', () => {
+    // 3 steps + finish = 4 units, 2 boxes ticked
+    expect(dayProgress([open([2, 3])])).toEqual({ done: 2, total: 4, percent: 50 })
+    // all boxes ticked but not completed yet: not 100 %
+    expect(dayProgress([open([3, 3])]).percent).toBe(75)
+  })
+
+  it('bigger tasks weigh more', () => {
+    // done task without steps (1/1) + open task with 3 steps, 1 ticked (1/4) -> 2/5
+    expect(dayProgress([done(null), open([1, 3])])).toEqual({ done: 2, total: 5, percent: 40 })
+  })
+
+  it('a completed task counts fully, whatever its boxes say', () => {
+    expect(dayProgress([done([1, 4])])).toEqual({ done: 5, total: 5, percent: 100 })
   })
 })

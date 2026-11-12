@@ -23,12 +23,14 @@ import { useTagFilter } from '../composables/useTagFilter.js'
 import { filterByTag, tagsOf } from '../utils/tags.js'
 import AreaTag from '../components/ui/AreaTag.vue'
 import ChecklistBadge from '../components/ui/ChecklistBadge.vue'
+import ProgressBar from '../components/ui/ProgressBar.vue'
+import DoneOverlay from '../components/ui/DoneOverlay.vue'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
 import { useTaskDetail } from '../composables/useTaskDetail.js'
 import { useToday } from '../composables/useToday.js'
 import { useToast } from '../composables/useToast.js'
 import {
-  TODAY_LIMIT, rankCandidates, suggestToday, pickReplacement, totalEffort, formatMinutes,
+  TODAY_LIMIT, rankCandidates, suggestToday, pickReplacement, totalEffort, formatMinutes, dayProgress,
 } from '../utils/todaySuggestion.js'
 
 const { enrichedTasks, openTasks: allOpen, doneTasks: allDone } = useTaskEnrichment()
@@ -74,6 +76,9 @@ const effort = computed(() => {
   const time = formatMinutes(total.minutes, locale.value === 'de' ? ',' : '.')
   return t(total.atLeast ? 'today.effortAtLeast' : 'today.effort', { time })
 })
+
+// Whole day in steps: checklist steps count, finishing a task is one more
+const day = computed(() => dayProgress(todayTasks.value))
 
 const replacement = computed(() =>
   pickReplacement(allOpen.value, { exclude: todayIds.value, skipped: skippedIds.value }),
@@ -141,7 +146,19 @@ function tickStep(task, event) {
   toggleStep(task, task._checklist.next.index)
 }
 
+// Short confirmation over the card when a task is finished from it. Skipped
+// under prefers-reduced-motion; the toast still announces it to everyone.
+const celebrating = ref(null)
+let celebrateTimer = 0
+function celebrate(task) {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+  clearTimeout(celebrateTimer)
+  celebrating.value = task._title || t('common.untitled')
+  celebrateTimer = setTimeout(() => { celebrating.value = null }, 1300)
+}
+
 function finish(task) {
+  celebrate(task)
   complete(task)
   focusNext()
 }
@@ -177,7 +194,7 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
         </div>
       </EmptyState>
 
-      <EmptyState v-else-if="allOpen.length === 0" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
+      <EmptyState v-else-if="allOpen.length === 0 && !planned" :icon="PhCheckCircle" :title="t('tasks.allDoneTitle')" :description="t('tasks.allDoneText')" />
 
       <template v-else>
         <!-- Morning picker: first visit of the day, or "Tag ändern" -->
@@ -244,6 +261,7 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
         </BaseCard>
 
         <template v-else>
+          <div class="relative">
           <!-- Next action: the one thing to do now -->
           <BaseCard
             v-if="focusTask"
@@ -251,20 +269,7 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
             class="cursor-pointer transition-colors duration-150 hover:border-line-strong"
             @click="openFromClick($event, focusTask)"
           >
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <p class="font-mono text-[12px] uppercase tracking-[0.06em] text-ink-muted">{{ t('today.nextAction') }}</p>
-              <p class="flex items-center gap-2 font-mono text-[12px] text-ink-muted">
-                <span class="sr-only">{{ t('today.progressLabel', { done: todayDone.length, total: todayTasks.length }) }}</span>
-                <span aria-hidden="true">{{ t('today.progress', { done: todayDone.length, total: todayTasks.length }) }}</span>
-                <span class="flex gap-1" aria-hidden="true">
-                  <span
-                    v-for="(task, i) in todayTasks"
-                    :key="task._id + i"
-                    :class="['h-1.5 w-5 rounded-full', task._isDone ? 'bg-green-ink' : 'bg-line-strong']"
-                  ></span>
-                </span>
-              </p>
-            </div>
+            <p class="font-mono text-[12px] uppercase tracking-[0.06em] text-ink-muted">{{ t('today.nextAction') }}</p>
             <div class="mt-3 flex flex-wrap items-end justify-between gap-6">
               <div class="min-w-0">
                 <p class="font-display text-[28px] font-bold leading-tight tracking-[-0.02em]">
@@ -284,7 +289,7 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
                   <input type="checkbox" class="mt-0.5 size-4 shrink-0 accent-[var(--dd-ink)]" @change="tickStep(focusTask, $event)" />
                   <span class="min-w-0">
                     <span class="block font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('checklist.nextStep') }}</span>
-                    <span class="block text-sm font-medium">{{ focusTask._checklist.next.text }}</span>
+                    <span :key="focusTask._checklist.next.index" class="dd-step-in block text-sm font-medium">{{ focusTask._checklist.next.text }}</span>
                   </span>
                 </label>
               </div>
@@ -302,9 +307,18 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
             <BaseButton v-if="replacement" :icon="PhPlus" @click="oneMore">{{ t('today.oneMore') }}</BaseButton>
           </EmptyState>
 
-          <!-- Effort left + edit -->
-          <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <p class="font-mono text-[13px] text-ink-muted">{{ effort }}</p>
+          <DoneOverlay :title="celebrating ? t('today.taskDone') : null" :subtitle="celebrating || ''" />
+          </div>
+
+          <!-- Day progress (in steps) + effort left + edit -->
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-[12px] uppercase tracking-[0.06em] text-ink-muted">{{ t('today.dayLabel') }}</span>
+                <ProgressBar :value="day.percent" :label="t('today.dayProgressLabel', { percent: day.percent, done: day.done, total: day.total })" />
+              </div>
+              <p v-if="effort" class="font-mono text-[13px] text-ink-muted">{{ effort }}</p>
+            </div>
             <BaseButton v-if="limit > 0" variant="ghost" size="sm" :icon="PhPencilSimple" @click="editDay">{{ t('today.editDay') }}</BaseButton>
           </div>
 
@@ -395,3 +409,15 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
     </div>
   </div>
 </template>
+
+<style scoped>
+.dd-step-in {
+  animation: dd-step-in 220ms var(--ease-out-soft);
+}
+@keyframes dd-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+</style>

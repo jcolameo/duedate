@@ -109,10 +109,15 @@ export function renderMarkdown(text, { emptyItemLabel = '' } = {}) {
   return out.join('')
 }
 
-/** First meaningful line without Markdown syntax, for list previews. */
+/**
+ * First meaningful line without Markdown syntax, for list previews.
+ * Checklist steps are skipped: they are shown as steps (next step, progress),
+ * not as a description of the task.
+ */
 export function markdownSummary(text, max = 120) {
   const line = String(text || '')
     .split('\n')
+    .filter(l => !CHECK_ITEM.test(l))
     .map(l => l.replace(HEADING, '$2').replace(BULLET, '$1').replace(NUMBERED, '$1').replace(/^\[[ xX]\]\s*/, '').trim())
     .find(Boolean)
   if (!line) return ''

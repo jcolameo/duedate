@@ -40,7 +40,7 @@ export function checklistProgress(markdown) {
     done,
     total: items.length,
     complete: done === items.length,
-    next: open ? { index: open.index, text: markdownSummary(open.text) || open.text } : null,
+    next: open ? { index: open.index, text: markdownSummary(`- ${open.text}`) || open.text } : null,
   }
 }
 

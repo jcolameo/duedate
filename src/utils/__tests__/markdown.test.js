@@ -139,8 +139,9 @@ describe('checklists (C1)', () => {
     expect(md('- [ ]x')).not.toContain('checkbox')
   })
 
-  it('summary skips the box', () => {
-    expect(markdownSummary('- [ ] Moodboard bauen')).toBe('Moodboard bauen')
+  it('summary skips checklist steps (they are not a description)', () => {
+    expect(markdownSummary('- [ ] Moodboard bauen')).toBe('')
+    expect(markdownSummary('- [ ] Moodboard bauen\nZiel: neues Logo')).toBe('Ziel: neues Logo')
   })
 
   it('parseChecklist lists steps with state and line', () => {
