@@ -92,7 +92,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B5b | ✅ | `feat:` Beschreibung (Markdown) + ganze Karte klickbar |
 | B5c | ✅ | `feat:` Eigene Tags mit Farbe + Filter |
 | B6 | ✅ | `feat:` Heute-Ansicht |
-| C1 | ⬜ | `feat:` Checkliste / Mikroschritte (vorgezogen, siehe Phase C) |
+| C1 | ✅ | `feat:` Checkliste in der Beschreibung (vorgezogen, siehe Phase C) |
 | B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 | B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
@@ -200,7 +200,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | C5 | ⬜ | `feat:` Wochenrückblick |
 | C6 | ⬜ | `feat:` Erinnerungen via Kalender |
 
-**C1 — Mikroschritte**: Checkliste pro Aufgabe (manuell, 10–20-Min.-Schritte); Heute-Ansicht zeigt nur den *nächsten* Schritt. Dateien: `TaskDetail.vue`, `useTasks.js`, `HomeView.vue`. Akzeptanz: Schritte hinzufügen/abhaken/sortieren per Tastatur. Test: Unit für Fortschritt; manuell.
+**C1 — Checkliste in der Beschreibung** ✅: Schritte stehen direkt im Markdown-Text als `- [ ] Schritt` / `- [x] erledigt` (ein Text = eine Wahrheit, kein separates Feld; das alte `steps`-Array im Modell bleibt ungenutzt). Werkzeugleiste „Checkliste“, Enter setzt die Liste fort, leerer Punkt beendet sie; Kästchen sind in der formatierten Ansicht direkt anklickbar (Fokus bleibt auf dem Kästchen). Fortschritt „2/4“ mit Balken im Editor und als Badge in Deadlines/Überblick. Überblick: Karte „Nächste Aktion“ zeigt den **nächsten offenen Schritt** zum direkten Abhaken. Letzter Schritt → Angebot „Aufgabe erledigen“ (Toast auf der Startseite, im modalen Panel inline, weil ein Toast dahinter unerreichbar wäre); es wird nie automatisch erledigt. BBNet-Aufgaben: Schritte stehen in „Eigene Notizen“ (BBNet-Beschreibung bleibt unberührt). Utils: `utils/checklist.js`.
 
 **C2b — Schätzung lernt mit** (ohne KI): Vergleich Schätzung vs. erfasste Zeit pro Bereich/Fach → Vorschlag „Du brauchst im Schnitt 1.6× so lange wie geschätzt: 19 h statt 12 h?“. Nur Vorschlag, nie automatisch überschreiben. Braucht C2 (und später D3).
 

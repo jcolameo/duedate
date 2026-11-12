@@ -17,6 +17,7 @@
 import { parseGermanDate, daysUntil } from './dateParser.js'
 import { taskId } from './taskId.js'
 import { AREAS, DEFAULT_AREA, normalizeArea } from './areas.js'
+import { checklistProgress, checklistTextOf } from './checklist.js'
 
 export const TASK_STATUS = ['open', 'done']
 export { AREAS }
@@ -233,6 +234,7 @@ export function enrichTask(task) {
     _statusCode: code,
     _isDone: task.status === 'done',
     _area: normalizeArea(task.area),
+    _checklist: checklistProgress(checklistTextOf(task)),
   }
 }
 

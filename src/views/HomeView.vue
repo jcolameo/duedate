@@ -22,6 +22,7 @@ import { useTags } from '../composables/useTags.js'
 import { useTagFilter } from '../composables/useTagFilter.js'
 import { filterByTag, tagsOf } from '../utils/tags.js'
 import AreaTag from '../components/ui/AreaTag.vue'
+import ChecklistBadge from '../components/ui/ChecklistBadge.vue'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
 import { useTaskDetail } from '../composables/useTaskDetail.js'
 import { useToday } from '../composables/useToday.js'
@@ -36,7 +37,7 @@ const { tagFilter } = useTagFilter()
 const { tagsById } = useTags()
 const quickAdd = useQuickAdd()
 const { openTask, openFromClick } = useTaskDetail()
-const { complete, toggleDone } = useTaskActions()
+const { complete, toggleDone, toggleStep } = useTaskActions()
 const { todayIds, skippedIds, setToday, addToday, swapToday } = useToday()
 const toast = useToast()
 const { t, locale } = useLocale()
@@ -134,6 +135,12 @@ function oneMore() {
   focusNext()
 }
 
+// Ticking the next step on the card: the box stays, the next step moves in.
+function tickStep(task, event) {
+  event.target.checked = false
+  toggleStep(task, task._checklist.next.index)
+}
+
 function finish(task) {
   complete(task)
   focusNext()
@@ -213,6 +220,7 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
                   <span v-if="subline(task)" class="block truncate text-[13px] text-ink-muted">{{ subline(task) }}</span>
                 </span>
                 <span class="hidden items-center gap-1.5 sm:flex">
+                  <ChecklistBadge :progress="task._checklist" />
                   <TagChip v-for="tag in tagsOf(task, tagsById)" :key="tag.id" :tag="tag" />
                   <AreaTag v-if="showAreaTags" :area="task._area" />
                 </span>
@@ -267,7 +275,18 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
                   <TagChip v-for="tag in tagsOf(focusTask, tagsById)" :key="tag.id" :tag="tag" />
                   <span v-if="subline(focusTask)" class="max-w-md truncate">{{ subline(focusTask) }}</span>
                   <DueBadge :code="focusTask._status.code" :days="focusTask._days" />
+                  <ChecklistBadge :progress="focusTask._checklist" />
                 </div>
+                <label
+                  v-if="focusTask._checklist?.next"
+                  class="mt-4 flex max-w-xl cursor-pointer items-start gap-3 rounded-lg border border-line bg-surface-muted/50 px-3 py-2.5 transition-colors duration-150 hover:border-line-strong"
+                >
+                  <input type="checkbox" class="mt-0.5 size-4 shrink-0 accent-[var(--dd-ink)]" @change="tickStep(focusTask, $event)" />
+                  <span class="min-w-0">
+                    <span class="block font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('checklist.nextStep') }}</span>
+                    <span class="block text-sm font-medium">{{ focusTask._checklist.next.text }}</span>
+                  </span>
+                </label>
               </div>
               <div class="flex flex-wrap gap-2">
                 <BaseButton variant="ghost" :icon="PhArrowsClockwise" :disabled="!replacement" :title="replacement ? undefined : t('today.swapNone')" @click="swap">
@@ -306,6 +325,7 @@ const titleButton = 'rounded-sm text-left underline-offset-4 decoration-line-str
                   <p v-if="subline(task)" class="truncate text-[13px] text-ink-muted">{{ subline(task) }}</p>
                 </div>
                 <span class="hidden items-center gap-1.5 sm:flex">
+                  <ChecklistBadge :progress="task._checklist" />
                   <TagChip v-for="tag in tagsOf(task, tagsById)" :key="tag.id" :tag="tag" />
                   <AreaTag :area="task._area" />
                 </span>

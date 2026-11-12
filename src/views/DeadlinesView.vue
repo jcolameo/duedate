@@ -21,6 +21,7 @@ import { filterByArea } from '../utils/areas.js'
 import AreaFilter from '../components/AreaFilter.vue'
 import TagFilter from '../components/TagFilter.vue'
 import TagChip from '../components/ui/TagChip.vue'
+import ChecklistBadge from '../components/ui/ChecklistBadge.vue'
 import { useTags } from '../composables/useTags.js'
 import { useTagFilter } from '../composables/useTagFilter.js'
 import { filterByTag, tagsOf } from '../utils/tags.js'
@@ -206,7 +207,8 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
               </td>
               <td :class="['max-w-xs px-4 py-3 align-middle font-medium', task._isDone ? 'text-ink-muted line-through decoration-line-strong' : 'text-ink']">
                 <button type="button" class="rounded-sm text-left underline-offset-4 decoration-line-strong hover:underline" :aria-haspopup="'dialog'" @click="openTask(task)">{{ task._title || t('common.untitled') }}</button>
-                <span v-if="task.tags?.length" class="mt-1 flex flex-wrap gap-1 no-underline">
+                <span v-if="task.tags?.length || task._checklist" class="mt-1 flex flex-wrap items-center gap-1.5 no-underline">
+                  <ChecklistBadge :progress="task._checklist" />
                   <TagChip v-for="tag in tagsOf(task, tagsById)" :key="tag.id" :tag="tag" />
                 </span>
               </td>

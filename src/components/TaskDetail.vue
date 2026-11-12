@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { PhTrash, PhCheck, PhArrowCounterClockwise, PhX, PhFileCsv, PhStar } from '@phosphor-icons/vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import { PhTrash, PhCheck, PhCheckCircle, PhArrowCounterClockwise, PhX, PhFileCsv, PhStar } from '@phosphor-icons/vue'
 import { useTaskDetail } from '../composables/useTaskDetail.js'
 import { useTasks } from '../composables/useTasks.js'
 import { useTaskActions } from '../composables/useTaskActions.js'
@@ -98,6 +98,14 @@ function remove() {
   })
 }
 
+// The offer disappears once the task is done: keep focus inside the panel
+const doneButton = ref(null)
+async function completeFromOffer() {
+  toggleDone(task.value)
+  await nextTick()
+  doneButton.value?.$el?.focus()
+}
+
 const fieldLabel = 'text-[13px] font-medium text-ink'
 const readOnly = 'text-sm text-ink'
 </script>
@@ -193,6 +201,17 @@ const readOnly = 'text-sm text-ink'
         @update:model-value="set(isCsv ? 'notes' : 'description', $event)"
       />
 
+      <!-- Inline instead of a toast: this panel is modal, a toast would sit behind it -->
+      <div
+        v-if="view._checklist?.complete && !view._isDone"
+        class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-green-soft px-3 py-2.5"
+      >
+        <p class="flex items-center gap-2 text-sm text-green-ink">
+          <PhCheckCircle class="size-4 shrink-0" aria-hidden="true" />{{ t('checklist.allDoneShort') }}
+        </p>
+        <BaseButton size="sm" variant="primary" :icon="PhCheck" @click="completeFromOffer">{{ t('checklist.completeTask') }}</BaseButton>
+      </div>
+
       <!-- Read-only details from BBNet -->
       <div v-if="isCsv" class="rounded-lg border border-line bg-surface-muted/50 p-4">
         <p class="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('detail.fromCsvTitle') }}</p>
@@ -215,7 +234,7 @@ const readOnly = 'text-sm text-ink'
       <BaseButton :icon="view._isDone ? PhArrowCounterClockwise : PhCheck" @click="toggleDone(task)">
         {{ view._isDone ? t('detail.reopen') : t('tasks.markDone') }}
       </BaseButton>
-      <BaseButton variant="primary" @click="closeTask">{{ t('detail.done') }}</BaseButton>
+      <BaseButton ref="doneButton" variant="primary" @click="closeTask">{{ t('detail.done') }}</BaseButton>
     </template>
   </BaseDialog>
 </template>

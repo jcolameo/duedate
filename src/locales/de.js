@@ -111,6 +111,7 @@ export const de = {
     heading: 'Überschrift',
     bullet: 'Aufzählung',
     numbered: 'Nummerierte Liste',
+    checklist: 'Checkliste',
     link: 'Link',
     linkText: 'Linktext',
     code: 'Code',
@@ -161,6 +162,14 @@ export const de = {
     oneMore: 'Noch eine Aufgabe',
     notToday: 'Nicht heute',
     nothingElse: 'Sonst ist nichts offen.',
+  },
+  checklist: {
+    allDoneShort: 'Alle Schritte erledigt.',
+    nextStep: 'Nächster Schritt',
+    progressLabel: '{done} von {total} Schritten erledigt',
+    allDone: '„{title}“: alle Schritte erledigt.',
+    completeTask: 'Aufgabe erledigen',
+    emptyItem: 'Schritt ohne Text',
   },
   tags: {
     title: 'Tags',
