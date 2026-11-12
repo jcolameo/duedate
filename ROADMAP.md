@@ -279,7 +279,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | KI: Kunden-Briefing → Scope, Rückfragen, Kalkulationsentwurf | Wie oben; Ergebnis landet in Kalkulation (D4) |
 | MCP: Claude verbinden | Variante A (JSON-Backup) ab B7 nutzbar. Lokaler MCP-Server (Mac) oder Remote-MCP erst nach Entscheid über Sync |
 | Speicher: IndexedDB (Dexie.js) | Statt localStorage (≈ 5 MB), sobald Zeiterfassung (C2/D3) viele Einträge erzeugt. Alles läuft über `useTasks`/Stores → Umbau ist lokal begrenzt. B7-Backup vorher. |
-| Sync Desktop ↔ Mobile | Mit Phase E: Supabase (Postgres, EU-Region Frankfurt, Login). Alternative: PocketBase selbst gehostet. Firebase verworfen (Lock-in, NoSQL passt schlecht zu Kunden → Projekte → Zeiten). |
+| Datenbank / Sync Desktop ↔ Mobile | **Entscheid des Nutzers: eigenes Backend** (statt Supabase), erst später (frühestens mit Phase E). Offen: API und Login des Backends. Vorgehen dann: Sync-Schicht hinter den Stores (alle Zugriffe laufen schon über `useTasks`, `useTags` …), Austauschformat = JSON-Backup (`docs/BACKUP_FORMAT.md`), App bleibt local-first und funktioniert offline. Alternativen, falls nötig: Supabase (EU), PocketBase. Firebase verworfen. |
 | Kanban-Board (Modul) | Nach B7, zusammen mit Projekten (D2): Spalten Offen → In Arbeit → Erledigt, zweite Ansicht derselben Aufgaben, filterbar nach Bereich/Projekt. Braucht Status „In Arbeit“ (Migration). Aus „verworfen“ zurückgeholt, weil DueDate Hauptarbeitsort werden soll. |
 | Module ein/aus | Einstellungen-Schalter pro Modul (z. B. Kanban, Freelance). Mit dem ersten optionalen Modul. |
 | SaaS | Login, Server-DB (Supabase), Bezahlung, Datenschutz/AGB, Support. Nichts bauen, was das verbaut. |
