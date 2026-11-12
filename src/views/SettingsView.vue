@@ -44,5 +44,6 @@ const localeOptions = [
         </div>
       </BaseCard>
     </section>
+
   </div>
 </template>

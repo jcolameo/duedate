@@ -59,6 +59,7 @@ Pastels (`*-soft` background / `*-ink` text):
 
 ## 4. Semantic color mapping
 - **Areas:** Studium = blue · Freelance = green · Privat = yellow.
+- **User tags (B5c):** 8 user-chosen colors (gray, blue, green, yellow, orange, purple, pink, teal; extra tokens `--dd-{orange,purple,pink,teal}-{soft,ink}`, all AA-checked). Tags are `#name`, normal case, `rounded-md`, so they never look like the uppercase area pills. Red is not offered (reserved for overdue/urgent).
 - **Deadline status:** overdue = red · urgent (< 3 d) = red text only, no fill · soon / ok = neutral muted text.
   Only what needs attention gets color.
 - Color is never the only signal: always label, icon or position as well.

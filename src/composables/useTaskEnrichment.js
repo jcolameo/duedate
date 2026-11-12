@@ -1,92 +1,37 @@
 import { computed } from 'vue'
-import { parseGermanDate, daysUntil } from '../utils/dateParser.js'
-import { taskId } from '../utils/taskId.js'
+import { useTasks } from './useTasks.js'
 import { useLocale } from './useLocale.js'
-
-// `code` is locale-independent (safe for logic/comparisons); `label` is the
-// translated display text. Visual styling lives in components/ui/DueBadge.vue. Never compare against `label` in code — it
-// changes with the active language.
-function computeStatus(days, t) {
-  if (days === null) return { code: 'unknown', label: t('status.unknown') }
-  if (days < 0) return { code: 'overdue', label: t('status.overdue') }
-  if (days < 3) return { code: 'urgent', label: t('status.urgent') }
-  if (days < 7) return { code: 'soon', label: t('status.soon') }
-  return { code: 'ok', label: t('status.ok') }
-}
+import { enrichTask, compareByDue } from '../utils/taskModel.js'
 
 /**
- * Sicheres Lesen via Mapping mit Legacy-Fallback
- * Wenn kein Mapping da → fallback auf alte hardcoded Spalten-Namen
- * Damit bricht nichts, falls Mapping leer ist
+ * Tasks from the store with derived fields (_days, _status, …) for views,
+ * scheduler and exports, sorted by due date.
+ *
+ * `_status.code` is locale-independent (use it in logic); `_status.label`
+ * is translated display text — never compare against it. Visual styling
+ * lives in components/ui/DueBadge.vue.
  */
-function readField(task, mapping, role, fallbacks = []) {
-  if (mapping && mapping[role] && task[mapping[role]] !== undefined) {
-    return task[mapping[role]]
-  }
-  for (const f of fallbacks) {
-    if (task[f] !== undefined) return task[f]
-  }
-  return ''
-}
+const { tasks } = useTasks()
 
-/**
- * Composable: nimmt rohe Tasks und reichert sie an.
- * @param {Ref<Array>} tasks - reaktive Liste roher CSV-Zeilen
- * @param {Ref<Object>} userMapping - reaktives Spalten-Mapping (optional)
- */
-export function useTaskEnrichment(tasks, userMapping = null) {
+export function useTaskEnrichment() {
   const { t } = useLocale()
 
-  const enrichedTasks = computed(() => {
-    const mapping = userMapping?.value || {}
-
-    return tasks.value
-      .map((task) => {
-        // Felder via Mapping lesen (mit Fallback für Legacy)
-        const title       = readField(task, mapping, 'title',       ['Titel', 'Title', 'Aufgabe'])
-        const deadlineRaw = readField(task, mapping, 'deadline',    ['Abgabe', 'Deadline', 'Due', 'Fällig'])
-        const startRaw    = readField(task, mapping, 'start',       ['Start', 'Beginn'])
-        const category    = readField(task, mapping, 'category',    ['Fach', 'Category', 'Kategorie'])
-        const description = readField(task, mapping, 'description', ['Beschreibung', 'Description'])
-        const gradedRaw   = readField(task, mapping, 'graded',      ['Benotet?', 'Benotet', 'Graded'])
-        const filesRaw    = readField(task, mapping, 'files',       ['Datei(en) zur Aufgabe', 'Datei', 'Files'])
-
-        const deadlineDate = parseGermanDate(deadlineRaw)
-        const days   = daysUntil(deadlineDate)
-        const status = computeStatus(days, t)
-        const isGraded = String(gradedRaw || '').toLowerCase().startsWith('j') ||
-                         String(gradedRaw || '').toLowerCase() === 'yes' ||
-                         String(gradedRaw || '').toLowerCase() === 'true'
-
-        return {
-          ...task,
-          // Normalisierte Felder (intern, mit Underscore)
-          _id: taskId(title, deadlineRaw),
-          _title: title,
-          _deadline: deadlineRaw,
-          _start: startRaw,
-          _category: category,
-          _description: description,
-          _files: filesRaw,
-          _deadlineDate: deadlineDate,
-          _days: days,
-          _status: status,
-          _isGraded: isGraded,
-        }
-      })
-      .sort((a, b) => {
-        if (a._days === null) return 1
-        if (b._days === null) return -1
-        return a._days - b._days
-      })
-  })
-
-  const exportableCount = computed(() =>
-    enrichedTasks.value.filter(t => t._deadlineDate).length
+  const enrichedTasks = computed(() =>
+    tasks.value
+      .map(enrichTask)
+      .map(task => ({ ...task, _status: { code: task._statusCode, label: t('status.' + task._statusCode) } }))
+      .sort(compareByDue),
   )
 
-  return {
-    enrichedTasks,
-    exportableCount,
-  }
+  // Most views only care about what is still to do
+  const openTasks = computed(() => enrichedTasks.value.filter(task => !task._isDone))
+  const doneTasks = computed(() =>
+    enrichedTasks.value
+      .filter(task => task._isDone)
+      .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt))),
+  )
+  // Calendar export only includes open tasks with a valid date
+  const exportableCount = computed(() => openTasks.value.filter(task => task._deadlineDate).length)
+
+  return { enrichedTasks, openTasks, doneTasks, exportableCount }
 }

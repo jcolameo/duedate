@@ -16,7 +16,7 @@ export function useCombinedExport() {
     exportMessage.value = ''
     exportError.value = ''
 
-    const deadlineTasks = enrichedTasks.filter(task => task._deadlineDate)
+    const deadlineTasks = enrichedTasks.filter(task => task._deadlineDate && !task._isDone)
     const workSessions = sessions || []
 
     if (deadlineTasks.length === 0 && workSessions.length === 0) {

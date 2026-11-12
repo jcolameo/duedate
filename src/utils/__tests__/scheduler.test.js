@@ -118,4 +118,21 @@ describe('generatePlan', () => {
     const plan = generatePlan([task('Edge', new Date(2026, 10, 25), 14)], planning(), [], NOW)
     expect(plan.sessions).toHaveLength(1)
   })
+
+  it('respects a busy block on several days (A6)', () => {
+    const job = [{ label: 'Job', days: ['Wed', 'Thu'], startTime: '08:00', endTime: '17:00' }]
+    const tasks = [task('A', new Date(2026, 10, 13), 2), task('B', new Date(2026, 10, 13), 2)]
+    const plan = generatePlan(tasks, planning(), job, NOW)
+    for (const s of plan.sessions.filter(x => ['Wed', 'Thu'].includes(x.day))) {
+      expect(s.startMin).toBeGreaterThanOrEqual(17 * 60)
+    }
+  })
+
+  it('never plans completed tasks (B2)', () => {
+    const tasks = [task('Done', new Date(2026, 10, 13), 2, { status: 'done' }), task('Open', new Date(2026, 10, 13), 2)]
+    const plan = generatePlan(tasks, planning(), [], NOW)
+    expect(plan.sessions.map(s => s.taskId)).toEqual(['Open'])
+    expect(plan.unscheduled).toEqual([])
+  })
 })
+

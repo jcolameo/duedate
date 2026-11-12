@@ -36,6 +36,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | A4 | ✅ | `fix:` Kalender-Export + Planer korrigieren |
 | A5a | ✅ | `feat:` Design-Basis: Tokens + Basis-Komponenten (`#/design`) |
 | A5b | ✅ | `refactor:` Bestehende Seiten + Sidebar auf Design-Basis umstellen |
+| A6 | ✅ | `feat:` Belegte Zeiten an mehreren Tagen (Quickfix, Ausbau in B8) |
 
 **A1 — Aufräumen**
 - Ziel: Unnötige/riskante Teile entfernen.
@@ -70,19 +71,32 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Akzeptanz: Ganze App per Tab bedienbar mit sichtbarem Fokus; Kontrast WCAG AA in Dark + Light.
 - Test: Storybook-a11y-Addon (bereits installiert) für die Basis-Komponenten.
 
+**A6 — Belegte Zeiten an mehreren Tagen** (Quickfix aus Nutzer-Feedback)
+- Ziel: Ein Eintrag gilt für mehrere Wochentage („Arbeit, Mo–Do, 08–17“, „Training, Mo + Mi“).
+- Dateien: `useAvailability.js`, neu `utils/availability.js`, `scheduler.js`, `WeekGrid.vue`, `StundenplanView.vue`, Locales.
+- Datenmodell: Block `{ day }` → `{ days: [] }`; alte Einträge werden beim Laden migriert (ein Tag → Liste mit einem Tag).
+- Akzeptanz: Tage per Toggle wählen; Anzeige „Mo–Do“ bzw. „Mo, Mi“; Planer und Wochenraster berücksichtigen alle Tage; „Bis“ muss nach „Von“ liegen.
+- Test: Unit für Migration, Tagesformat und Planer mit Mehrtages-Block.
+
 ---
 
 ## Phase B — Aufgaben-Kern (→ MVP)
 
 | # | Status | Schritt |
 |---|---|---|
-| B1 | ⬜ | `feat:` Aufgaben-Store + Datenmigration |
-| B2 | ⬜ | `feat:` Erledigt-Status mit Rückgängig |
-| B3 | ⬜ | `feat:` Bereiche Studium / Freelance / Privat |
-| B4 | ⬜ | `feat:` Schnellerfassung (< 5 s) |
-| B5 | ⬜ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
+| B1 | ✅ | `feat:` Aufgaben-Store + Datenmigration |
+| B2 | ✅ | `feat:` Erledigt-Status mit Rückgängig |
+| B3 | ✅ | `feat:` Bereiche Studium / Freelance / Privat |
+| B4 | ✅ | `feat:` Schnellerfassung (< 5 s) |
+| B5 | ✅ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
+| B5b | ✅ | `feat:` Beschreibung (Markdown) + ganze Karte klickbar |
+| B5c | ✅ | `feat:` Eigene Tags mit Farbe + Filter |
 | B6 | ⬜ | `feat:` Heute-Ansicht |
+| C1 | ⬜ | `feat:` Checkliste / Mikroschritte (vorgezogen, siehe Phase C) |
 | B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
+| B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
+| B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
+| B10 | ⬜ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -103,6 +117,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Dateien: `useTasks.js`, Locale-Dateien, Views, Tokens in `style.css`.
 - Akzeptanz: Jede Aufgabe hat Bereich + Farbe (nicht nur Farbe, auch Label/Icon für Farbenblinde); Filter auf allen Listen.
 - Test: Manuell; Kontrastprüfung der Bereichsfarben.
+- Umgesetzt: Bereich-Tag mit Icon in Tabelle (direkt änderbar, mit Rückgängig) und Überblick; Filter mit Zählern auf Überblick und Deadlines, gemeinsam und gespeichert. Bereich überlebt CSV-Re-Import.
 
 **B4 — Schnellerfassung**
 - Ziel: Aufgabe in unter 5 Sekunden, von überall.
@@ -110,12 +125,26 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Syntax: `Portfolio abgeben fr #studium !` → Titel, Datum (heute/morgen/Wochentag/`24.4.`), Bereich (`#studium #freelance #privat`), Priorität (`!`). Live-Vorschau der erkannten Teile.
 - Akzeptanz: `N` → tippen → Enter → Aufgabe gespeichert, Fokus zurück; funktioniert ohne Maus.
 - Test: Unit-Tests für den Parser (≥ 15 Fälle); Stoppuhr-Test < 5 s.
+- Umgesetzt: Dialog „Neue Aufgabe“ (N, Sidebar-Knopf, leerer Überblick), Live-Vorschau, Enter speichert, Shift+Enter speichert und bleibt offen, Rückgängig im Toast. Ohne #tag → aktueller Bereichsfilter, sonst Studium. Bereich, Datum und „Wichtig“ zusätzlich klickbar (zuletzt Geändertes gilt); Parser versteht auch `15.12`, `15/12`, `15. Dezember`. Kurze Wochentage (fr, mo …) nur als letztes Wort oder nach „bis/am“, damit „So geht das“ ein Titel bleibt. 48 Parser-Tests.
 
 **B5 — Aufgabe bearbeiten**
 - Ziel: Titel, Datum, Bereich, Priorität, Aufwand, Notizen ändern; löschen mit Rückgängig.
 - Dateien: neu `components/TaskDetail.vue` (Seitenpanel), `useTasks.js`.
 - Akzeptanz: Klick/Enter auf Aufgabe öffnet Panel; `Esc` schliesst; Fokus wird korrekt zurückgegeben.
 - Test: Manuell inkl. Tastatur + Screenreader (VoiceOver).
+- Umgesetzt: Seitenpanel (natives `<dialog>`, `BaseDialog placement="right"`), öffnet per Klick/Enter auf den Titel (Deadlines, Überblick). Speichert sofort; leerer Titel wird nicht gespeichert. CSV-Felder (Titel, Datum, Fach …) nur lesbar mit Hinweis, weil der nächste Import sie überschreiben würde. Löschen mit Rückgängig (CSV-Aufgaben: Hinweis, dass sie beim Import zurückkommen). VoiceOver-Test steht noch aus (nur auf dem Mac möglich).
+
+**B5b — Beschreibung + Karten** ✅
+- Beschreibung in Markdown (Listen, fett, kursiv, Überschrift, Links, Code) mit Werkzeugleiste, Kürzeln (Ctrl+B/I/K, Enter setzt Listen fort, Ctrl+Enter speichert) und formatierter Ansicht. Eigener kleiner Renderer, keine Abhängigkeit, HTML wird immer escaped, Links nur http(s)/mailto.
+- „Neue Aufgabe“: optionales Feld „Beschreibung hinzufügen“. Detail-Panel: eigene Aufgaben → Beschreibung; BBNet-Aufgaben → „Eigene Notizen“ (BBNet-Beschreibung bleibt nur lesbar).
+- Ganze Karte/Zeile öffnet das Detail (Maus); Titel-Button bleibt der Tastaturweg. Überblick zeigt die erste Zeile der Beschreibung.
+- Migration Schema 3: Notizen eigener Aufgaben (aus B5) → Beschreibung.
+
+**B5c — Eigene Tags**
+- Ziel: Freie Etiketten (Name + Farbe aus ~8 kontrastgeprüften Farben), zusätzlich zu Bereich/Priorität/Aufwand.
+- Schnellerfassung: `#wort`, das kein Bereich ist, wird zum Tag. Detail-Panel: Tags hinzufügen/entfernen. Filter nach Tag. Tags umbenennen/Farbe ändern/löschen.
+- Abgrenzung: Projekte (D2) sind eigene Objekte mit Kunde, Budget, Zeit; Aufgaben werden ihnen später zugeordnet.
+- Umgesetzt: `utils/tags.js`, `useTags` (`duedate.tags.v1`), `useTagFilter` (`duedate.tagFilter.v1`), TagChip/TagPicker/TagFilter/TagSettings. 8 Farben (4 neue Tokens, alle AA). Filter kombiniert mit Bereich. Verwaltung direkt im Detail-Panel wie bei Trello: Menü „+ Tag“ mit Suche, Häkchen, Stift (Name, Farbe, löschen mit Rückgängig) und „Neuen Tag erstellen“ (Nutzer-Feedback: Einstellungen waren der falsche Ort). Tags bleiben beim CSV-Re-Import erhalten.
 
 **B6 — Heute-Ansicht**
 - Ziel: Die Startseite beantwortet nur: „Was mache ich jetzt?“
@@ -130,7 +159,31 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Akzeptanz: Export aller Daten als `duedate-backup-JJJJ-MM-TT.json`; Import prüft Schema/Version, zeigt Vorschau („42 Aufgaben, 3 Kunden …“), ersetzt erst nach Bestätigung; „Alle Daten löschen“ mit Bestätigung.
 - Test: Unit: Export → Import ergibt identischen Zustand; kaputte Datei → verständliche Fehlermeldung.
 
-### ✅ MVP erreicht nach B7
+**B8 — Planer v2** (aus Nutzer-Feedback; baut auf A6 auf, braucht B1/B2)
+- Ziel: Kein Abgabestress mehr. Grosse Aufgaben werden früh und verteilt eingeplant statt als ein Block am letzten Tag.
+- Aufwand als **Gesamtstunden** pro Aufgabe (Schnellwahl 2/4/8/16 h + freie Eingabe) statt 30m/1h/2h/3h+; Migration der alten Werte.
+- Regeln (deterministisch, ohne KI): Puffer = fertig 1 Tag vor Abgabe (einstellbar) · Sessions max. 90 min · max. ~3 h pro Aufgabe und Tag · gleichmässig auf freie Tage bis zum Ziel verteilen · Dringendes zuerst · rollend: Woche zeigt ihren Anteil, Erledigtes/gearbeitete Zeit wird abgezogen · ehrliche Meldung, wenn die Zeit nicht reicht („Für X fehlen 4 h vor dem 10.12.“).
+- Planungshorizont über die aktuelle Woche hinaus (ersetzt die 14-Tage-Grenze aus A4); Woche blättern und Monat/Jahr folgen in B9/B10.
+- Akzeptanz: Aufgabe 12 h, Abgabe in 4 Wochen → mehrere Sessions verteilt über die Wochen, letzte Session ≥ 1 Tag vor Abgabe.
+- Test: Unit-Tests für Aufteilung, Puffer, Überbuchung, Rundung; Vergleich mehrerer Wochen.
+- Optional B8b: Planer-Einstellungen (Arbeitszeitfenster, Puffer-Tage, max. Stunden pro Tag).
+
+**B9 — Kalender: Wochen blättern + Monatsansicht** (aus Nutzer-Feedback)
+- Ziel: Nicht nur die aktuelle Woche, sondern ein richtiger Kalender mit Überblick.
+- Woche: vor/zurück blättern, „Heute“-Knopf, Tastatur (← → T). Ersetzt „Woche blättern“ aus C6.
+- Monat: Raster Mo–So mit Deadlines (rot), geplanten Sessions (blau, als Anzahl/Stunden pro Tag) und belegten Zeiten; Klick auf einen Tag öffnet die Woche.
+- Voraussetzung: Planer v2 (B8) rechnet über mehrere Wochen; der Plan wird dafür gespeichert oder pro Woche deterministisch berechnet.
+- Dateien: `MyWeekView.vue` → Kalender-Ansicht mit Umschalter Woche/Monat, neu `MonthGrid.vue`, `utils/calendar.js` (Monatsraster, KW).
+- Akzeptanz: Beliebige Woche/Monat erreichbar; Deadlines und Sessions stimmen mit dem Planer überein; Monatswechsel inkl. Jahreswechsel korrekt.
+- Test: Unit für Monatsraster (Monatsanfang/-ende, Schaltjahr, KW 53); Browser-Test Navigation per Tastatur.
+
+**B10 — Jahresübersicht + Aufräumen**
+- Jahr: 12 Mini-Monate, Tage mit Deadlines markiert (Dichte = wie viel ansteht), Klick öffnet den Monat. Gut für Semesterplanung und Freelance-Auslastung.
+- Aufräumen: Vergangenes wird standardmässig ausgeblendet (nicht gelöscht). In den Einstellungen: „Erledigte Einträge älter als X Monate löschen“ mit Vorschau und Bestätigung; vorher JSON-Backup anbieten (B7).
+- Begründung „ausblenden statt sofort löschen“: Die Historie wird für C2b (Schätzung lernt aus erfasster Zeit) gebraucht.
+- Test: Unit für Aufräum-Regel (nur erledigt + älter als X); Browser-Test Jahresansicht.
+
+### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
 
 ---
 
@@ -140,12 +193,15 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 |---|---|---|
 | C1 | ⬜ | `feat:` Mikroschritte |
 | C2 | ⬜ | `feat:` Fokus-Timer |
+| C2b | ⬜ | `feat:` Aufwandsschätzung lernt aus erfasster Zeit |
 | C3 | ⬜ | `feat:` Wiedervorlage („wieder zeigen am“) |
 | C4 | ⬜ | `feat:` Wiederkehrende Aufgaben (Training) |
 | C5 | ⬜ | `feat:` Wochenrückblick |
-| C6 | ⬜ | `feat:` Erinnerungen via Kalender + Woche blättern |
+| C6 | ⬜ | `feat:` Erinnerungen via Kalender |
 
 **C1 — Mikroschritte**: Checkliste pro Aufgabe (manuell, 10–20-Min.-Schritte); Heute-Ansicht zeigt nur den *nächsten* Schritt. Dateien: `TaskDetail.vue`, `useTasks.js`, `HomeView.vue`. Akzeptanz: Schritte hinzufügen/abhaken/sortieren per Tastatur. Test: Unit für Fortschritt; manuell.
+
+**C2b — Schätzung lernt mit** (ohne KI): Vergleich Schätzung vs. erfasste Zeit pro Bereich/Fach → Vorschlag „Du brauchst im Schnitt 1.6× so lange wie geschätzt: 19 h statt 12 h?“. Nur Vorschlag, nie automatisch überschreiben. Braucht C2 (und später D3).
 
 **C2 — Fokus-Timer**: 25/5 (einstellbar), an eine Aufgabe gekoppelt, zeitstempelbasiert (läuft korrekt im Hintergrund-Tab und übersteht Reload), Restzeit im Tab-Titel, Fokusminuten pro Aufgabe gespeichert. Dateien: neu `composables/useFocusTimer.js`, `components/FocusTimer.vue`. Akzeptanz: Timer starten → Tab wechseln 10 Min. → Zeit stimmt. Test: Unit mit gefälschter Uhr.
 
@@ -155,7 +211,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 **C5 — Wochenrückblick**: Geführter 5-Min.-Dialog (Sonntag/Montag angeboten): erledigt diese Woche, liegengeblieben (verschieben / löschen / zerlegen), Top 3 nächste Woche. Unterstützende Sprache, keine Vorwürfe. Dateien: neu `views/ReviewView.vue`. Akzeptanz: Durchlauf in < 5 Min. möglich. Test: manuell mit Testdaten.
 
-**C6 — Erinnerungen + Woche blättern**: ICS-Export mit Erinnerungseinträgen (z. B. 1 Tag + 2 h vorher) → dein Kalender erinnert zuverlässig, ohne Server; Export pro Aufgabe; My Week vor/zurück blättern. Dateien: `utils/ics.js`, `MyWeekView.vue`, `scheduler.js`. Akzeptanz: Erinnerung erscheint in Apple/Google Kalender. Test: Unit für ICS-Inhalt; manuell im Kalender.
+**C6 — Erinnerungen**: ICS-Export mit Erinnerungseinträgen (z. B. 1 Tag + 2 h vorher) → dein Kalender erinnert zuverlässig, ohne Server; Export pro Aufgabe. (Woche blättern ist nach B9 verschoben.) Dateien: `utils/ics.js`, `MyWeekView.vue`, `scheduler.js`. Akzeptanz: Erinnerung erscheint in Apple/Google Kalender. Test: Unit für ICS-Inhalt; manuell im Kalender.
 
 ---
 
@@ -215,16 +271,21 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 | Idee | Voraussetzung / Bemerkung |
 |---|---|
+| KI: Aufwand schätzen | Aus Beschreibung/PDF einer Aufgabe; erst nach C2b sinnvoll (eigene Daten zuerst) |
 | KI: Aufgaben zerlegen | Kleiner Server für den API-Key (z. B. Cloudflare Worker) mit Zugangsschutz; Fallback = manuelle Mikroschritte (C1) |
 | KI: Kunden-Briefing → Scope, Rückfragen, Kalkulationsentwurf | Wie oben; Ergebnis landet in Kalkulation (D4) |
 | MCP: Claude verbinden | Variante A (JSON-Backup) ab B7 nutzbar. Lokaler MCP-Server (Mac) oder Remote-MCP erst nach Entscheid über Sync |
-| Sync Desktop ↔ Mobile | Nur falls Mobile-Nutzung täglich wird; braucht Backend + Login |
+| Speicher: IndexedDB (Dexie.js) | Statt localStorage (≈ 5 MB), sobald Zeiterfassung (C2/D3) viele Einträge erzeugt. Alles läuft über `useTasks`/Stores → Umbau ist lokal begrenzt. B7-Backup vorher. |
+| Sync Desktop ↔ Mobile | Mit Phase E: Supabase (Postgres, EU-Region Frankfurt, Login). Alternative: PocketBase selbst gehostet. Firebase verworfen (Lock-in, NoSQL passt schlecht zu Kunden → Projekte → Zeiten). |
+| Kanban-Board (Modul) | Nach B7, zusammen mit Projekten (D2): Spalten Offen → In Arbeit → Erledigt, zweite Ansicht derselben Aufgaben, filterbar nach Bereich/Projekt. Braucht Status „In Arbeit“ (Migration). Aus „verworfen“ zurückgeholt, weil DueDate Hauptarbeitsort werden soll. |
+| Module ein/aus | Einstellungen-Schalter pro Modul (z. B. Kanban, Freelance). Mit dem ersten optionalen Modul. |
+| SaaS | Login, Server-DB (Supabase), Bezahlung, Datenschutz/AGB, Support. Nichts bauen, was das verbaut. |
 | Rechnungen inkl. QR-Rechnung | Erst wenn regelmässig Aufträge laufen |
 | Streak (ohne Strafe), Hintergrundgeräusche | Nice-to-have |
 | Ausbau Wochenplan-Generator | Eingefroren, bis Nutzung im Alltag belegt ist |
 
 ## Bewusst verworfen
-Notion-artiger Block-Editor · Kanban-Board · Karteikarten/Quiz · XP/Level/Badges · KI-Priorisierung ·
+Notion-artiger Block-Editor (stattdessen Markdown, B5b) · Karteikarten/Quiz · XP/Level/Badges · KI-Priorisierung ·
 „Cloud Vault“ ohne Login · Beispieldaten beim ersten Start.
 
 ---

@@ -1,9 +1,25 @@
 <script setup>
 import AppSidebar from './components/AppSidebar.vue'
 import AppToaster from './components/ui/AppToaster.vue'
+import QuickAdd from './components/QuickAdd.vue'
+import TaskDetail from './components/TaskDetail.vue'
+import { onMounted, onBeforeUnmount } from 'vue'
 import { useLocale } from './composables/useLocale.js'
+import { useQuickAdd, isTypingTarget } from './composables/useQuickAdd.js'
 
 const { t } = useLocale()
+const quickAdd = useQuickAdd()
+
+// "N" opens quick capture from anywhere, unless the user is typing or a dialog is open
+function onGlobalKeydown(e) {
+  if (e.key !== 'n' && e.key !== 'N') return
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return
+  if (isTypingTarget(e.target) || document.querySelector('dialog[open]')) return
+  e.preventDefault()
+  quickAdd.open()
+}
+onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
 </script>
 
 <template>
@@ -18,6 +34,8 @@ const { t } = useLocale()
     <main id="main" ref="main" tabindex="-1" class="min-w-0 flex-1 outline-none">
       <RouterView />
     </main>
+    <QuickAdd />
+    <TaskDetail />
     <AppToaster />
   </div>
 </template>

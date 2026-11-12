@@ -1,3 +1,5 @@
+import { expandBlocksByDay } from './availability.js'
+
 export const WORK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 export const DAY_START_MIN = 8 * 60   // 08:00
 export const DAY_END_MIN = 21 * 60    // 21:00
@@ -75,7 +77,7 @@ function findFreeSlot(durationMin, busyIntervals, earliestMin = DAY_START_MIN) {
  *
  * @param {Array} enrichedTasks - from useTaskEnrichment
  * @param {(task) => {effort: string|null, priority: string}} getPlanningFor - from useTaskPlanning
- * @param {Array<{day: string, startTime: string, endTime: string}>} availabilityBlocks - from useAvailability
+ * @param {Array<{days: string[], startTime: string, endTime: string}>} availabilityBlocks - from useAvailability
  * @param {Date} today
  */
 export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, today = new Date()) {
@@ -87,7 +89,8 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
 
   const busyByDay = {}
   for (const day of days) busyByDay[day.label] = []
-  for (const block of availabilityBlocks) {
+  // Blocks can span several days (A6); legacy single-day blocks are normalized too
+  for (const block of expandBlocksByDay(availabilityBlocks)) {
     if (busyByDay[block.day]) {
       busyByDay[block.day].push([toMinutes(block.startTime), toMinutes(block.endTime)])
     }
@@ -95,6 +98,7 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
 
   const eligible = enrichedTasks
     .filter(t => t._deadlineDate)
+    .filter(t => t.status !== 'done')
     .filter(t => t._days === null || t._days <= PLANNING_HORIZON_DAYS)
     .map(t => ({ task: t, planning: getPlanningFor(t) }))
     .sort((a, b) => {

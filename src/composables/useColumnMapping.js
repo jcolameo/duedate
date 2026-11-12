@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { detectColumns } from '../utils/columnDetector.js'
 import { useCSVImport } from './useCSVImport.js'
+import { useTasks } from './useTasks.js'
 import { withRole, isSavedMappingUsable } from '../utils/mapping.js'
 
 const STORAGE_KEY = 'duedate.columnMapping.v1'
@@ -88,6 +89,8 @@ function updateMapping(role, column) {
 function confirmMapping() {
   saveMapping(userMapping.value)
   isConfirmed.value = true
+  // The confirmed mapping turns the raw rows into tasks (B1)
+  applyCsvImport(rawRows.value, userMapping.value)
 }
 
 /**
@@ -119,14 +122,18 @@ const needsConfirmation = computed(() => {
   return availableColumns.value.length > 0 && !isConfirmed.value
 })
 
-// Läuft automatisch, sobald sich die geteilte Task-Liste ändert (Upload,
-// oder aus LocalStorage wiederhergestellt) — unabhängig davon, welche View
-// gerade gemounted ist.
-const { tasks } = useCSVImport()
-watch(tasks, (newTasks) => {
-  if (newTasks && newTasks.length > 0) {
-    analyzeNewCSV(Object.keys(newTasks[0]), newTasks)
-  }
+// Runs whenever the raw CSV rows change (new upload, or restored from
+// localStorage at app start) — regardless of which view is mounted.
+// Rows only become tasks on a *new* upload with a reusable mapping, or when
+// the user confirms a mapping. Restoring at start does not re-import, so
+// changes made in the task store are never overwritten by an old CSV.
+const { tasks: rawRows } = useCSVImport()
+const { applyCsvImport } = useTasks()
+watch(rawRows, (rows, oldRows) => {
+  if (!rows || rows.length === 0) return
+  analyzeNewCSV(Object.keys(rows[0]), rows)
+  const isNewUpload = oldRows !== undefined
+  if (isNewUpload && isConfirmed.value) applyCsvImport(rows, userMapping.value)
 }, { immediate: true })
 
 export function useColumnMapping() {

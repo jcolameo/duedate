@@ -15,7 +15,7 @@ export function useICSExport(enrichedTasks) {
     exportMessage.value = ''
     exportError.value = ''
 
-    const validTasks = enrichedTasks.value.filter(task => task._deadlineDate)
+    const validTasks = enrichedTasks.value.filter(task => task._deadlineDate && !task._isDone)
     if (validTasks.length === 0) {
       exportError.value = t('errors.noValidTasks')
       return

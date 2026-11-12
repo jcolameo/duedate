@@ -1,6 +1,4 @@
 import { ref } from 'vue'
-import { useCSVImport } from './useCSVImport.js'
-import { useColumnMapping } from './useColumnMapping.js'
 import { useTaskEnrichment } from './useTaskEnrichment.js'
 import { useTaskPlanning } from './useTaskPlanning.js'
 import { useAvailability } from './useAvailability.js'
@@ -14,9 +12,7 @@ import { generatePlan } from '../utils/scheduler.js'
  * survives navigation between views within a session, not just re-renders
  * of a single component.
  */
-const { tasks } = useCSVImport()
-const { userMapping } = useColumnMapping()
-const { enrichedTasks } = useTaskEnrichment(tasks, userMapping)
+const { enrichedTasks } = useTaskEnrichment()
 const { getPlanningFor } = useTaskPlanning()
 const { blocks } = useAvailability()
 
