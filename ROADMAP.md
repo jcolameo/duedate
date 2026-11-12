@@ -97,6 +97,9 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B8 | ✅ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 | B9 | ✅ | `feat:` Kalender: Wochen blättern + Monatsansicht |
 | B10 | ✅ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
+| B11 | ⬜ | `feat:` Arbeitstage / arbeitsfreie Wochentage (B8b, Teil 1) |
+| B12 | ⬜ | `feat:` Arbeitszeiten verschieben und fixieren (Drag & Drop, Panel-Alternative, Rückgängig) |
+| B13 | ⬜ | `feat:` Planungsmodus + „Neu planen“ (B8b, Teil 2) |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -191,6 +194,14 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Aufräumen umgesetzt: Einstellungen → „Erledigtes aufräumen“ (3/6/12 Monate, Vorschau „Wird gelöscht: n“, Bestätigung mit optionaler Backup-Datei vorher, danach „Rückgängig“). Nur eigene erledigte Aufgaben; BBNet-Aufgaben bleiben, weil sie beim nächsten CSV-Import als offen zurückkämen (Archiv-Flag wäre die Alternative, später falls gewünscht). Vergangenes wird im Kalender nicht angezeigt, soweit erledigt.
 
 - Datei-Import als Abkürzung (Nutzerwunsch): „Neue Aufgabe“ hat die Zeile **Datei importieren** (CSV wählen oder in den Dialog ziehen); eine Datei lässt sich auch auf das ganze Fenster ziehen (Overlay „Datei hier ablegen“). Gleiche Pipeline wie Deadlines: beim ersten Mal die Spalten bestätigen (führt zu Deadlines), danach direkt importiert mit Toast + Rückgängig, „nichts Neues“ bei gleicher Datei. Nicht unterstützte Typen (Excel, Markdown) melden „kommt später“. Erweiterbar über `readers` in `composables/useFileImport.js`, Typ-Erkennung in `utils/fileTypes.js` (17 Tests). Excel später mit `read-excel-file` (lazy).
+
+
+**B11–B13 — Plan anpassen** (Nutzerwunsch: Plan neu aussortieren oder Einträge selbst verschieben; Release-Ziel v0.2.3)
+- **B11 Arbeitstage**: Einstellung in den Planer-Einstellungen, Wochentage an/abwählen (Standard Mo–So, damit sich nichts ändert; Beispiel Sa/So frei). Neues Feld in `duedate.plannerSettings.v1` mit Standardwert, keine Migration nötig. Der Planer legt nichts auf freie Tage; Deadlines an freien Tagen bleiben sichtbar. Einmalige Abwesenheit bleibt bei Belegte Zeiten.
+- **B12 Verschieben + Fixieren**: Arbeitszeit in Woche/Tag per Drag & Drop auf anderen Tag/Zeit (Raster 15 min), Monat: auf anderes Tagesfeld. Tastatur-Alternative: im Aufgaben-Panel „Verschieben“ (Datum + Start). Eine verschobene Sitzung wird **fixiert** (Schloss-Symbol, per Klick lösbar) und gespeichert. Speicherort: Feld `pinned: [{n, date, start}]` an der Aufgabe, Schema 5 mit Migration (leeres Array). Der Planer plant fixierte Sitzungen zuerst ein und verteilt den Rest um sie herum; Rückgängig per Toast. Warnung bei Konflikt (Belegtes, Tageslimit überschritten, nach der Deadline) statt stillem Ablehnen.
+- **B13 Planungsmodus + Neu planen**: Schalter in den Planer-Einstellungen: „Gleichmässig“ (heute), „So früh wie möglich“, „Gebündelt“ (wenige, längere Tage). Kein Zufall. Button „Neu planen“ im Kalender wendet den Modus an und lässt Fixiertes stehen; „Fixierungen aufheben“ als zweite Aktion mit Bestätigung.
+- Test: Unit für Arbeitstage, fixierte Sitzungen (bleiben, Rest verteilt sich neu, Konflikte), jeden Modus; Browser: Drag & Drop, Tastatur-Verschieben, axe.
+- Offen: Touch-Drag später mit Phase E.
 
 
 ### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
