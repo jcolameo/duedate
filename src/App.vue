@@ -2,6 +2,7 @@
 import AppSidebar from './components/AppSidebar.vue'
 import AppToaster from './components/ui/AppToaster.vue'
 import QuickAdd from './components/QuickAdd.vue'
+import TaskDetail from './components/TaskDetail.vue'
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useLocale } from './composables/useLocale.js'
 import { useQuickAdd, isTypingTarget } from './composables/useQuickAdd.js'
@@ -34,6 +35,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
       <RouterView />
     </main>
     <QuickAdd />
+    <TaskDetail />
     <AppToaster />
   </div>
 </template>

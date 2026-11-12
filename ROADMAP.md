@@ -88,7 +88,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B2 | ✅ | `feat:` Erledigt-Status mit Rückgängig |
 | B3 | ✅ | `feat:` Bereiche Studium / Freelance / Privat |
 | B4 | ✅ | `feat:` Schnellerfassung (< 5 s) |
-| B5 | ⬜ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
+| B5 | ✅ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
 | B6 | ⬜ | `feat:` Heute-Ansicht |
 | B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
@@ -129,6 +129,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Dateien: neu `components/TaskDetail.vue` (Seitenpanel), `useTasks.js`.
 - Akzeptanz: Klick/Enter auf Aufgabe öffnet Panel; `Esc` schliesst; Fokus wird korrekt zurückgegeben.
 - Test: Manuell inkl. Tastatur + Screenreader (VoiceOver).
+- Umgesetzt: Seitenpanel (natives `<dialog>`, `BaseDialog placement="right"`), öffnet per Klick/Enter auf den Titel (Deadlines, Überblick). Speichert sofort; leerer Titel wird nicht gespeichert. CSV-Felder (Titel, Datum, Fach …) nur lesbar mit Hinweis, weil der nächste Import sie überschreiben würde. Löschen mit Rückgängig (CSV-Aufgaben: Hinweis, dass sie beim Import zurückkommen). VoiceOver-Test steht noch aus (nur auf dem Mac möglich).
 
 **B6 — Heute-Ansicht**
 - Ziel: Die Startseite beantwortet nur: „Was mache ich jetzt?“

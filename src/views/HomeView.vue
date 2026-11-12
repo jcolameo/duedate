@@ -17,10 +17,12 @@ import { filterByArea } from '../utils/areas.js'
 import AreaFilter from '../components/AreaFilter.vue'
 import AreaTag from '../components/ui/AreaTag.vue'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
+import { useTaskDetail } from '../composables/useTaskDetail.js'
 
 const { enrichedTasks, openTasks: allOpen, doneTasks: allDone } = useTaskEnrichment()
 const { areaFilter } = useAreaFilter()
 const quickAdd = useQuickAdd()
+const { openTask } = useTaskDetail()
 // Everything below follows the area filter (shared with Deadlines)
 const openTasks = computed(() => filterByArea(allOpen.value, areaFilter.value))
 const doneTasks = computed(() => filterByArea(allDone.value, areaFilter.value))
@@ -74,7 +76,7 @@ const summary = computed(() =>
           <div class="mt-3 flex flex-wrap items-end justify-between gap-6">
             <div class="min-w-0">
               <p class="font-display text-[28px] font-bold leading-tight tracking-[-0.02em]">
-                {{ focusTask._title || t('common.untitled') }}
+                <button type="button" class="rounded-sm text-left underline-offset-4 decoration-line-strong hover:underline" aria-haspopup="dialog" @click="openTask(focusTask)">{{ focusTask._title || t('common.untitled') }}</button>
               </p>
               <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-ink-muted">
                 <AreaTag v-if="showAreaTags" :area="focusTask._area" />
@@ -118,7 +120,9 @@ const summary = computed(() =>
               <li v-for="task in upcoming" :key="task._id" class="flex items-center gap-3 px-4 py-2.5">
                 <TaskCheckbox :done="task._isDone" :title="task._title || t('common.untitled')" @toggle="toggleDone(task)" />
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-medium">{{ task._title || t('common.untitled') }}</p>
+                  <p class="truncate text-sm font-medium">
+                    <button type="button" class="rounded-sm text-left underline-offset-4 decoration-line-strong hover:underline" aria-haspopup="dialog" @click="openTask(task)">{{ task._title || t('common.untitled') }}</button>
+                  </p>
                   <p v-if="task._category" class="truncate text-[13px] text-ink-muted">{{ task._category }}</p>
                 </div>
                 <AreaTag v-if="showAreaTags" :area="task._area" class="hidden sm:inline-flex" />

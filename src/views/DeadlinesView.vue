@@ -20,6 +20,7 @@ import { useAreaFilter } from '../composables/useAreaFilter.js'
 import { filterByArea } from '../utils/areas.js'
 import AreaFilter from '../components/AreaFilter.vue'
 import AreaSelect from '../components/ui/AreaSelect.vue'
+import { useTaskDetail } from '../composables/useTaskDetail.js'
 
 // CSV import: drag & drop, parsing, file state
 const {
@@ -37,6 +38,7 @@ const {
 const { enrichedTasks, openTasks, doneTasks, exportableCount } = useTaskEnrichment()
 const { toggleDone, changeArea } = useTaskActions()
 const { areaFilter } = useAreaFilter()
+const { openTask } = useTaskDetail()
 
 // Completed tasks are hidden by default; open ones first, then done (newest first)
 const showDone = ref(false)
@@ -186,7 +188,9 @@ const code = 'rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[12px] text-
                 <span v-if="task._isDone" class="font-mono text-[13px] text-ink-muted">{{ t('tasks.markDone') }}</span>
                 <DueBadge v-else :code="task._status.code" :days="task._days" />
               </td>
-              <td :class="['max-w-xs px-4 py-3 align-middle font-medium', task._isDone ? 'text-ink-muted line-through decoration-line-strong' : 'text-ink']">{{ task._title || t('common.dash') }}</td>
+              <td :class="['max-w-xs px-4 py-3 align-middle font-medium', task._isDone ? 'text-ink-muted line-through decoration-line-strong' : 'text-ink']">
+                <button type="button" class="rounded-sm text-left underline-offset-4 decoration-line-strong hover:underline" :aria-haspopup="'dialog'" @click="openTask(task)">{{ task._title || t('common.untitled') }}</button>
+              </td>
               <td class="whitespace-nowrap px-4 py-3 align-middle">
                 <AreaSelect :area="task._area" :title="task._title || t('common.untitled')" @change="changeArea(task, $event)" />
               </td>
