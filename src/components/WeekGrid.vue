@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue'
-import { PhFlag } from '@phosphor-icons/vue'
+import { computed, ref, onBeforeUnmount } from 'vue'
+import { PhFlag, PhLockSimple } from '@phosphor-icons/vue'
 import { useLocale } from '../composables/useLocale.js'
 import { DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
 import { expandBlocksByDay } from '../utils/availability.js'
@@ -22,9 +22,11 @@ const props = defineProps({
   /** Optional { [dayLabel]: enrichedTask[] } — shows an all-day deadline row */
   deadlinesByDay: { type: Object, default: null },
   label: { type: String, required: true },
+  /** Sessions can be dragged to another day or time (emits move-session) */
+  editable: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['open-task', 'open-session'])
+const emit = defineEmits(['open-task', 'open-session', 'move-session'])
 const { t } = useLocale()
 
 const TOTAL_SLOTS = (DAY_END_MIN - DAY_START_MIN) / 30
@@ -55,6 +57,81 @@ const visibleBlocks = computed(() =>
     .filter(b => b.end > b.start && props.days.some(d => d.label === b.day)),
 )
 const visibleSessions = computed(() => props.sessions.filter(s => props.days.some(d => d.label === s.day)))
+
+// --- Drag a session to another day or time (15-minute steps) ---
+const gridEl = ref(null)
+const drag = ref(null) // { session, grab, x0, y0, active, target: { index, startMin } | null }
+let suppressClick = false
+const DRAG_THRESHOLD = 5
+const LABEL_COL_REM = 3.25
+
+function targetAt(e) {
+  const rect = gridEl.value.getBoundingClientRect()
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  const labelW = LABEL_COL_REM * rem
+  const colW = (rect.width - labelW) / props.days.length
+  const index = Math.min(props.days.length - 1, Math.max(0, Math.floor((e.clientX - rect.left - labelW) / colW)))
+  const pointerMin = DAY_START_MIN + ((e.clientY - rect.top) / rect.height) * (DAY_END_MIN - DAY_START_MIN)
+  const length = drag.value.session.endMin - drag.value.session.startMin
+  const raw = Math.round((pointerMin - drag.value.grab) / 15) * 15
+  return { index, startMin: Math.min(DAY_END_MIN - length, Math.max(DAY_START_MIN, raw)) }
+}
+
+function onPointerDown(e, s) {
+  if (!props.editable || e.button !== 0) return
+  const rect = gridEl.value.getBoundingClientRect()
+  const pointerMin = DAY_START_MIN + ((e.clientY - rect.top) / rect.height) * (DAY_END_MIN - DAY_START_MIN)
+  drag.value = { session: s, grab: pointerMin - s.startMin, x0: e.clientX, y0: e.clientY, active: false, target: null }
+  e.currentTarget.setPointerCapture?.(e.pointerId)
+}
+
+function onPointerMove(e) {
+  const d = drag.value
+  if (!d) return
+  if (!d.active && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < DRAG_THRESHOLD) return
+  d.active = true
+  d.target = targetAt(e)
+}
+
+function endDrag(commit) {
+  const d = drag.value
+  drag.value = null
+  if (!d?.active) return
+  suppressClick = true
+  setTimeout(() => { suppressClick = false }, 0)
+  if (commit && d.target) emit('move-session', { session: d.session, date: props.days[d.target.index].date, startMin: d.target.startMin })
+}
+
+function onPointerUp() { endDrag(true) }
+function onKeydown(e) { if (e.key === 'Escape' && drag.value) endDrag(false) }
+if (typeof window !== 'undefined') window.addEventListener('keydown', onKeydown)
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+
+function onSessionClick(s) {
+  if (suppressClick) return
+  emit('open-session', s)
+}
+
+const ghostStyle = computed(() => {
+  const d = drag.value
+  if (!d?.active || !d.target) return null
+  const length = d.session.endMin - d.session.startMin
+  const span = DAY_END_MIN - DAY_START_MIN
+  const n = props.days.length
+  return {
+    top: `${((d.target.startMin - DAY_START_MIN) / span) * 100}%`,
+    height: `${(length / span) * 100}%`,
+    left: `calc(${LABEL_COL_REM}rem + (100% - ${LABEL_COL_REM}rem) * ${d.target.index} / ${n} + 2px)`,
+    width: `calc((100% - ${LABEL_COL_REM}rem) / ${n} - 4px)`,
+  }
+})
+const ghostTime = computed(() => {
+  const d = drag.value
+  if (!d?.active || !d.target) return ''
+  const fmt = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+  return `${fmt(d.target.startMin)}–${fmt(d.target.startMin + d.session.endMin - d.session.startMin)}`
+})
+const isDragging = (s) => drag.value?.active && drag.value.session === s
 
 const todayKey = new Date().toDateString()
 const isToday = (d) => d.date.toDateString() === todayKey
@@ -99,6 +176,7 @@ const isToday = (d) => d.date.toDateString() === todayKey
 
       <!-- Hourly grid -->
       <div
+        ref="gridEl"
         class="relative grid overflow-hidden rounded-xl border border-line bg-surface"
         :style="{ gridTemplateColumns: COLUMNS, gridTemplateRows: `repeat(${TOTAL_SLOTS}, 1.4rem)` }"
       >
@@ -128,15 +206,32 @@ const isToday = (d) => d.date.toDateString() === todayKey
           v-for="(s, i) in visibleSessions"
           :key="'ses-' + i"
           type="button"
-          :class="['mx-0.5 my-px cursor-pointer overflow-hidden rounded border-l-2 px-1 text-left text-[10.5px] font-medium leading-tight transition-[filter] duration-150 hover:brightness-110 focus-visible:outline-offset-[-2px] light:hover:brightness-95', sessionClass(s)]"
+          :class="[
+            'mx-0.5 my-px overflow-hidden rounded border-l-2 px-1 text-left text-[10.5px] font-medium leading-tight transition-[filter] duration-150 hover:brightness-110 focus-visible:outline-offset-[-2px] light:hover:brightness-95',
+            editable ? 'cursor-grab select-none' : 'cursor-pointer',
+            isDragging(s) && 'opacity-40',
+            sessionClass(s),
+          ]"
           :style="place(s.day, s.startMin, s.endMin)"
-          :title="`${s.title} (${s.startTime}–${s.endTime})`"
-          :aria-label="`${t('calendar.legendSession')}: ${s.title}${s.of > 1 ? ` (${s.n}/${s.of})` : ''}, ${s.startTime}–${s.endTime}, ${t('areas.' + normalizeArea(s.area))}`"
+          :title="`${s.title} (${s.startTime}–${s.endTime})${editable ? ' · ' + t('planEdit.dragHint') : ''}`"
+          :aria-label="`${t('calendar.legendSession')}: ${s.title}${s.of > 1 ? ` (${s.n}/${s.of})` : ''}, ${s.startTime}–${s.endTime}, ${t('areas.' + normalizeArea(s.area))}${s.pinned ? ', ' + t('planEdit.pinned') : ''}`"
           aria-haspopup="dialog"
-          @click="emit('open-session', s)"
+          @click="onSessionClick(s)"
+          @pointerdown="onPointerDown($event, s)"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="endDrag(false)"
         >
-          <span class="font-mono text-[10px]">{{ s.startTime }}</span> {{ s.title }}
+          <PhLockSimple v-if="s.pinned" class="mr-0.5 inline size-2.5 align-[-1px]" aria-hidden="true" /><span class="font-mono text-[10px]">{{ s.startTime }}</span> {{ s.title }}
         </button>
+
+        <!-- Drop target while dragging -->
+        <div
+          v-if="ghostStyle"
+          class="pointer-events-none absolute z-10 rounded border-2 border-dashed border-accent bg-accent/15 px-1 text-[10.5px] font-medium text-ink"
+          :style="ghostStyle"
+          aria-hidden="true"
+        ><span class="font-mono">{{ ghostTime }}</span></div>
       </div>
     </div>
   </div>

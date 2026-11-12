@@ -9,6 +9,7 @@ import { useAvailability } from '../composables/useAvailability.js'
 import { formatDays, isValidTimeRange } from '../utils/availability.js'
 import { usePlanExport } from '../composables/usePlanExport.js'
 import { usePlanState } from '../composables/usePlanState.js'
+import { usePlanEdit } from '../composables/usePlanEdit.js'
 import { usePlannerSettings, BUFFER_OPTIONS, MAX_HOURS_OPTIONS } from '../composables/usePlannerSettings.js'
 import { summarizePlan, summarizeByTask, sessionsInWeek, shortDate } from '../utils/planSummary.js'
 import { formatMinutes } from '../utils/estimate.js'
@@ -31,6 +32,8 @@ const { getPlanningFor, setEstimate, setPriority } = useTaskPlanning()
 const { blocks, addBlock, removeBlock, restoreBlock } = useAvailability()
 const { exportMessage, exportError, exportPlanToICS } = usePlanExport()
 const { plan, generate: handleGeneratePlan } = usePlanState()
+const { moveSession } = usePlanEdit()
+const onMoveSession = ({ session, date, startMin }) => moveSession(session, date, startMin)
 const { t, locale } = useLocale()
 const toast = useToast()
 const { settings } = usePlannerSettings()
@@ -229,7 +232,7 @@ function handleExportPlan() {
         </InlineNotice>
 
         <p class="mb-2 text-[13px] text-ink-muted">{{ t('stundenplan.thisWeek') }}</p>
-        <WeekGrid :days="plan.days" :sessions="weekSessions" :blocks="blocks" :label="t('stundenplan.thisWeek')" @open-session="openTask({ id: $event.taskId }, $event)" />
+        <WeekGrid :days="plan.days" :sessions="weekSessions" :blocks="blocks" :label="t('stundenplan.thisWeek')" @open-session="openTask({ id: $event.taskId }, $event)" @move-session="onMoveSession" />
       </template>
     </section>
   </div>

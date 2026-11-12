@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { PhCalendarPlus, PhDownloadSimple, PhCaretLeft, PhCaretRight, PhFlag } from '@phosphor-icons/vue'
 import { useAvailability } from '../composables/useAvailability.js'
 import { usePlanState } from '../composables/usePlanState.js'
+import { usePlanEdit } from '../composables/usePlanEdit.js'
 import { useCombinedExport } from '../composables/useCombinedExport.js'
 import { useLocale } from '../composables/useLocale.js'
 import { useToast } from '../composables/useToast.js'
@@ -33,6 +34,8 @@ import YearGrid from '../components/calendar/YearGrid.vue'
  */
 const { blocks } = useAvailability()
 const { plan, generate: handleGeneratePlan, enrichedTasks } = usePlanState()
+const { moveSession } = usePlanEdit()
+const onMoveSession = ({ session, date, startMin }) => moveSession(session, date, startMin)
 const { exportMessage, exportError, exportWeekToICS } = useCombinedExport()
 const { openTask } = useTaskDetail()
 const { areaFilter } = useAreaFilter()
@@ -163,6 +166,7 @@ function handleExport() {
       :label="t('calendar.weekGrid')"
       @open-task="openTask"
       @open-session="openSession"
+      @move-session="onMoveSession"
     />
 
     <!-- Day: time grid + list of the day -->
@@ -175,6 +179,7 @@ function handleExport() {
         :label="t('calendar.dayGrid')"
         @open-task="openTask"
         @open-session="openSession"
+        @move-session="onMoveSession"
       />
       <aside class="space-y-6" :aria-label="t('calendar.dayList')">
         <section>

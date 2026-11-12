@@ -10,7 +10,7 @@
  * they are tested without a browser. UI preferences that are only about
  * looks (filters) are not part of a backup.
  */
-import { createTask, upgradeToV3, upgradeToV4, SCHEMA_VERSION } from './taskModel.js'
+import { createTask, upgradeToV3, upgradeToV4, upgradeToV5, SCHEMA_VERSION } from './taskModel.js'
 import { normalizeBlocks } from './availability.js'
 
 export const BACKUP_FORMAT = 'duedate-backup'
@@ -140,6 +140,7 @@ export function applyBackup(backup, storage) {
   let tasks = data.tasks
   if ((backup.schema ?? 2) < 3) tasks = upgradeToV3(tasks)
   if ((backup.schema ?? 2) < 4) tasks = upgradeToV4(tasks)
+  if ((backup.schema ?? 2) < 5) tasks = upgradeToV5(tasks)
   tasks = tasks.map(task => {
     const full = createTask(task)
     return { ...full, tags: (Array.isArray(full.tags) ? full.tags : []).filter(id => tagIds.has(id)) }
