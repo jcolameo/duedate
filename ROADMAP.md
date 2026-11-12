@@ -91,7 +91,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B5 | ✅ | `feat:` Aufgabe bearbeiten (Detail-Panel) |
 | B5b | ✅ | `feat:` Beschreibung (Markdown) + ganze Karte klickbar |
 | B5c | ✅ | `feat:` Eigene Tags mit Farbe + Filter |
-| B6 | ⬜ | `feat:` Heute-Ansicht |
+| B6 | ✅ | `feat:` Heute-Ansicht |
 | C1 | ⬜ | `feat:` Checkliste / Mikroschritte (vorgezogen, siehe Phase C) |
 | B7 | ⬜ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
@@ -152,6 +152,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Inhalt: Max. 3 Aufgaben für heute (selbst gewählt oder Vorschlag: überfällig → dringend → Priorität); grosse „Nächste Aktion“-Karte; kurzes Morgen-Ritual beim ersten Öffnen am Tag („Was sind heute deine 3?“); Empty State „Alles erledigt 🎉“ ohne Druck.
 - Akzeptanz: Kein Scrollen nötig; erledigte Heute-Aufgaben zeigen Fortschritt (z. B. 2/3).
 - Test: Unit-Test für Vorschlagslogik; manuell über 2 Tage (Tageswechsel).
+- Umgesetzt: Morgen-Auswahl „Was sind heute deine 3?“ (Vorschlag vorausgewählt, max. 3, Filter nach Bereich/Tag), danach grosse Karte „Nächste Aktion“ mit Erledigt und „Andere vorschlagen“, Fortschritt „Heute 1/3“ (3 Segmente), restliche Tagesaufgaben als Liste (erledigte bleiben stehen), „Tag ändern“, „Noch eine Aufgabe“ nach 3/3, Restzeit aus Aufwand („Noch ca. 3,5 h“, nur wenn alle Aufwände bekannt). Alles Übrige unter „Nicht heute“. Neuer Tag (auch bei offener App um Mitternacht) = neue Auswahl, gestern nicht erledigte Aufgaben erscheinen wieder als Vorschlag. Ranking: überfällig → dringend (<3 Tage) → bald (<7) → später → ohne Datum; innerhalb Stufe Priorität (benotet = hoch), dann Datum. Ohne Emoji (bewusst, Roadmap-Text war überholt). Speicher: `duedate.today.v1` `{date, ids, skipped}`.
 
 **B7 — JSON-Backup**
 - Ziel: Daten gehören dir. Grundlage für spätere MCP-Variante A.
