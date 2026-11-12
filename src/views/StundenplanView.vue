@@ -14,6 +14,7 @@ import { summarizePlan, summarizeByTask, sessionsInWeek, shortDate } from '../ut
 import { formatMinutes } from '../utils/estimate.js'
 import { useLocale } from '../composables/useLocale.js'
 import { useToast } from '../composables/useToast.js'
+import { useTaskDetail } from '../composables/useTaskDetail.js'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseCard from '../components/ui/BaseCard.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
@@ -32,7 +33,8 @@ const { exportMessage, exportError, exportPlanToICS } = usePlanExport()
 const { plan, generate: handleGeneratePlan } = usePlanState()
 const { t, locale } = useLocale()
 const toast = useToast()
-const { settings, plannerOptions } = usePlannerSettings()
+const { settings } = usePlannerSettings()
+const { openTask } = useTaskDetail()
 
 watch(exportMessage, (msg) => { if (msg) toast.show(msg, { tone: 'success' }) })
 
@@ -42,9 +44,6 @@ const priorityOptions = computed(() =>
 
 const bufferOptions = BUFFER_OPTIONS.map(v => ({ value: v, label: String(v) }))
 const maxHoursOptions = MAX_HOURS_OPTIONS.map(v => ({ value: v, label: `${v} h` }))
-
-// A changed rule applies to a plan that is already shown
-watch(plannerOptions, () => { if (plan.value) handleGeneratePlan() })
 
 const decimal = computed(() => (locale.value === 'de' ? ',' : '.'))
 const time = (min) => formatMinutes(min, decimal.value)
@@ -218,7 +217,7 @@ function handleExportPlan() {
         </InlineNotice>
 
         <p class="mb-2 text-[13px] text-ink-muted">{{ t('stundenplan.thisWeek') }}</p>
-        <WeekGrid :days="plan.days" :sessions="weekSessions" :blocks="blocks" :label="t('stundenplan.thisWeek')" />
+        <WeekGrid :days="plan.days" :sessions="weekSessions" :blocks="blocks" :label="t('stundenplan.thisWeek')" @open-session="openTask({ id: $event.taskId }, $event)" />
       </template>
     </section>
   </div>

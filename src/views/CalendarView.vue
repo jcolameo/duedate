@@ -31,6 +31,7 @@ const { blocks } = useAvailability()
 const { plan, generate: handleGeneratePlan, enrichedTasks } = usePlanState()
 const { exportMessage, exportError, exportWeekToICS } = useCombinedExport()
 const { openTask } = useTaskDetail()
+const openSession = (session) => openTask({ id: session.taskId }, session)
 const { t, locale } = useLocale()
 const toast = useToast()
 
@@ -137,6 +138,8 @@ function handleExport() {
       :blocks="blocks"
       :deadlines-by-day="weekDeadlines"
       :label="t('calendar.weekGrid')"
+      @open-task="openTask"
+      @open-session="openSession"
     />
 
     <!-- Day: time grid + list of the day -->
@@ -147,6 +150,8 @@ function handleExport() {
         :blocks="blocks"
         :deadlines-by-day="{ [dayLabel]: dayDetail.deadlines }"
         :label="t('calendar.dayGrid')"
+        @open-task="openTask"
+        @open-session="openSession"
       />
       <aside class="space-y-6" :aria-label="t('calendar.dayList')">
         <section>
@@ -163,9 +168,11 @@ function handleExport() {
         <section>
           <h3 class="mb-2 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('calendar.legendSession') }}</h3>
           <ul v-if="dayDetail.sessions.length" class="divide-y divide-line rounded-lg border border-line">
-            <li v-for="s in dayDetail.sessions" :key="s.taskId + s.startMin" class="flex items-baseline gap-3 px-3 py-2 text-sm">
-              <span class="font-mono text-[13px] text-ink-muted">{{ s.startTime }}–{{ s.endTime }}</span>
-              <span class="min-w-0 flex-1 truncate">{{ s.title }}<span v-if="s.of > 1" class="font-mono text-[12px] text-ink-muted"> ({{ s.n }}/{{ s.of }})</span></span>
+            <li v-for="s in dayDetail.sessions" :key="s.taskId + s.startMin">
+              <button type="button" class="flex w-full items-baseline gap-3 px-3 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-muted/60" aria-haspopup="dialog" @click="openSession(s)">
+                <span class="font-mono text-[13px] text-ink-muted">{{ s.startTime }}–{{ s.endTime }}</span>
+                <span class="min-w-0 flex-1 truncate">{{ s.title }}<span v-if="s.of > 1" class="font-mono text-[12px] text-ink-muted"> ({{ s.n }}/{{ s.of }})</span></span>
+              </button>
             </li>
           </ul>
           <p v-else class="text-sm text-ink-muted">{{ plan ? t('calendar.nothingEntered') : t('calendar.noPlanYet') }}</p>

@@ -22,6 +22,7 @@ const props = defineProps({
   label: { type: String, required: true },
 })
 
+const emit = defineEmits(['open-task', 'open-session'])
 const { t } = useLocale()
 
 const TOTAL_SLOTS = (DAY_END_MIN - DAY_START_MIN) / 30
@@ -79,14 +80,18 @@ const isToday = (d) => d.date.toDateString() === todayKey
       <div v-if="deadlinesByDay" class="grid border-t border-line py-1.5" :style="{ gridTemplateColumns: COLUMNS }">
         <div class="pr-2 pt-1 text-right font-mono text-[10px] uppercase text-ink-muted"></div>
         <div v-for="day in days" :key="'dl-' + day.label" class="space-y-1 px-0.5">
-          <p
+          <button
             v-for="task in deadlinesByDay[day.label]"
             :key="task._id"
-            class="flex items-center gap-1 truncate rounded bg-red-soft px-1.5 py-0.5 text-[11px] font-medium text-red-ink"
+            type="button"
+            class="flex w-full items-center gap-1 truncate rounded bg-red-soft px-1.5 py-0.5 text-left text-[11px] font-medium text-red-ink transition-[filter] duration-150 hover:brightness-95"
             :title="task._title"
+            :aria-label="`${t('calendar.legendDeadline')}: ${task._title || t('common.untitled')}`"
+            aria-haspopup="dialog"
+            @click="emit('open-task', task)"
           >
             <PhFlag class="size-3 shrink-0" aria-hidden="true" /><span class="truncate">{{ task._title || t('common.untitled') }}</span>
-          </p>
+          </button>
         </div>
       </div>
 
@@ -117,15 +122,19 @@ const isToday = (d) => d.date.toDateString() === todayKey
           :title="`${b.label} (${b.startTime}–${b.endTime})`"
         >{{ b.label }}</div>
 
-        <div
+        <button
           v-for="(s, i) in visibleSessions"
           :key="'ses-' + i"
-          class="mx-0.5 my-px overflow-hidden rounded border-l-2 border-blue-ink bg-blue-soft px-1 text-[10.5px] font-medium leading-tight text-blue-ink"
+          type="button"
+          class="mx-0.5 my-px cursor-pointer overflow-hidden rounded border-l-2 border-blue-ink bg-blue-soft px-1 text-left text-[10.5px] font-medium leading-tight text-blue-ink transition-[filter] duration-150 hover:brightness-110 focus-visible:outline-offset-[-2px] light:hover:brightness-95"
           :style="place(s.day, s.startMin, s.endMin)"
           :title="`${s.title} (${s.startTime}–${s.endTime})`"
+          :aria-label="`${t('calendar.legendSession')}: ${s.title}${s.of > 1 ? ` (${s.n}/${s.of})` : ''}, ${s.startTime}–${s.endTime}`"
+          aria-haspopup="dialog"
+          @click="emit('open-session', s)"
         >
           <span class="font-mono text-[10px]">{{ s.startTime }}</span> {{ s.title }}
-        </div>
+        </button>
       </div>
     </div>
   </div>
