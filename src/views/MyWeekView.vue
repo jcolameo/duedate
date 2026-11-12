@@ -1,6 +1,6 @@
 <script setup>
-import { computed, watch } from 'vue'
-import { PhCalendarPlus, PhDownloadSimple } from '@phosphor-icons/vue'
+import { computed, ref, watch } from 'vue'
+import { PhCalendarPlus, PhDownloadSimple, PhCaretLeft, PhCaretRight } from '@phosphor-icons/vue'
 import { useAvailability } from '../composables/useAvailability.js'
 import { usePlanState } from '../composables/usePlanState.js'
 import { useCombinedExport } from '../composables/useCombinedExport.js'
@@ -8,6 +8,7 @@ import { useLocale } from '../composables/useLocale.js'
 import { useToast } from '../composables/useToast.js'
 import { getWeekDays } from '../utils/scheduler.js'
 import { isoWeek } from '../utils/dueLabel.js'
+import { sessionsInWeek } from '../utils/planSummary.js'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
 import InlineNotice from '../components/ui/InlineNotice.vue'
@@ -21,7 +22,14 @@ const toast = useToast()
 
 watch(exportMessage, (msg) => { if (msg) toast.show(msg, { tone: 'success' }) })
 
-const weekDays = computed(() => plan.value?.days || getWeekDays(new Date()))
+// Browse the plan week by week (0 = this week)
+const weekOffset = ref(0)
+const weekDays = computed(() => {
+  const base = new Date()
+  base.setDate(base.getDate() + weekOffset.value * 7)
+  return getWeekDays(base)
+})
+const weekSessions = computed(() => sessionsInWeek(plan.value?.sessions || [], weekDays.value))
 
 // "KW 46 · 9.11.–15.11."
 const eyebrow = computed(() => {
@@ -60,18 +68,25 @@ function handleExportWeek() {
       </template>
     </PageHeader>
 
-    <div class="mt-10 mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-ink-muted">
+    <div class="mt-10 mb-3 flex items-center gap-1" role="group" :aria-label="t('myWeek.browse')">
+      <BaseButton variant="ghost" size="sm" icon-only :icon="PhCaretLeft" :label="t('myWeek.prevWeek')" @click="weekOffset--" />
+      <BaseButton variant="ghost" size="sm" :disabled="weekOffset === 0" @click="weekOffset = 0">{{ t('myWeek.thisWeek') }}</BaseButton>
+      <BaseButton variant="ghost" size="sm" icon-only :icon="PhCaretRight" :label="t('myWeek.nextWeek')" @click="weekOffset++" />
+    </div>
+
+    <div class="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-ink-muted">
       <span class="flex items-center gap-2"><span class="size-3 rounded-sm bg-red-soft ring-1 ring-red-ink/40"></span>{{ t('myWeek.legendDeadline') }}</span>
       <span class="flex items-center gap-2"><span class="size-3 rounded-sm border-l-2 border-blue-ink bg-blue-soft"></span>{{ t('myWeek.legendSession') }}</span>
       <span class="flex items-center gap-2"><span class="size-3 rounded-sm border border-dashed border-line-strong bg-surface-muted"></span>{{ t('myWeek.legendAvailability') }}</span>
       <span v-if="!plan" class="basis-full text-ink-muted sm:basis-auto sm:before:mr-5 sm:before:content-['·']">{{ t('myWeek.noPlanYet') }}</span>
+      <span v-else-if="weekSessions.length === 0" class="basis-full text-ink-muted sm:basis-auto sm:before:mr-5 sm:before:content-['·']">{{ t('myWeek.nothingThisWeek') }}</span>
     </div>
 
     <InlineNotice v-if="exportError" tone="error" class="mb-4">{{ exportError }}</InlineNotice>
 
     <WeekGrid
       :days="weekDays"
-      :sessions="plan?.sessions || []"
+      :sessions="weekSessions"
       :blocks="blocks"
       :deadlines-by-day="deadlinesByDay"
       :label="t('myWeek.weekGrid')"

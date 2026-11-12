@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { useTaskEnrichment } from './useTaskEnrichment.js'
 import { useTaskPlanning } from './useTaskPlanning.js'
 import { useAvailability } from './useAvailability.js'
+import { usePlannerSettings } from './usePlannerSettings.js'
 import { generatePlan } from '../utils/scheduler.js'
 
 /**
@@ -15,11 +16,12 @@ import { generatePlan } from '../utils/scheduler.js'
 const { enrichedTasks } = useTaskEnrichment()
 const { getPlanningFor } = useTaskPlanning()
 const { blocks } = useAvailability()
+const { plannerOptions } = usePlannerSettings()
 
 const plan = ref(null)
 
 function generate() {
-  plan.value = generatePlan(enrichedTasks.value, getPlanningFor, blocks.value, new Date())
+  plan.value = generatePlan(enrichedTasks.value, getPlanningFor, blocks.value, new Date(), plannerOptions.value)
 }
 
 export function usePlanState() {

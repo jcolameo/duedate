@@ -25,6 +25,7 @@ const KEYS = {
   csv: 'duedate.tasks.v1',
   theme: 'duedate.theme.v1',
   locale: 'duedate.locale.v1',
+  planner: 'duedate.plannerSettings.v1',
 }
 const SCHEMA_KEY = 'duedate.schemaVersion'
 
@@ -70,6 +71,7 @@ export function createBackup(storage, now = new Date()) {
       settings: {
         theme: storage.getItem(KEYS.theme) || null,
         locale: storage.getItem(KEYS.locale) || null,
+        planner: isObject(readJSON(storage, KEYS.planner)) ? readJSON(storage, KEYS.planner) : null,
       },
     },
   }
@@ -152,6 +154,7 @@ export function applyBackup(backup, storage) {
   put(storage, KEYS.csv, data.csv)
   if (data.settings?.theme) put(storage, KEYS.theme, data.settings.theme)
   if (data.settings?.locale) put(storage, KEYS.locale, data.settings.locale)
+  if (isObject(data.settings?.planner)) put(storage, KEYS.planner, data.settings.planner)
 }
 
 /** Removes all user data (theme and language stay). */

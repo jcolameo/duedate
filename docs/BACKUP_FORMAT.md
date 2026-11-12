@@ -19,7 +19,7 @@ browser (nothing is sent anywhere). The file is plain JSON, so other tools
     "today": { "date": "2026-11-12", "ids": ["…"], "skipped": [] },   // or null
     "columnMapping": { "title": "Titel", "deadline": "Abgabe" },       // or null
     "csv": { "fileName": "…", "rows": [ { } ] },                       // last CSV import, or null
-    "settings": { "theme": "dark", "locale": "de" }
+    "settings": { "theme": "dark", "locale": "de", "planner": { "bufferDays": 1, "maxPerDayHours": 6 } }
   }
 }
 ```

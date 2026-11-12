@@ -33,6 +33,7 @@ const FULL = {
   'duedate.tasks.v1': JSON.stringify({ fileName: 'x.csv', rows: [{ Titel: 'Plakat', Abgabe: '20.11.2026' }] }),
   'duedate.theme.v1': 'light',
   'duedate.locale.v1': 'en',
+  'duedate.plannerSettings.v1': JSON.stringify({ bufferDays: 2, maxPerDayHours: 8 }),
 }
 
 describe('createBackup', () => {
@@ -43,12 +44,12 @@ describe('createBackup', () => {
     expect(b.data.tags).toHaveLength(2)
     expect(b.data.availability).toHaveLength(1)
     expect(b.data.csv.rows).toHaveLength(1)
-    expect(b.data.settings).toEqual({ theme: 'light', locale: 'en' })
+    expect(b.data.settings).toEqual({ theme: 'light', locale: 'en', planner: { bufferDays: 2, maxPerDayHours: 8 } })
   })
 
   it('an empty app gives an empty, valid backup', () => {
     const b = createBackup(fakeStorage(), NOW)
-    expect(b.data).toEqual({ tasks: [], tags: [], availability: [], today: null, columnMapping: null, csv: null, settings: { theme: null, locale: null } })
+    expect(b.data).toEqual({ tasks: [], tags: [], availability: [], today: null, columnMapping: null, csv: null, settings: { theme: null, locale: null, planner: null } })
     expect(parseBackup(JSON.stringify(b)).backup).toBeTruthy()
   })
 
@@ -167,10 +168,10 @@ describe('parseBackup gives readable errors', () => {
 })
 
 describe('clearAllData / helpers', () => {
-  it('removes data and looks-only state but keeps theme and language', () => {
+  it('removes data and looks-only state but keeps theme, language and planner rules', () => {
     const s = fakeStorage({ ...FULL, 'duedate.areaFilter.v1': 'study', 'duedate.lastBackup.v1': 'x', 'duedate.taskPlanning.v1': '{}' })
     clearAllData(s)
-    expect(s.keys()).toEqual(['duedate.locale.v1', 'duedate.theme.v1'])
+    expect(s.keys()).toEqual(['duedate.locale.v1', 'duedate.plannerSettings.v1', 'duedate.theme.v1'])
   })
 
   it('summarize copes with nothing', () => {

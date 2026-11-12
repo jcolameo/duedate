@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { PhTray, PhUploadSimple, PhPlus, PhTrash, PhCalendarPlus, PhDownloadSimple, PhWarning } from '@phosphor-icons/vue'
+import { PhTray, PhUploadSimple, PhPlus, PhTrash, PhCalendarPlus, PhDownloadSimple } from '@phosphor-icons/vue'
 import { useTaskEnrichment } from '../composables/useTaskEnrichment.js'
 import { useTaskPlanning, PRIORITY_OPTIONS } from '../composables/useTaskPlanning.js'
 import EffortInput from '../components/ui/EffortInput.vue'
@@ -9,6 +9,9 @@ import { useAvailability } from '../composables/useAvailability.js'
 import { formatDays, isValidTimeRange } from '../utils/availability.js'
 import { usePlanExport } from '../composables/usePlanExport.js'
 import { usePlanState } from '../composables/usePlanState.js'
+import { usePlannerSettings, BUFFER_OPTIONS, MAX_HOURS_OPTIONS } from '../composables/usePlannerSettings.js'
+import { summarizePlan, summarizeByTask, sessionsInWeek, shortDate } from '../utils/planSummary.js'
+import { formatMinutes } from '../utils/estimate.js'
 import { useLocale } from '../composables/useLocale.js'
 import { useToast } from '../composables/useToast.js'
 import PageHeader from '../components/ui/PageHeader.vue'
@@ -27,8 +30,9 @@ const { getPlanningFor, setEstimate, setPriority } = useTaskPlanning()
 const { blocks, addBlock, removeBlock, restoreBlock } = useAvailability()
 const { exportMessage, exportError, exportPlanToICS } = usePlanExport()
 const { plan, generate: handleGeneratePlan } = usePlanState()
-const { t } = useLocale()
+const { t, locale } = useLocale()
 const toast = useToast()
+const { settings, plannerOptions } = usePlannerSettings()
 
 watch(exportMessage, (msg) => { if (msg) toast.show(msg, { tone: 'success' }) })
 
@@ -36,7 +40,29 @@ const priorityOptions = computed(() =>
   PRIORITY_OPTIONS.map(p => ({ value: p, label: t('stundenplan.priority' + p[0].toUpperCase() + p.slice(1)) })),
 )
 
-const reasonLabel = { noFreeSlot: 'stundenplan.reasonNoFreeSlot', noFreeSlotDefaultEffort: 'stundenplan.reasonNoFreeSlotDefaultEffort' }
+const bufferOptions = BUFFER_OPTIONS.map(v => ({ value: v, label: String(v) }))
+const maxHoursOptions = MAX_HOURS_OPTIONS.map(v => ({ value: v, label: `${v} h` }))
+
+// A changed rule applies to a plan that is already shown
+watch(plannerOptions, () => { if (plan.value) handleGeneratePlan() })
+
+const decimal = computed(() => (locale.value === 'de' ? ',' : '.'))
+const time = (min) => formatMinutes(min, decimal.value)
+const summary = computed(() => summarizePlan(plan.value))
+const byTask = computed(() => summarizeByTask(plan.value))
+const weekSessions = computed(() => (plan.value ? sessionsInWeek(plan.value.sessions, plan.value.days) : []))
+
+/** "Für „Portfolio“ fehlen 4 h vor dem 10.12." */
+function shortfallText(s) {
+  const key = s.overdue ? 'stundenplan.shortfallOverdue' : 'stundenplan.shortfall'
+  const base = t(key, { title: s.title, time: time(s.missingMin), date: shortDate(s.deadline) })
+  return s.defaultEstimate ? `${base} ${t('stundenplan.shortfallDefault', { time: time(s.neededMin) })}` : base
+}
+
+function planned(task) {
+  const entry = byTask.value.get(task._id)
+  return entry ? t('stundenplan.plannedFor', { count: entry.count, time: time(entry.minutes), date: shortDate(entry.last) }) : ''
+}
 
 const emptyBlock = () => ({ label: '', days: [], startTime: '09:00', endTime: '10:00' })
 const newBlock = ref(emptyBlock())
@@ -93,6 +119,7 @@ function handleExportPlan() {
                 <span v-if="task._category" class="truncate">{{ task._category }}</span>
                 <DueBadge :code="task._status.code" :days="task._days" />
               </p>
+              <p v-if="planned(task)" class="mt-0.5 font-mono text-[12px] text-ink-muted">{{ planned(task) }}</p>
             </div>
             <SegmentedControl
               size="sm"
@@ -138,7 +165,32 @@ function handleExportPlan() {
       </BaseCard>
     </section>
 
-    <!-- Weekly plan -->
+    <!-- Planner rules -->
+    <section class="mt-12" aria-labelledby="h-rules">
+      <h2 id="h-rules" class="font-display text-[22px] font-bold tracking-[-0.01em]">{{ t('stundenplan.rules') }}</h2>
+      <p class="mb-3 mt-1 text-sm text-ink-muted">{{ t('stundenplan.rulesHint') }}</p>
+      <BaseCard padding="none">
+        <div class="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+          <div class="min-w-0 flex-1 basis-64">
+            <p class="text-sm font-medium">{{ t('stundenplan.buffer') }}</p>
+            <p class="text-[13px] text-ink-muted">{{ t('stundenplan.bufferHint') }}</p>
+          </div>
+          <span class="flex items-center gap-2">
+            <SegmentedControl v-model="settings.bufferDays" mono :label="t('stundenplan.buffer')" :options="bufferOptions" />
+            <span class="text-[13px] text-ink-muted" aria-hidden="true">{{ t('stundenplan.bufferUnit') }}</span>
+          </span>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-line px-5 py-4">
+          <div class="min-w-0 flex-1 basis-64">
+            <p class="text-sm font-medium">{{ t('stundenplan.maxPerDay') }}</p>
+            <p class="text-[13px] text-ink-muted">{{ t('stundenplan.maxPerDayHint') }}</p>
+          </div>
+          <SegmentedControl v-model="settings.maxPerDayHours" mono :label="t('stundenplan.maxPerDay')" :options="maxHoursOptions" />
+        </div>
+      </BaseCard>
+    </section>
+
+    <!-- Plan -->
     <section class="mt-12" aria-labelledby="h-plan">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h2 id="h-plan" class="font-display text-[22px] font-bold tracking-[-0.01em]">{{ t('stundenplan.weeklyPlan') }}</h2>
@@ -152,19 +204,21 @@ function handleExportPlan() {
 
       <template v-else>
         <p class="mb-4 text-sm" role="status">
-          {{ t('stundenplan.scheduledSummary', { scheduled: plan.sessions.length, total: plan.sessions.length + plan.unscheduled.length }) }}
-          <span v-if="plan.unscheduled.length > 0" class="text-ink-muted">{{ t('stundenplan.unscheduledSummary', { count: plan.unscheduled.length }) }}</span>
+          <template v-if="summary.sessions > 0">{{ t('stundenplan.planSummary', { sessions: summary.sessions, time: time(summary.minutes), tasks: summary.tasks, date: shortDate(summary.last) }) }}</template>
+          <template v-else>{{ t('stundenplan.nothingToPlan') }}</template>
         </p>
         <InlineNotice v-if="exportError" tone="error" class="mb-4">{{ exportError }}</InlineNotice>
 
-        <WeekGrid :days="plan.days" :sessions="plan.sessions" :blocks="blocks" :label="t('stundenplan.weeklyPlan')" />
+        <InlineNotice v-if="plan.shortfalls.length > 0" tone="warning" class="mb-4">
+          <p class="font-medium">{{ t('stundenplan.shortfallTitle') }}</p>
+          <ul class="mt-1 space-y-0.5">
+            <li v-for="item in plan.shortfalls" :key="item.taskId">{{ shortfallText(item) }}</li>
+          </ul>
+          <p class="mt-2 text-[13px]">{{ t('stundenplan.shortfallHint') }}</p>
+        </InlineNotice>
 
-        <ul v-if="plan.unscheduled.length > 0" class="mt-4 space-y-1">
-          <li v-for="u in plan.unscheduled" :key="u.taskId" class="flex items-center gap-2 text-[13px] text-ink-muted">
-            <PhWarning class="size-3.5 shrink-0 text-yellow-ink" aria-hidden="true" />
-            <span class="text-ink">{{ u.title }}</span> · {{ t(reasonLabel[u.reason]) }}
-          </li>
-        </ul>
+        <p class="mb-2 text-[13px] text-ink-muted">{{ t('stundenplan.thisWeek') }}</p>
+        <WeekGrid :days="plan.days" :sessions="weekSessions" :blocks="blocks" :label="t('stundenplan.thisWeek')" />
       </template>
     </section>
   </div>

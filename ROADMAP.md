@@ -94,7 +94,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B6 | ✅ | `feat:` Heute-Ansicht |
 | C1 | ✅ | `feat:` Checkliste in der Beschreibung (vorgezogen, siehe Phase C) |
 | B7 | ✅ | `feat:` JSON-Backup (Export/Import) |
-| B8 | ⬜ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
+| B8 | ✅ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
 | B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
 | B10 | ⬜ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
 
@@ -169,8 +169,9 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Akzeptanz: Aufgabe 12 h, Abgabe in 4 Wochen → mehrere Sessions verteilt über die Wochen, letzte Session ≥ 1 Tag vor Abgabe.
 - Test: Unit-Tests für Aufteilung, Puffer, Überbuchung, Rundung; Vergleich mehrerer Wochen.
 - Optional B8b: Planer-Einstellungen (Arbeitszeitfenster, Puffer-Tage, max. Stunden pro Tag).
+- Umgesetzt: Aufwand = Gesamtstunden (`estimateMin`, Schnellwahl 2/4/8/16 h + freies Feld „6“, „2,5“, „90 min“, 30-Minuten-Raster, Schema 4 mit Migration der alten Werte, `3h+` wurde zu 3 h). Neuer Planer `utils/scheduler.js`: Aufgabe → Arbeitszeiten ≤ 90 min (`splitIntoSessions`), gleichmässig über die Tage bis `Abgabe − Puffer` verteilt (jede Arbeitszeit auf dem freien Tag, der ihrem Zieltag am nächsten liegt, im Zweifel früher), höchstens 3 h pro Aufgabe und 6 h pro Tag insgesamt, Belegtes respektiert, Überfälliges so früh wie möglich, Dringendes zuerst, Horizont 26 Wochen. Rollend: neu berechnet ab heute, abgehakte Checklistenschritte ziehen ihren Anteil vom Aufwand ab (später auch erfasste Zeit). Ehrliche Meldung „Für X fehlen 9 h vor dem 13.11.“ statt Quetschen. Stundenplan: Regeln (Puffer 0/1/2/3/5 Tage, Tageslimit 3–10 h, wirken sofort auf einen sichtbaren Plan), Zusammenfassung, pro Aufgabe „Geplant: … bis 6.12.“. Meine Woche: **Wochen blättern** (Teil von B9), Export enthält den ganzen Plan; Kalender-Einträge „Aufgabe (2/8)“ mit stabiler UID pro Aufgabe und Nummer (Nr. 1 behält die alte UID). Planungsregeln stehen im Backup (`settings.planner`). Bewusst offen (B8b): Arbeitszeitfenster 08–21 Uhr einstellbar, Wochenenden ausnehmen (heute über „Belegte Zeiten“ möglich), Pausen zwischen Arbeitszeiten.
 
-**B9 — Kalender: Wochen blättern + Monatsansicht** (aus Nutzer-Feedback)
+**B9 — Kalender: Wochen blättern + Monatsansicht** (aus Nutzer-Feedback) — *Wochen blättern ist seit B8 in „Meine Woche“ da; offen: Monatsansicht*
 - Ziel: Nicht nur die aktuelle Woche, sondern ein richtiger Kalender mit Überblick.
 - Woche: vor/zurück blättern, „Heute“-Knopf, Tastatur (← → T). Ersetzt „Woche blättern“ aus C6.
 - Monat: Raster Mo–So mit Deadlines (rot), geplanten Sessions (blau, als Anzahl/Stunden pro Tag) und belegten Zeiten; Klick auf einen Tag öffnet die Woche.
