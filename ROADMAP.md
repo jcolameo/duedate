@@ -190,6 +190,8 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Farben nach Bereich (Nutzerwunsch): Studium blau, Freelance grün, Privat gelb; Deadline = gefüllt mit Flagge, Arbeitszeit = hell mit farbigem Rand, überfällige Deadline = rot. Legende, Bereich im Namen für Screenreader, Bereichsfilter im Kalender (gemeinsam mit dem Überblick), Monat: eine Zeile pro Bereich, Jahr: Tagesfarbe = Hauptbereich, Deadline-Punkte in Bereichsfarben. Arbeitszeiten tragen `area` im Plan.
 - Aufräumen umgesetzt: Einstellungen → „Erledigtes aufräumen“ (3/6/12 Monate, Vorschau „Wird gelöscht: n“, Bestätigung mit optionaler Backup-Datei vorher, danach „Rückgängig“). Nur eigene erledigte Aufgaben; BBNet-Aufgaben bleiben, weil sie beim nächsten CSV-Import als offen zurückkämen (Archiv-Flag wäre die Alternative, später falls gewünscht). Vergangenes wird im Kalender nicht angezeigt, soweit erledigt.
 
+- Datei-Import als Abkürzung (Nutzerwunsch): „Neue Aufgabe“ hat die Zeile **Datei importieren** (CSV wählen oder in den Dialog ziehen); eine Datei lässt sich auch auf das ganze Fenster ziehen (Overlay „Datei hier ablegen“). Gleiche Pipeline wie Deadlines: beim ersten Mal die Spalten bestätigen (führt zu Deadlines), danach direkt importiert mit Toast + Rückgängig, „nichts Neues“ bei gleicher Datei. Nicht unterstützte Typen (Excel, Markdown) melden „kommt später“. Erweiterbar über `readers` in `composables/useFileImport.js`, Typ-Erkennung in `utils/fileTypes.js` (17 Tests). Excel später mit `read-excel-file` (lazy).
+
 
 ### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
 

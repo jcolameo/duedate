@@ -250,6 +250,16 @@ export const en = {
     hint: 'How long will it take in total? The planner spreads it over several days.',
     remaining: 'Left: {time} (after checklist)',
   },
+  import: {
+    fileButton: 'Import file',
+    fileHint: 'CSV, e.g. from BBNet, or drop it here. Excel and Markdown will follow.',
+    dropHere: 'Drop the file here',
+    dropHint: 'A CSV file is read as a task list.',
+    done: 'Tasks imported: {count} (from “{file}”)',
+    nothingNew: 'Nothing new in “{file}”. Everything is already there.',
+    checkColumns: '“{file}” read. Please confirm the columns.',
+    unsupported: '“{file}” cannot be read yet. CSV is supported. Excel and Markdown come later.',
+  },
   tags: {
     title: 'Tags',
     add: 'Tag',
