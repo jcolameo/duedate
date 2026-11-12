@@ -240,6 +240,40 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 ---
 
+## Phase K — Kanban, Projekte, Kleinkram (nur geplant, nichts gebaut)
+
+Entstanden im Gespräch mit dem Nutzer; der Figma-Prototyp (Seite 2) zeigt Struktur, Board, Projekt-Board und Kalender. Ziel: den Arbeitstag im Griff behalten, mit möglichst wenig Pflegeaufwand. Nicht alles auf einmal: jeder Schritt ist einzeln nutzbar.
+
+**Leitentscheide (vom Nutzer bestätigt)**
+
+| Thema | Entscheid |
+|---|---|
+| Ebenen | **Zwei:** Projekt (optionaler Ordner) → Aufgabe. Keine echten Unteraufgaben (kein `parentId`): Aufgaben im Projekt sind die Unteraufgaben. Die Checkliste im Text bleibt für Kleinkram ohne Zeit. |
+| Projekt | Ordner mit Bereich, Abgabe und **Fortschrittsbalken** (erledigte Stunden / Gesamtstunden, ohne Schätzung nach Anzahl). Aufgaben haben ein optionales `projectId`. |
+| Boards | Sind **Ansichten**, keine eigenen Objekte: „Alle“ (Zeilen = Projekte, lose Aufgaben unter „Ohne Projekt“), „ein Projekt“, „ein Bereich“. Alle Aufgaben stehen automatisch im Board (Backlog). |
+| Kleinkram | **Quicktask**: einfache Zeile mit Häkchen wie die iPhone-Erinnerungen, für kleine Alltagssachen am selben Tag. Eigene Liste „Kleinkram“ auf dem Überblick mit Eingabezeile; „Neue Aufgabe“ (N) legt immer eine echte Aufgabe an. Kein Aufwand, keine Spalten, nicht im Kalender, nicht im Planer (heute würde eine Aufgabe ohne Aufwand mit 60 Min. eingeplant). Standard „heute“; Liegengebliebenes rutscht still auf den nächsten Tag, ohne Warnung. Getrennt von den „3 für heute“. |
+| Bereich der Quicktasks | Standard Privat; `#studium` / `#freelance` in der Zeile oder Klick auf den Bereichspunkt; liegt der Quicktask in einem Projekt, gilt dessen Bereich. Kein Raten anhand von Wörtern. |
+| Umwandeln | Quicktask → **„Zu Aufgabe machen“** (fragt kurz Aufwand/Datum) oder **„Zu Projekt machen“**; Aufgabe → „Zu Projekt machen“ (Titel wird Projektname, Checkliste kann zu Aufgaben werden). Getrennt davon: „In Projekt verschieben“ = Feld „Projekt“ an der Aufgabe. |
+| Checkliste → Aufgaben | Einmalig umwandeln („Zu Aufgaben machen“, auch aus CSV/Text), **keine** Dauer-Synchronisation in beide Richtungen. BBNet-„Kategorie/Modul“ wird als Projekt vorgeschlagen. |
+| Hauptboard der Projekte | Projektstatus **errechnet sich** aus den Aufgaben (Backlog / In Arbeit / Review / Erledigt), Projekte werden nicht von Hand gezogen. Optional „pausiert“. |
+
+**Noch zu bestätigen:** Spalten fest (Backlog, Diese Woche, In Arbeit mit Limit 3, einstellbar; Review pro Projekt ausblendbar, Erledigt) · ob nur „Diese Woche“ und „In Arbeit“ in den Kalender kommen (ändert das heutige Verhalten, K6) · Reihenfolge (Vorschlag: K3 zuerst, dann C3/C4, dann K1/K2).
+
+| # | Status | Schritt |
+|---|---|---|
+| K1 | ⬜ | `feat:` Board: alle Aufgaben automatisch im Board, Status „In Arbeit“ und „Review“ (Schema 6 mit Migration), Ziehen zwischen Spalten, Bereichsfilter |
+| K2 | ⬜ | `feat:` Projekte: Ordner mit Fortschrittsbalken, Projekt-Board, „In Projekt verschieben“, „Zu Projekt machen“ |
+| K3 | ⬜ | `feat:` Kleinkram: Quicktask-Liste auf dem Überblick, Umwandeln in Aufgabe/Projekt |
+| K4 | ⬜ | `feat:` Hauptboard der Projekte mit errechnetem Status |
+| K5 | ⬜ | `feat:` Vorlagen pro Projektart, Checkliste → Aufgaben |
+| K6 | ⬜ | `feat:` Spalten steuern den Kalender („Diese Woche“, „In Arbeit“ mit Limit) |
+
+- Daten (Vorschlag): `duedate.projects.v1`, Task-Felder `projectId` und `quick`, Status `open | doing | review | done` (Schema 6; bestehende offene Aufgaben bleiben „Offen“ = Backlog); Backup-Format und Migration mitziehen.
+- Test je Schritt: Unit für Fortschritt/Projektstatus/Umwandlung, Browser-Test für Ziehen und Tastatur, axe.
+- Später: **Überblick überarbeiten** (Quickview von allem: Heute, Kleinkram, Projekte, nächste Abgaben). D2 (Freelance-Projekte) baut auf K2 auf und ergänzt Kunde und Status Anfrage → Aktiv.
+
+---
+
 ## Phase D — Freelance
 
 | # | Status | Schritt |
@@ -303,7 +337,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | Speicher: IndexedDB (Dexie.js) | Statt localStorage (≈ 5 MB), sobald Zeiterfassung (C2/D3) viele Einträge erzeugt. Alles läuft über `useTasks`/Stores → Umbau ist lokal begrenzt. B7-Backup vorher. |
 | Kalender direkt verbinden statt .ics-Export | Nutzerwunsch: Aufgaben und Arbeitszeiten erscheinen automatisch im Kalender auf Handy und Desktop (Google, Apple, Microsoft). Drei Wege, vom einfachsten: **(1) Abo-Link (ICS-Feed)**: eine private URL, die der Kalender selbst abruft; funktioniert bei Apple, Google und Outlook mit einmaligem „Kalender abonnieren“, nur lesend, Google aktualisiert langsam (oft bis zu 24 h). Braucht einen kleinen Server, der den Plan ausliefert, also das eigene Backend (siehe unten). **(2) Google Calendar API** direkt aus dem Browser (OAuth-Anmeldung, eigener Kalender „DueDate“, Einträge werden angelegt/verschoben/gelöscht, fast sofort sichtbar); kein Server nötig, aber OAuth-Client einrichten, Token im Browser, Google sieht die Termine. **(3) Microsoft Graph** (Outlook/Windows) ähnlich wie (2). Apple/iCloud hat keine offene Kalender-API: dort nur über (1). Handy: braucht keine eigene App, sobald der Kalender-Account synchronisiert. Voraussetzung: stabile Eintrags-IDs (seit B8 vorhanden). Empfehlung: erst (1) mit dem Backend, danach optional (2). |
 | Datenbank / Sync Desktop ↔ Mobile | **Entscheid des Nutzers: eigenes Backend** (statt Supabase), erst später (frühestens mit Phase E). Offen: API und Login des Backends. Vorgehen dann: Sync-Schicht hinter den Stores (alle Zugriffe laufen schon über `useTasks`, `useTags` …), Austauschformat = JSON-Backup (`docs/BACKUP_FORMAT.md`), App bleibt local-first und funktioniert offline. Alternativen, falls nötig: Supabase (EU), PocketBase. Firebase verworfen. |
-| Kanban-Board (Modul) | Nach B7, zusammen mit Projekten (D2): Spalten Offen → In Arbeit → Erledigt, zweite Ansicht derselben Aufgaben, filterbar nach Bereich/Projekt. Braucht Status „In Arbeit“ (Migration). Aus „verworfen“ zurückgeholt, weil DueDate Hauptarbeitsort werden soll. |
+| Kanban-Board (Modul) | Jetzt als **Phase K** geplant (Board, Projekte, Kleinkram), siehe dort. Modul-Schalter in den Einstellungen bleibt Idee. |
 | Module ein/aus | Einstellungen-Schalter pro Modul (z. B. Kanban, Freelance). Mit dem ersten optionalen Modul. |
 | SaaS | Login, Server-DB (Supabase), Bezahlung, Datenschutz/AGB, Support. Nichts bauen, was das verbaut. |
 | Rechnungen inkl. QR-Rechnung | Erst wenn regelmässig Aufträge laufen |
