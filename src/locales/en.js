@@ -386,6 +386,7 @@ export const en = {
     next_year: 'Next year',
     legendDeadline: 'Deadline',
     legendSession: 'Work time',
+    legendOverdue: 'Overdue',
     legendAvailability: 'Busy',
     noPlanYet: 'No plan yet. “Create plan” adds work time.',
     nothingPlanned: 'Nothing planned here.',

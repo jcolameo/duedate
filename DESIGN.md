@@ -59,6 +59,7 @@ Pastels (`*-soft` background / `*-ink` text):
 
 ## 4. Semantic color mapping
 - **Areas:** Studium = blue · Freelance = green · Privat = yellow.
+- **Calendar entries:** colored by area (same mapping). Deadline = solid fill with a flag, work time = soft fill with a colored left edge, overdue deadline = solid red (red stays reserved for attention). Color is never the only signal: the area is also in the accessible name, the legend shows shape and color. Year view: day color = area with the most planned time, intensity = amount, deadline dots in area colors.
 - **User tags (B5c):** 8 user-chosen colors (gray, blue, green, yellow, orange, purple, pink, teal; extra tokens `--dd-{orange,purple,pink,teal}-{soft,ink}`, all AA-checked). Tags are `#name`, normal case, `rounded-md`, so they never look like the uppercase area pills. Red is not offered (reserved for overdue/urgent).
 - **Deadline status:** overdue = red · urgent (< 3 d) = red text only, no fill · soon / ok = neutral muted text.
   Only what needs attention gets color.

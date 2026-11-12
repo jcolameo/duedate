@@ -11,7 +11,7 @@ import { remainingMinutes, formatMinutes } from '../utils/estimate.js'
 import { enrichTask, fromISODate } from '../utils/taskModel.js'
 import { AREAS, normalizeArea } from '../utils/areas.js'
 import { dueLabel } from '../utils/dueLabel.js'
-import { AREA_META } from './ui/areaMeta.js'
+import { AREA_META, sessionClass } from './ui/areaMeta.js'
 import BaseDialog from './ui/BaseDialog.vue'
 import BaseButton from './ui/BaseButton.vue'
 import SegmentedControl from './ui/SegmentedControl.vue'
@@ -171,7 +171,7 @@ const readOnly = 'text-sm text-ink'
       </div>
 
       <!-- Opened from a work session in the calendar -->
-      <div v-if="fromSession" class="rounded-lg border-l-2 border-blue-ink bg-blue-soft px-3 py-2 text-blue-ink">
+      <div v-if="fromSession" :class="['rounded-lg border-l-2 px-3 py-2', sessionClass({ area: task.area })]">
         <p v-if="fromSession.of > 1" class="text-sm font-medium">{{ t('detail.sessionOf', { n: fromSession.n, of: fromSession.of }) }}</p>
         <p v-else class="text-sm font-medium">{{ t('calendar.legendSession') }}</p>
         <p class="font-mono text-[13px]">{{ dayText(fromSession.date) }} · {{ fromSession.startTime }}–{{ fromSession.endTime }}</p>
@@ -289,7 +289,7 @@ const readOnly = 'text-sm text-ink'
             <li
               v-for="s in planned.upcoming.slice(0, SESSIONS_SHOWN)"
               :key="s.n"
-              :class="['flex items-baseline gap-3 px-3 py-1.5 text-sm', fromSession && fromSession.n === s.n && 'bg-blue-soft']"
+              :class="['flex items-baseline gap-3 px-3 py-1.5 text-sm', fromSession && fromSession.n === s.n && 'bg-surface-muted']"
             >
               <span class="w-24 shrink-0 font-mono text-[13px] text-ink-muted">{{ dayText(s.date) }}</span>
               <span class="font-mono text-[13px]">{{ s.startTime }}–{{ s.endTime }}</span>

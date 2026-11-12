@@ -12,11 +12,15 @@ import { getWeekDays, WORK_DAYS } from '../utils/scheduler.js'
 import { isoWeek } from '../utils/dueLabel.js'
 import { formatMinutes } from '../utils/estimate.js'
 import { toISODate } from '../utils/taskModel.js'
+import { AREAS, filterByArea } from '../utils/areas.js'
+import { useAreaFilter } from '../composables/useAreaFilter.js'
+import { AREA_EVENT_CLASSES, OVERDUE_DEADLINE_CLASS } from '../components/ui/areaMeta.js'
 import { CALENDAR_VIEWS, buildDayMap, rangeLabel, shiftAnchor, startOfDay, isSameDay } from '../utils/calendar.js'
 import PageHeader from '../components/ui/PageHeader.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
 import InlineNotice from '../components/ui/InlineNotice.vue'
 import SegmentedControl from '../components/ui/SegmentedControl.vue'
+import AreaFilter from '../components/AreaFilter.vue'
 import DueBadge from '../components/ui/DueBadge.vue'
 import WeekGrid from '../components/WeekGrid.vue'
 import MonthGrid from '../components/calendar/MonthGrid.vue'
@@ -31,6 +35,7 @@ const { blocks } = useAvailability()
 const { plan, generate: handleGeneratePlan, enrichedTasks } = usePlanState()
 const { exportMessage, exportError, exportWeekToICS } = useCombinedExport()
 const { openTask } = useTaskDetail()
+const { areaFilter } = useAreaFilter()
 const openSession = (session) => openTask({ id: session.taskId }, session)
 const { t, locale } = useLocale()
 const toast = useToast()
@@ -75,7 +80,12 @@ function openDay(date) { anchor.value = startOfDay(date); view.value = 'day' }
 function openMonth(date) { anchor.value = startOfDay(date); view.value = 'month' }
 
 // --- Data for all views ------------------------------------------------------
-const dayMap = computed(() => buildDayMap(enrichedTasks.value, plan.value?.sessions || []))
+// The area filter (shared with the overview) shows one area at a time; "all" shows everything
+const openTasks = computed(() => enrichedTasks.value.filter(task => !task._isDone))
+const dayMap = computed(() => buildDayMap(
+  filterByArea(enrichedTasks.value, areaFilter.value),
+  filterByArea(plan.value?.sessions || [], areaFilter.value),
+))
 const dayInfo = (date) => dayMap.value.get(toISODate(date)) || { deadlines: [], sessions: [], minutes: 0 }
 
 const weekDays = computed(() => getWeekDays(anchor.value))
@@ -118,13 +128,26 @@ function handleExport() {
         </div>
         <h2 class="font-display text-[22px] font-bold tracking-[-0.01em]" aria-live="polite">{{ label }}</h2>
       </div>
-      <SegmentedControl v-model="view" :label="t('calendar.view')" :options="viewOptions" />
+      <div class="flex flex-wrap items-center gap-3">
+        <AreaFilter :tasks="openTasks" />
+        <SegmentedControl v-model="view" :label="t('calendar.view')" :options="viewOptions" />
+      </div>
     </div>
 
     <div class="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-ink-muted">
-      <span class="flex items-center gap-2"><span class="size-3 rounded-sm bg-red-soft ring-1 ring-red-ink/40"></span>{{ t('calendar.legendDeadline') }}</span>
-      <span class="flex items-center gap-2"><span class="size-3 rounded-sm border-l-2 border-blue-ink bg-blue-soft"></span>{{ t('calendar.legendSession') }}</span>
-      <span v-if="view === 'week' || view === 'day'" class="flex items-center gap-2"><span class="size-3 rounded-sm border border-dashed border-line-strong bg-surface-muted"></span>{{ t('calendar.legendAvailability') }}</span>
+      <span v-for="area in AREAS" :key="area" class="flex items-center gap-2">
+        <span :class="['size-3 rounded-sm', AREA_EVENT_CLASSES[area].swatch]"></span>{{ t('areas.' + area) }}
+      </span>
+      <span class="flex items-center gap-2" aria-hidden="true">
+        <span class="h-3 w-5 rounded-sm bg-ink-muted"></span>{{ t('calendar.legendDeadline') }}
+      </span>
+      <span class="flex items-center gap-2" aria-hidden="true">
+        <span class="h-3 w-5 rounded-sm border-l-2 border-ink-muted bg-ink-muted/30"></span>{{ t('calendar.legendSession') }}
+      </span>
+      <span class="flex items-center gap-2" aria-hidden="true">
+        <span :class="['h-3 w-5 rounded-sm', OVERDUE_DEADLINE_CLASS.split(' ')[0]]"></span>{{ t('calendar.legendOverdue') }}
+      </span>
+      <span v-if="view === 'week' || view === 'day'" class="flex items-center gap-2"><span class="h-3 w-5 rounded-sm border border-dashed border-line-strong bg-surface-muted"></span>{{ t('calendar.legendAvailability') }}</span>
       <span v-if="!plan" class="basis-full text-ink-muted sm:basis-auto sm:before:mr-5 sm:before:content-['·']">{{ t('calendar.noPlanYet') }}</span>
       <span v-else-if="nothingShown" class="basis-full text-ink-muted sm:basis-auto sm:before:mr-5 sm:before:content-['·']">{{ t('calendar.nothingPlanned') }}</span>
     </div>
@@ -158,8 +181,9 @@ function handleExport() {
           <h3 class="mb-2 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">{{ t('calendar.legendDeadline') }}</h3>
           <ul v-if="dayDetail.deadlines.length" class="divide-y divide-line rounded-lg border border-line">
             <li v-for="task in dayDetail.deadlines" :key="task._id" class="flex items-center gap-2 px-3 py-2">
-              <PhFlag class="size-4 shrink-0 text-red-ink" aria-hidden="true" />
-              <button type="button" class="min-w-0 flex-1 truncate rounded-sm text-left text-sm font-medium hover:underline hover:underline-offset-4" aria-haspopup="dialog" @click="openTask(task)">{{ task._title || t('common.untitled') }}</button>
+              <span :class="['size-2.5 shrink-0 rounded-sm', AREA_EVENT_CLASSES[task._area || 'study'].swatch]" aria-hidden="true"></span>
+              <PhFlag class="size-4 shrink-0 text-ink-muted" aria-hidden="true" />
+              <button type="button" class="min-w-0 flex-1 truncate rounded-sm text-left text-sm font-medium hover:underline hover:underline-offset-4" aria-haspopup="dialog" @click="openTask(task)">{{ task._title || t('common.untitled') }}<span class="sr-only">, {{ t('areas.' + (task._area || 'study')) }}</span></button>
               <DueBadge :code="task._status.code" :days="task._days" />
             </li>
           </ul>
@@ -170,8 +194,9 @@ function handleExport() {
           <ul v-if="dayDetail.sessions.length" class="divide-y divide-line rounded-lg border border-line">
             <li v-for="s in dayDetail.sessions" :key="s.taskId + s.startMin">
               <button type="button" class="flex w-full items-baseline gap-3 px-3 py-2 text-left text-sm transition-colors duration-150 hover:bg-surface-muted/60" aria-haspopup="dialog" @click="openSession(s)">
+                <span :class="['size-2.5 shrink-0 translate-y-px rounded-sm', AREA_EVENT_CLASSES[s.area || 'study'].swatch]" aria-hidden="true"></span>
                 <span class="font-mono text-[13px] text-ink-muted">{{ s.startTime }}–{{ s.endTime }}</span>
-                <span class="min-w-0 flex-1 truncate">{{ s.title }}<span v-if="s.of > 1" class="font-mono text-[12px] text-ink-muted"> ({{ s.n }}/{{ s.of }})</span></span>
+                <span class="min-w-0 flex-1 truncate">{{ s.title }}<span v-if="s.of > 1" class="font-mono text-[12px] text-ink-muted"> ({{ s.n }}/{{ s.of }})</span><span class="sr-only">, {{ t('areas.' + (s.area || 'study')) }}</span></span>
               </button>
             </li>
           </ul>

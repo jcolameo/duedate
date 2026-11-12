@@ -386,6 +386,7 @@ export const de = {
     next_year: 'Nächstes Jahr',
     legendDeadline: 'Deadline',
     legendSession: 'Arbeitszeit',
+    legendOverdue: 'Überfällig',
     legendAvailability: 'Belegt',
     noPlanYet: 'Noch kein Plan. Mit „Plan erstellen“ kommen Arbeitszeiten dazu.',
     nothingPlanned: 'Hier ist nichts eingeplant.',

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   addDays, addMonths, startOfWeek, shiftAnchor, monthGrid, compactMonthGrid, buildDayMap, loadLevel,
-  rangeLabel, moveByKey, isSameDay, CALENDAR_VIEWS,
+  rangeLabel, moveByKey, isSameDay, CALENDAR_VIEWS, dominantArea, deadlineAreas,
 } from '../calendar.js'
 
 const d = (y, m, day) => new Date(y, m - 1, day)
@@ -95,6 +95,32 @@ describe('buildDayMap', () => {
   it('skips done tasks and tasks without a date', () => {
     const map = buildDayMap([task('x', 2026, 11, 20, { _isDone: true }), { _id: 'n', _deadlineDate: null }], [])
     expect(map.size).toBe(0)
+  })
+})
+
+describe('areas in the day map', () => {
+  const session = (area, start, end) => ({ taskId: 'x', area, date: new Date(2026, 10, 20), startMin: start, endMin: end })
+
+  it('adds up the planned minutes per area', () => {
+    const entry = buildDayMap([], [session('study', 600, 690), session('freelance', 700, 760), session('study', 800, 860)]).get('2026-11-20')
+    expect(entry.areaMinutes).toEqual({ study: 150, freelance: 60 })
+    expect(entry.minutes).toBe(210)
+  })
+
+  it('a session without an area counts as study (old plans)', () => {
+    expect(buildDayMap([], [session(undefined, 600, 660)]).get('2026-11-20').areaMinutes).toEqual({ study: 60 })
+  })
+
+  it('dominantArea: most minutes wins, ties follow the fixed order, nothing gives null', () => {
+    expect(dominantArea({ study: 60, freelance: 90 })).toBe('freelance')
+    expect(dominantArea({ freelance: 60, personal: 60 })).toBe('freelance')
+    expect(dominantArea({})).toBeNull()
+    expect(dominantArea(undefined)).toBeNull()
+  })
+
+  it('deadlineAreas lists each area once, in fixed order', () => {
+    expect(deadlineAreas([{ _area: 'personal' }, { _area: 'study' }, { _area: 'personal' }, {}])).toEqual(['study', 'personal'])
+    expect(deadlineAreas([])).toEqual([])
   })
 })
 

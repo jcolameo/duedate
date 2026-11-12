@@ -2,7 +2,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useLocale } from '../../composables/useLocale.js'
 import { toISODate } from '../../utils/taskModel.js'
-import { compactMonthGrid, moveByKey, isSameDay, loadLevel, startOfWeek, addDays } from '../../utils/calendar.js'
+import { compactMonthGrid, moveByKey, isSameDay, loadLevel, startOfWeek, addDays, dominantArea, deadlineAreas } from '../../utils/calendar.js'
+import { AREA_EVENT_CLASSES } from '../ui/areaMeta.js'
 import { formatMinutes } from '../../utils/estimate.js'
 
 /**
@@ -34,12 +35,12 @@ const weekdays = computed(() => {
 
 const info = (date) => props.dayMap.get(toISODate(date)) || { deadlines: [], sessions: [], minutes: 0 }
 
-const LEVEL_CLASS = [
-  'text-ink',
-  'bg-blue-soft text-blue-ink',
-  'bg-blue-soft text-blue-ink ring-1 ring-inset ring-blue-ink/60',
-  'bg-blue-ink text-surface font-semibold',
-]
+// Planned work colors the day in the color of its main area, stronger with more time
+function dayClass(date) {
+  const day = info(date)
+  const area = dominantArea(day.areaMinutes)
+  return area ? AREA_EVENT_CLASSES[area].heat[loadLevel(day.minutes)] : 'text-ink'
+}
 
 function ariaLabel(date) {
   const parts = [date.toLocaleDateString(loc.value, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })]
@@ -92,13 +93,15 @@ watch(() => props.anchor, async () => {
               :aria-current="isSameDay(cell.date, today) ? 'date' : undefined"
               :class="[
                 'relative m-px flex h-7 items-center justify-center rounded-md font-mono text-[12px] transition-colors duration-150 hover:bg-surface-muted',
-                LEVEL_CLASS[loadLevel(info(cell.date).minutes)],
+                dayClass(cell.date),
                 isSameDay(cell.date, today) && 'outline outline-2 -outline-offset-2 outline-ink',
               ]"
               @click="emit('select', cell.date)"
             >
               <span aria-hidden="true">{{ cell.date.getDate() }}</span>
-              <span v-if="info(cell.date).deadlines.length" class="absolute bottom-[3px] size-1 rounded-full bg-red-ink" aria-hidden="true"></span>
+              <span v-if="info(cell.date).deadlines.length" class="absolute bottom-[2px] flex gap-px" aria-hidden="true">
+                <span v-for="area in deadlineAreas(info(cell.date).deadlines)" :key="area" :class="['size-[5px] rounded-full ring-1 ring-surface', AREA_EVENT_CLASSES[area].swatch]"></span>
+              </span>
             </button>
           </template>
         </div>

@@ -205,6 +205,7 @@ export function generatePlan(enrichedTasks, getPlanningFor, availabilityBlocks, 
           sessions.push({
             taskId: task._id,
             title: task._title || 'Aufgabe',
+            area: task._area || task.area || 'study',
             day: weekdayLabel(date),
             date,
             startMin: slot[0],

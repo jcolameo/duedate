@@ -70,12 +70,12 @@ export function compactMonthGrid(year, month) {
 
 /**
  * Open tasks with a deadline and planned sessions, looked up by day:
- * Map 'YYYY-MM-DD' -> { deadlines: task[], sessions: session[], minutes }
+ * Map 'YYYY-MM-DD' -> { deadlines: task[], sessions: session[], minutes, areaMinutes: { [area]: minutes } }
  */
 export function buildDayMap(tasks, sessions) {
   const map = new Map()
   const entry = (key) => {
-    if (!map.has(key)) map.set(key, { deadlines: [], sessions: [], minutes: 0 })
+    if (!map.has(key)) map.set(key, { deadlines: [], sessions: [], minutes: 0, areaMinutes: {} })
     return map.get(key)
   }
   for (const task of tasks) {
@@ -83,10 +83,28 @@ export function buildDayMap(tasks, sessions) {
   }
   for (const s of sessions) {
     const e = entry(toISODate(s.date))
+    const length = s.endMin - s.startMin
+    const area = s.area || 'study'
     e.sessions.push(s)
-    e.minutes += s.endMin - s.startMin
+    e.minutes += length
+    e.areaMinutes[area] = (e.areaMinutes[area] || 0) + length
   }
   return map
+}
+
+/** The area with the most planned minutes on a day (ties: study, freelance, personal order), or null. */
+export function dominantArea(areaMinutes) {
+  let best = null
+  for (const area of ['study', 'freelance', 'personal']) {
+    if (areaMinutes?.[area] > (best ? areaMinutes[best] : 0)) best = area
+  }
+  return best
+}
+
+/** Distinct areas of a list of deadline tasks, in fixed order (for dots and chips). */
+export function deadlineAreas(tasks) {
+  const present = new Set(tasks.map(t => t._area || 'study'))
+  return ['study', 'freelance', 'personal'].filter(a => present.has(a))
 }
 
 /** How busy a day is, for the heat marks of the year view: 0 none, 1 light, 2 medium, 3 heavy. */

@@ -4,6 +4,8 @@ import { PhFlag } from '@phosphor-icons/vue'
 import { useLocale } from '../composables/useLocale.js'
 import { DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
 import { expandBlocksByDay } from '../utils/availability.js'
+import { deadlineClass, sessionClass } from './ui/areaMeta.js'
+import { normalizeArea } from '../utils/areas.js'
 
 /**
  * Time grid shared by Stundenplan and the calendar: one column per entry in
@@ -84,9 +86,9 @@ const isToday = (d) => d.date.toDateString() === todayKey
             v-for="task in deadlinesByDay[day.label]"
             :key="task._id"
             type="button"
-            class="flex w-full items-center gap-1 truncate rounded bg-red-soft px-1.5 py-0.5 text-left text-[11px] font-medium text-red-ink transition-[filter] duration-150 hover:brightness-95"
+            :class="['flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium transition-[filter] duration-150 hover:brightness-95', deadlineClass(task)]"
             :title="task._title"
-            :aria-label="`${t('calendar.legendDeadline')}: ${task._title || t('common.untitled')}`"
+            :aria-label="`${t('calendar.legendDeadline')}: ${task._title || t('common.untitled')}, ${t('areas.' + normalizeArea(task._area))}`"
             aria-haspopup="dialog"
             @click="emit('open-task', task)"
           >
@@ -126,10 +128,10 @@ const isToday = (d) => d.date.toDateString() === todayKey
           v-for="(s, i) in visibleSessions"
           :key="'ses-' + i"
           type="button"
-          class="mx-0.5 my-px cursor-pointer overflow-hidden rounded border-l-2 border-blue-ink bg-blue-soft px-1 text-left text-[10.5px] font-medium leading-tight text-blue-ink transition-[filter] duration-150 hover:brightness-110 focus-visible:outline-offset-[-2px] light:hover:brightness-95"
+          :class="['mx-0.5 my-px cursor-pointer overflow-hidden rounded border-l-2 px-1 text-left text-[10.5px] font-medium leading-tight transition-[filter] duration-150 hover:brightness-110 focus-visible:outline-offset-[-2px] light:hover:brightness-95', sessionClass(s)]"
           :style="place(s.day, s.startMin, s.endMin)"
           :title="`${s.title} (${s.startTime}–${s.endTime})`"
-          :aria-label="`${t('calendar.legendSession')}: ${s.title}${s.of > 1 ? ` (${s.n}/${s.of})` : ''}, ${s.startTime}–${s.endTime}`"
+          :aria-label="`${t('calendar.legendSession')}: ${s.title}${s.of > 1 ? ` (${s.n}/${s.of})` : ''}, ${s.startTime}–${s.endTime}, ${t('areas.' + normalizeArea(s.area))}`"
           aria-haspopup="dialog"
           @click="emit('open-session', s)"
         >

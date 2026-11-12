@@ -6,6 +6,7 @@ import { toISODate } from '../../utils/taskModel.js'
 import { monthGrid, moveByKey, isSameDay, startOfWeek, addDays } from '../../utils/calendar.js'
 import { isoWeek } from '../../utils/dueLabel.js'
 import { formatMinutes } from '../../utils/estimate.js'
+import { deadlineClass, sessionClass } from '../ui/areaMeta.js'
 
 /**
  * Month view: 6 weeks × 7 days with the week number. Each day shows its
@@ -96,11 +97,11 @@ watch(() => props.anchor, async () => {
               aria-hidden="true"
             >{{ cell.date.getDate() }}</span>
 
-            <span v-for="task in info(cell.date).deadlines.slice(0, MAX_DEADLINES)" :key="task._id" class="flex items-center gap-1 truncate rounded bg-red-soft px-1 text-[11px] font-medium text-red-ink" aria-hidden="true">
+            <span v-for="task in info(cell.date).deadlines.slice(0, MAX_DEADLINES)" :key="task._id" :class="['flex items-center gap-1 truncate rounded px-1 text-[11px] font-medium', deadlineClass(task)]" aria-hidden="true">
               <PhFlag class="size-3 shrink-0" /><span class="truncate">{{ task._title || t('common.untitled') }}</span>
             </span>
             <span v-if="info(cell.date).deadlines.length > MAX_DEADLINES" class="px-1 font-mono text-[11px] text-ink-muted" aria-hidden="true">+{{ info(cell.date).deadlines.length - MAX_DEADLINES }}</span>
-            <span v-if="info(cell.date).minutes" class="truncate rounded border-l-2 border-blue-ink bg-blue-soft px-1 font-mono text-[11px] text-blue-ink" aria-hidden="true">{{ formatMinutes(info(cell.date).minutes, decimal) }}</span>
+            <span v-for="(minutes, area) in info(cell.date).areaMinutes" :key="area" :class="['truncate rounded border-l-2 px-1 font-mono text-[11px]', sessionClass({ area })]" aria-hidden="true">{{ formatMinutes(minutes, decimal) }}</span>
           </button>
         </div>
       </div>

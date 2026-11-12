@@ -298,6 +298,13 @@ describe('rules that stayed', () => {
     expect(plan.shortfalls).toEqual([])
   })
 
+  it('sessions carry the area of their task (for the calendar colors)', () => {
+    const tasks = [due('S', 3, { _area: 'study' }), due('F', 3, { _area: 'freelance' }), due('P', 3, { _area: 'personal' }), due('N', 3)]
+    const plan = generatePlan(tasks, planning({ S: { hours: 1 }, F: { hours: 1 }, P: { hours: 1 }, N: { hours: 1 } }), [], NOW)
+    const area = (id) => plan.sessions.find(s => s.taskId === id).area
+    expect([area('S'), area('F'), area('P'), area('N')]).toEqual(['study', 'freelance', 'personal', 'study'])
+  })
+
   it('plans a task without an estimate with the default (1 h)', () => {
     const plan = generatePlan([due('A', 3)], planning(), [], NOW)
     expect(total(plan.sessions)).toBe(PLANNER_DEFAULTS.defaultEstimateMin)
