@@ -43,14 +43,15 @@
 
 .light {
   color-scheme: light;
-  --dd-canvas: #fbfbfa;
-  --dd-surface: #ffffff;
-  --dd-surface-muted: #f4f3f0;
-  --dd-line: #eaeaea;
-  --dd-line-strong: #8f8e89;
+  --dd-canvas: #f5f3ee;
+  --dd-surface: #fbfaf7;
+  --dd-surface-muted: #ebe8e1;
+  --dd-line: #dedad2;
+  --dd-line-strong: #85847f;
   --dd-ink: #2f3437;
-  /* SKILL.md's #787774 is 4.3:1 on the canvas — darkened to pass WCAG AA */
-  --dd-ink-muted: #6b6a66;
+  /* Warm off-white canvas (easier on the eyes than pure white); ink-muted and line-strong
+     are darkened so they keep WCAG AA / 3:1 on canvas, surface and surface-muted */
+  --dd-ink-muted: #66655f;
   --dd-accent: #111111;
   --dd-on-accent: #ffffff;
   --dd-accent-hover: #333333;
