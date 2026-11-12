@@ -2,15 +2,16 @@
 import { computed } from 'vue'
 import { PhFlag } from '@phosphor-icons/vue'
 import { useLocale } from '../composables/useLocale.js'
-import { WORK_DAYS, DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
+import { DAY_START_MIN, DAY_END_MIN } from '../utils/scheduler.js'
 import { expandBlocksByDay } from '../utils/availability.js'
 
 /**
- * Weekly time grid shared by Stundenplan and My Week (was duplicated before).
- * Rows are 30-minute slots between DAY_START_MIN and DAY_END_MIN.
+ * Time grid shared by Stundenplan and the calendar: one column per entry in
+ * `days` (7 for a week, 1 for the day view). Rows are 30-minute slots
+ * between DAY_START_MIN and DAY_END_MIN.
  */
 const props = defineProps({
-  /** [{ label: 'Mon'..'Sun', date: Date }] from getWeekDays() */
+  /** [{ label: 'Mon'..'Sun', date: Date }]: getWeekDays(), or one entry for a single day */
   days: { type: Array, required: true },
   /** Planned sessions from generatePlan() */
   sessions: { type: Array, default: () => [] },
@@ -24,7 +25,8 @@ const props = defineProps({
 const { t } = useLocale()
 
 const TOTAL_SLOTS = (DAY_END_MIN - DAY_START_MIN) / 30
-const COLUMNS = '3.25rem repeat(7, minmax(0, 1fr))'
+const COLUMNS = computed(() => `3.25rem repeat(${props.days.length}, minmax(0, 1fr))`)
+const minWidth = computed(() => (props.days.length > 1 ? 'min-w-[46rem]' : 'min-w-[22rem]'))
 
 const hourMarks = computed(() => {
   const marks = []
@@ -38,7 +40,7 @@ function toMinutes(hhmm) {
 }
 
 function place(dayLabel, startMin, endMin) {
-  const col = WORK_DAYS.indexOf(dayLabel) + 2
+  const col = props.days.findIndex(d => d.label === dayLabel) + 2
   const rowStart = Math.max(1, Math.round((startMin - DAY_START_MIN) / 30) + 1)
   const rowSpan = Math.max(1, Math.round((endMin - startMin) / 30))
   return { gridColumn: String(col), gridRow: `${rowStart} / span ${rowSpan}` }
@@ -47,8 +49,9 @@ function place(dayLabel, startMin, endMin) {
 const visibleBlocks = computed(() =>
   expandBlocksByDay(props.blocks)
     .map(b => ({ ...b, start: Math.max(DAY_START_MIN, toMinutes(b.startTime)), end: Math.min(DAY_END_MIN, toMinutes(b.endTime)) }))
-    .filter(b => b.end > b.start),
+    .filter(b => b.end > b.start && props.days.some(d => d.label === b.day)),
 )
+const visibleSessions = computed(() => props.sessions.filter(s => props.days.some(d => d.label === s.day)))
 
 const todayKey = new Date().toDateString()
 const isToday = (d) => d.date.toDateString() === todayKey
@@ -56,7 +59,7 @@ const isToday = (d) => d.date.toDateString() === todayKey
 
 <template>
   <div class="overflow-x-auto" role="region" :aria-label="label" tabindex="0">
-    <div class="min-w-[46rem]">
+    <div :class="minWidth">
       <!-- Day headers -->
       <div class="grid" :style="{ gridTemplateColumns: COLUMNS }">
         <div></div>
@@ -115,7 +118,7 @@ const isToday = (d) => d.date.toDateString() === todayKey
         >{{ b.label }}</div>
 
         <div
-          v-for="(s, i) in sessions"
+          v-for="(s, i) in visibleSessions"
           :key="'ses-' + i"
           class="mx-0.5 my-px overflow-hidden rounded border-l-2 border-blue-ink bg-blue-soft px-1 text-[10.5px] font-medium leading-tight text-blue-ink"
           :style="place(s.day, s.startMin, s.endMin)"

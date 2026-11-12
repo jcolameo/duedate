@@ -30,7 +30,7 @@ export function useCombinedExport() {
       ...workSessions.map(buildSessionEvent),
     ]
     try {
-      downloadIcs(await buildIcs(events), 'my-week.ics')
+      downloadIcs(await buildIcs(events), 'duedate-plan.ics')
       exportMessage.value = t('export.weekExported', { count: events.length })
     } catch (error) {
       exportError.value = t('errors.icsExportError', { message: error.message })

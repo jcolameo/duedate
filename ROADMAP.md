@@ -95,8 +95,8 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | C1 | ✅ | `feat:` Checkliste in der Beschreibung (vorgezogen, siehe Phase C) |
 | B7 | ✅ | `feat:` JSON-Backup (Export/Import) |
 | B8 | ✅ | `feat:` Planer v2 — Gesamtaufwand in Stunden, Aufteilung über Tage und Wochen, Puffer |
-| B9 | ⬜ | `feat:` Kalender: Wochen blättern + Monatsansicht |
-| B10 | ⬜ | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
+| B9 | ✅ | `feat:` Kalender: Wochen blättern + Monatsansicht |
+| B10 | 🟡 | `feat:` Jahresübersicht + Aufräumen vergangener Einträge |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -185,6 +185,8 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Aufräumen: Vergangenes wird standardmässig ausgeblendet (nicht gelöscht). In den Einstellungen: „Erledigte Einträge älter als X Monate löschen“ mit Vorschau und Bestätigung; vorher JSON-Backup anbieten (B7).
 - Begründung „ausblenden statt sofort löschen“: Die Historie wird für C2b (Schätzung lernt aus erfasster Zeit) gebraucht.
 - Test: Unit für Aufräum-Regel (nur erledigt + älter als X); Browser-Test Jahresansicht.
+- Umgesetzt (Nutzerwunsch „wie ein echter Kalender, Jahr/Woche/Tag wählbar“): „Meine Woche“ heisst jetzt **Kalender** (`/calendar`, `/my-week` leitet um) mit Umschalter **Tag · Woche · Monat · Jahr** (Auswahl wird gemerkt), Zurück/Heute/Vor je Ansicht und Titel des Zeitraums. Tag = Zeitraster + Liste (Deadlines, Arbeitszeiten, Belegtes). Woche wie bisher. Monat = 6 Wochen mit KW, Deadlines (max. 2, dann „+n“) und geplante Zeit pro Tag. Jahr = 12 Monate, Deadline-Punkt, Arbeitslast in 3 Stufen. Klick auf einen Tag öffnet ihn, auf einen Monatsnamen den Monat. Tastatur: Pfeile, Pos1/Ende, Bild auf/ab; ein einziger Tab-Stopp pro Raster. `utils/calendar.js` (38 Tests), `components/calendar/MonthGrid.vue`, `YearGrid.vue`, `WeekGrid` jetzt für 1–7 Spalten. Export heisst `duedate-plan.ics`.
+
 
 ### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
 
@@ -280,6 +282,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | KI: Kunden-Briefing → Scope, Rückfragen, Kalkulationsentwurf | Wie oben; Ergebnis landet in Kalkulation (D4) |
 | MCP: Claude verbinden | Variante A (JSON-Backup) ab B7 nutzbar. Lokaler MCP-Server (Mac) oder Remote-MCP erst nach Entscheid über Sync |
 | Speicher: IndexedDB (Dexie.js) | Statt localStorage (≈ 5 MB), sobald Zeiterfassung (C2/D3) viele Einträge erzeugt. Alles läuft über `useTasks`/Stores → Umbau ist lokal begrenzt. B7-Backup vorher. |
+| Kalender direkt verbinden statt .ics-Export | Nutzerwunsch: Aufgaben und Arbeitszeiten erscheinen automatisch im Kalender auf Handy und Desktop (Google, Apple, Microsoft). Drei Wege, vom einfachsten: **(1) Abo-Link (ICS-Feed)**: eine private URL, die der Kalender selbst abruft; funktioniert bei Apple, Google und Outlook mit einmaligem „Kalender abonnieren“, nur lesend, Google aktualisiert langsam (oft bis zu 24 h). Braucht einen kleinen Server, der den Plan ausliefert, also das eigene Backend (siehe unten). **(2) Google Calendar API** direkt aus dem Browser (OAuth-Anmeldung, eigener Kalender „DueDate“, Einträge werden angelegt/verschoben/gelöscht, fast sofort sichtbar); kein Server nötig, aber OAuth-Client einrichten, Token im Browser, Google sieht die Termine. **(3) Microsoft Graph** (Outlook/Windows) ähnlich wie (2). Apple/iCloud hat keine offene Kalender-API: dort nur über (1). Handy: braucht keine eigene App, sobald der Kalender-Account synchronisiert. Voraussetzung: stabile Eintrags-IDs (seit B8 vorhanden). Empfehlung: erst (1) mit dem Backend, danach optional (2). |
 | Datenbank / Sync Desktop ↔ Mobile | **Entscheid des Nutzers: eigenes Backend** (statt Supabase), erst später (frühestens mit Phase E). Offen: API und Login des Backends. Vorgehen dann: Sync-Schicht hinter den Stores (alle Zugriffe laufen schon über `useTasks`, `useTags` …), Austauschformat = JSON-Backup (`docs/BACKUP_FORMAT.md`), App bleibt local-first und funktioniert offline. Alternativen, falls nötig: Supabase (EU), PocketBase. Firebase verworfen. |
 | Kanban-Board (Modul) | Nach B7, zusammen mit Projekten (D2): Spalten Offen → In Arbeit → Erledigt, zweite Ansicht derselben Aufgaben, filterbar nach Bereich/Projekt. Braucht Status „In Arbeit“ (Migration). Aus „verworfen“ zurückgeholt, weil DueDate Hauptarbeitsort werden soll. |
 | Module ein/aus | Einstellungen-Schalter pro Modul (z. B. Kanban, Freelance). Mit dem ersten optionalen Modul. |

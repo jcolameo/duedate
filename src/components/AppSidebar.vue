@@ -17,7 +17,7 @@ const NAV_ITEMS = computed(() => [
   { path: '/', label: t('nav.home'), icon: PhHouse },
   { path: '/deadlines', label: t('nav.deadlines'), icon: PhCalendarCheck },
   { path: '/stundenplan', label: t('nav.stundenplan'), icon: PhClock },
-  { path: '/my-week', label: t('nav.myWeek'), icon: PhCalendarDots },
+  { path: '/calendar', label: t('nav.calendar'), icon: PhCalendarDots },
 ])
 
 // Future modules: shown quietly so the roadmap is visible, but not interactive
