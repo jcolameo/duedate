@@ -66,9 +66,21 @@ describe('parseQuickAdd', () => {
     expect(p(`Abgabe ${word}`).due).toBe(due)
   })
 
+  it.each([
+    ['15.12', '2026-12-15'], ['am 3.12', '2026-12-03'], ['15/12', '2026-12-15'],
+    ['15. Dezember', '2026-12-15'], ['15 dez', '2026-12-15'], ['3. Feb.', '2027-02-03'],
+    ['15. Dezember 2027', '2027-12-15'], ['bis 1. März', '2027-03-01'],
+  ])('also understands %s -> %s', (text, due) => {
+    expect(p(`Abgabe ${text}`)).toMatchObject({ title: 'Abgabe', due })
+  })
+
   it('invalid dates and version numbers stay in the title', () => {
     expect(p('Release 31.2.').due).toBeNull()
     expect(p('Update auf 2.0').title).toBe('Update auf 2.0')
+  })
+
+  it('a number followed by a month name is always read as a date', () => {
+    expect(p('Kapitel 3 Mai lesen')).toMatchObject({ title: 'Kapitel lesen', due: '2027-05-03' })
   })
 
   it.each([

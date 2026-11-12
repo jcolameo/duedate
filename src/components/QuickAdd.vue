@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { PhCalendarBlank, PhFlag, PhKeyReturn } from '@phosphor-icons/vue'
+import { PhFlag, PhKeyReturn, PhX } from '@phosphor-icons/vue'
 import { useQuickAdd } from '../composables/useQuickAdd.js'
 import { useTasks } from '../composables/useTasks.js'
 import { useAreaFilter } from '../composables/useAreaFilter.js'
@@ -8,18 +8,21 @@ import { useLocale } from '../composables/useLocale.js'
 import { useToast } from '../composables/useToast.js'
 import { parseQuickAdd } from '../utils/quickAddParser.js'
 import { fromISODate } from '../utils/taskModel.js'
+import { AREAS } from '../utils/areas.js'
+import { AREA_META } from './ui/areaMeta.js'
 import { daysUntil } from '../utils/dateParser.js'
 import { dueLabel } from '../utils/dueLabel.js'
 import BaseDialog from './ui/BaseDialog.vue'
 import BaseButton from './ui/BaseButton.vue'
-import BaseTag from './ui/BaseTag.vue'
 import BaseKbd from './ui/BaseKbd.vue'
-import AreaTag from './ui/AreaTag.vue'
+import SegmentedControl from './ui/SegmentedControl.vue'
 
 /**
  * Quick capture (B4): one line of text, parsed live into title, date, area
- * and priority. Enter saves and closes, Shift+Enter saves and stays open
- * for the next task. Opens with "N" from anywhere (see App.vue).
+ * and priority. The same three things can be set with the controls below
+ * the input; whatever was changed last (typed or clicked) wins.
+ * Enter saves and closes, Shift+Enter saves and stays open for the next
+ * task. Opens with "N" from anywhere (see App.vue).
  */
 const { isOpen } = useQuickAdd()
 const { addTask, removeTask } = useTasks()
@@ -32,12 +35,34 @@ const triedSubmit = ref(false)
 const inputEl = ref(null)
 
 const parsed = computed(() => parseQuickAdd(text.value))
-// Without #tag the task lands in the area currently filtered, else Studium
-const area = computed(() => parsed.value.area || (areaFilter.value !== 'all' ? areaFilter.value : 'study'))
+
+// Clicked values; cleared when the typed text recognises something new
+const pickedArea = ref(null)
+const pickedDue = ref(null) // '' = explicitly no date
+const pickedPriority = ref(null)
+watch(() => parsed.value.area, (v) => { if (v) pickedArea.value = null })
+watch(() => parsed.value.due, (v) => { if (v) pickedDue.value = null })
+watch(() => parsed.value.priority, (v) => { if (v) pickedPriority.value = null })
+
+// Without #tag or click the task lands in the area currently filtered, else Studium
+const area = computed({
+  get: () => pickedArea.value || parsed.value.area || (areaFilter.value !== 'all' ? areaFilter.value : 'study'),
+  set: (v) => { pickedArea.value = v },
+})
+const due = computed({
+  get: () => (pickedDue.value !== null ? pickedDue.value : parsed.value.due || ''),
+  set: (v) => { pickedDue.value = v || '' },
+})
+const important = computed(() =>
+  pickedPriority.value !== null ? pickedPriority.value : parsed.value.priority === 'high',
+)
+function toggleImportant() { pickedPriority.value = !important.value }
+
+const areaOptions = computed(() => AREAS.map(a => ({ value: a, label: t('areas.' + a), icon: AREA_META[a].icon })))
 const titleMissing = computed(() => !parsed.value.title)
 
 const dueText = computed(() => {
-  const date = fromISODate(parsed.value.due)
+  const date = fromISODate(due.value)
   if (!date) return ''
   const weekday = date.toLocaleDateString(locale.value === 'de' ? 'de-CH' : 'en-GB', { weekday: 'short' }).replace('.', '')
   const rel = dueLabel(daysUntil(date))
@@ -46,24 +71,31 @@ const dueText = computed(() => {
 
 watch(isOpen, async (open) => {
   if (!open) return
-  text.value = ''
-  triedSubmit.value = false
+  reset()
   await nextTick()
   inputEl.value?.focus()
 })
 
+function reset() {
+  text.value = ''
+  triedSubmit.value = false
+  pickedArea.value = null
+  pickedDue.value = null
+  pickedPriority.value = null
+}
+
 function save(keepOpen) {
   triedSubmit.value = true
   if (titleMissing.value) return
-  const { title, due, priority } = parsed.value
-  const task = addTask({ title, due, priority, area: area.value })
+  const title = parsed.value.title
+  const task = addTask({ title, due: due.value || null, priority: important.value ? 'high' : null, area: area.value })
   toast.show(t('quickAdd.saved', { title }), {
     tone: 'success',
     action: { label: t('ui.undo'), onClick: () => removeTask(task.id) },
   })
-  text.value = ''
-  triedSubmit.value = false
+  reset()
   if (!keepOpen) isOpen.value = false
+  else inputEl.value?.focus()
 }
 
 function onKeydown(e) {
@@ -94,19 +126,57 @@ function onKeydown(e) {
     />
     <p v-if="triedSubmit && titleMissing" class="mt-1.5 text-[13px] text-red-ink">{{ t('quickAdd.errorTitle') }}</p>
 
-    <!-- Live preview of what was recognised -->
-    <div id="quick-add-preview" class="mt-4 flex min-h-6 flex-wrap items-center gap-2 text-sm">
-      <span class="sr-only">{{ t('quickAdd.previewLabel') }}</span>
-      <span :class="['mr-1 font-medium', parsed.title ? 'text-ink' : 'text-ink-muted']">{{ parsed.title || t('quickAdd.noTitle') }}</span>
-      <AreaTag :area="area" />
-      <BaseTag v-if="parsed.due" :icon="PhCalendarBlank"><span class="font-mono normal-case tracking-normal">{{ dueText }}</span></BaseTag>
-      <BaseTag v-if="parsed.priority" :icon="PhFlag">{{ t('quickAdd.important') }}</BaseTag>
+    <!-- Title as it will be saved -->
+    <p id="quick-add-preview" class="mt-3 truncate text-sm">
+      <span class="text-ink-muted">{{ t('quickAdd.previewLabel') }}</span>
+      <span :class="['ml-1 font-medium', parsed.title ? 'text-ink' : 'text-ink-muted']">{{ parsed.title || t('quickAdd.noTitle') }}</span>
+    </p>
+
+    <!-- Area, date and priority: recognised from the text, or set here -->
+    <div class="mt-4 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
+      <span class="text-[13px] text-ink-muted">{{ t('quickAdd.helpArea') }}</span>
+      <SegmentedControl v-model="area" size="sm" :label="t('quickAdd.helpArea')" :options="areaOptions" class="justify-self-start" />
+
+      <label for="quick-add-due" class="text-[13px] text-ink-muted">{{ t('quickAdd.helpDate') }}</label>
+      <div class="flex flex-wrap items-center gap-2">
+        <input
+          id="quick-add-due"
+          v-model="due"
+          type="date"
+          @keydown="onKeydown"
+          class="h-8 rounded-md border border-line-strong bg-surface px-2 font-mono text-[13px] text-ink transition-colors duration-150 hover:border-ink-muted [color-scheme:dark] light:[color-scheme:light]"
+        />
+        <span v-if="due" class="font-mono text-[12px] text-ink-muted">{{ dueText }}</span>
+        <button
+          v-if="due"
+          type="button"
+          class="flex size-7 items-center justify-center rounded-md text-ink-muted hover:bg-surface-muted hover:text-ink"
+          :aria-label="t('quickAdd.clearDate')"
+          @click="due = ''"
+        >
+          <PhX class="size-3.5" aria-hidden="true" />
+        </button>
+      </div>
+
+      <span class="text-[13px] text-ink-muted">{{ t('quickAdd.priority') }}</span>
+      <button
+        type="button"
+        :aria-pressed="important"
+        :class="[
+          'inline-flex h-7 items-center gap-1.5 justify-self-start rounded-md border px-2.5 text-[13px] transition-colors duration-150',
+          important ? 'border-ink bg-ink text-canvas font-medium' : 'border-line-strong text-ink-muted hover:border-ink-muted hover:text-ink',
+        ]"
+        @click="toggleImportant"
+      >
+        <PhFlag :weight="important ? 'fill' : 'bold'" class="size-3.5" aria-hidden="true" />{{ t('quickAdd.important') }}
+      </button>
     </div>
 
     <p id="quick-add-help" class="mt-4 border-t border-line pt-3 text-[13px] leading-6 text-ink-muted">
-      {{ t('quickAdd.helpDate') }} <BaseKbd>morgen</BaseKbd> <BaseKbd>fr</BaseKbd> <BaseKbd>24.11.</BaseKbd>
-      · {{ t('quickAdd.helpArea') }} <BaseKbd>#freelance</BaseKbd> <BaseKbd>#p</BaseKbd>
-      · {{ t('quickAdd.helpPriority') }} <BaseKbd>!</BaseKbd>
+      {{ t('quickAdd.helpIntro') }}
+      <BaseKbd>morgen</BaseKbd> <BaseKbd>fr</BaseKbd> <BaseKbd>15.12</BaseKbd>
+      · <BaseKbd>#studium</BaseKbd> <BaseKbd>#freelance</BaseKbd> <BaseKbd>#privat</BaseKbd>
+      · <BaseKbd>!</BaseKbd>
     </p>
 
     <template #actions>

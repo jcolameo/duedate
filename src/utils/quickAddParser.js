@@ -2,8 +2,8 @@
  * Quick capture syntax (B4): "Portfolio abgeben fr #studium !"
  *
  * - Date: heute, morgen, übermorgen (today/tomorrow), weekday names
- *   ("freitag", or "fr" as the last word / after "bis"/"am"), "24.4.",
- *   "24.4.27", "24.04.2027", "2027-04-24". A weekday means the next one;
+ *   ("freitag", or "fr" as the last word / after "bis"/"am"), "24.4.", "24.4",
+ *   "24.4.27", "24.04.2027", "2027-04-24", "24. April", "24 apr 2027". A weekday means the next one;
  *   on that weekday itself it means one week ahead ("heute" is for today).
  *   "bis"/"am"/"until"/"on" right before a date is dropped as well.
  *   Dates without a year that are already past mean next year.
@@ -34,6 +34,19 @@ const WEEKDAYS_SHORT = {
 }
 const RELATIVE = { heute: 0, today: 0, morgen: 1, tomorrow: 1, übermorgen: 2, uebermorgen: 2 }
 const PREPOSITIONS = new Set(['bis', 'am', 'until', 'on', 'by'])
+const MONTHS = {
+  januar: 0, jan: 0, februar: 1, feb: 1, märz: 2, maerz: 2, mär: 2, mrz: 2, april: 3, apr: 3,
+  mai: 4, juni: 5, jun: 5, juli: 6, jul: 6, august: 7, aug: 7, september: 8, sept: 8, sep: 8,
+  oktober: 9, okt: 9, november: 10, nov: 10, dezember: 11, dez: 11,
+  january: 0, february: 1, march: 2, mar: 2, may: 4, june: 5, july: 6, october: 9, oct: 9, december: 11, dec: 11,
+}
+
+/** Day + month without year: this year, or next year if already past. */
+function upcomingDate(today, month, day) {
+  const thisYear = validDate(today.getFullYear(), month, day)
+  if (!thisYear) return validDate(today.getFullYear() + 1, month, day)
+  return thisYear < today ? validDate(today.getFullYear() + 1, month, day) : thisYear
+}
 
 function addDays(date, n) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -66,7 +79,8 @@ function dateFor(word, today, allowShort) {
   }
   let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(word)
   if (m) return validDate(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-  m = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})?$/.exec(word)
+  // "15.12.", "15.12", "15.12.26", "15.12.2026" (also with "/")
+  m = /^(\d{1,2})[./](\d{1,2})(?:[./](\d{2}|\d{4})?)?$/.exec(word)
   if (m) {
     const day = Number(m[1])
     const month = Number(m[2]) - 1
@@ -74,9 +88,7 @@ function dateFor(word, today, allowShort) {
       const y = Number(m[3])
       return validDate(y < 100 ? 2000 + y : y, month, day)
     }
-    const thisYear = validDate(today.getFullYear(), month, day)
-    if (!thisYear) return validDate(today.getFullYear() + 1, month, day)
-    return thisYear < today ? validDate(today.getFullYear() + 1, month, day) : thisYear
+    return upcomingDate(today, month, day)
   }
   return null
 }
@@ -91,6 +103,7 @@ export function parseQuickAdd(input, now = new Date()) {
   let lastPlain = -1
   words.forEach((w, i) => { if (!w.startsWith('#') && !/^!+$/.test(w)) lastPlain = i })
 
+  let consumedUntil = -1
   words.forEach((word, i) => {
     if (/^!{1,3}$/.test(word)) {
       result.priority = 'high'
@@ -103,6 +116,26 @@ export function parseQuickAdd(input, now = new Date()) {
       return
     }
     if (result.due) return
+    // "15. Dezember" / "15 dez" / "15. Dez. 2027": day + month name (+ year)
+    const dayMatch = /^(\d{1,2})\.?$/.exec(word)
+    const monthWord = (words[i + 1] || '').toLowerCase().replace(/\.$/, '')
+    if (dayMatch && monthWord in MONTHS) {
+      const yearWord = /^(\d{4})$/.exec(words[i + 2] || '')
+      const date = yearWord
+        ? validDate(Number(yearWord[1]), MONTHS[monthWord], Number(dayMatch[1]))
+        : upcomingDate(today, MONTHS[monthWord], Number(dayMatch[1]))
+      if (date) {
+        result.due = toISODate(date)
+        keep[i] = false
+        keep[i + 1] = false
+        if (yearWord) keep[i + 2] = false
+        const prevWord = i > 0 ? words[i - 1].toLowerCase() : ''
+        if (PREPOSITIONS.has(prevWord)) keep[i - 1] = false
+        consumedUntil = yearWord ? i + 2 : i + 1
+        return
+      }
+    }
+    if (i <= consumedUntil) return
     const prev = i > 0 && keep[i - 1] ? words[i - 1].toLowerCase() : ''
     const afterPreposition = PREPOSITIONS.has(prev)
     const date = dateFor(word, today, i === lastPlain || afterPreposition)

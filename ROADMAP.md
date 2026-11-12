@@ -122,7 +122,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Syntax: `Portfolio abgeben fr #studium !` → Titel, Datum (heute/morgen/Wochentag/`24.4.`), Bereich (`#studium #freelance #privat`), Priorität (`!`). Live-Vorschau der erkannten Teile.
 - Akzeptanz: `N` → tippen → Enter → Aufgabe gespeichert, Fokus zurück; funktioniert ohne Maus.
 - Test: Unit-Tests für den Parser (≥ 15 Fälle); Stoppuhr-Test < 5 s.
-- Umgesetzt: Dialog „Neue Aufgabe“ (N, Sidebar-Knopf, leerer Überblick), Live-Vorschau, Enter speichert, Shift+Enter speichert und bleibt offen, Rückgängig im Toast. Ohne #tag → aktueller Bereichsfilter, sonst Studium. Kurze Wochentage (fr, mo …) nur als letztes Wort oder nach „bis/am“, damit „So geht das“ ein Titel bleibt. 41 Parser-Tests.
+- Umgesetzt: Dialog „Neue Aufgabe“ (N, Sidebar-Knopf, leerer Überblick), Live-Vorschau, Enter speichert, Shift+Enter speichert und bleibt offen, Rückgängig im Toast. Ohne #tag → aktueller Bereichsfilter, sonst Studium. Bereich, Datum und „Wichtig“ zusätzlich klickbar (zuletzt Geändertes gilt); Parser versteht auch `15.12`, `15/12`, `15. Dezember`. Kurze Wochentage (fr, mo …) nur als letztes Wort oder nach „bis/am“, damit „So geht das“ ein Titel bleibt. 48 Parser-Tests.
 
 **B5 — Aufgabe bearbeiten**
 - Ziel: Titel, Datum, Bereich, Priorität, Aufwand, Notizen ändern; löschen mit Rückgängig.
