@@ -33,6 +33,7 @@ Erwartet: Jeder `VEVENT` hat zwei `VALARM` (siehe `contracts/deadline-event-ics.
 |---|---|---|
 | Apple Kalender (Mac/iPhone) | Datei öffnen → in einen Test-Kalender importieren → Eintrag öffnen | Erinnerungen: Vortag 18:00, Abgabetag 08:00 |
 | Google Kalender (Web) | Einstellungen → Importieren → Test-Kalender → Eintrag öffnen | **Prüfen:** Werden die beiden Erinnerungen übernommen? (Risiko R6) |
+| Outlook (Desktop oder Web) | Datei öffnen bzw. Kalender hinzufügen → aus Datei → Eintrag öffnen | **Prüfen:** Werden beide Erinnerungen übernommen oder nur eine? |
 
 Den Export ein zweites Mal importieren → kein doppelter Eintrag, weiterhin zwei Erinnerungen.
 

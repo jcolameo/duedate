@@ -77,7 +77,7 @@ Die Tests werden **vor** dem Code geschrieben und müssen zuerst fehlschlagen.
 ## Phase 5: Polish & Abschluss
 
 - [ ] T012 `npm run build` ausführen: ohne Fehler.
-- [ ] T013 Manueller Test nach `quickstart.md` Schritte 3–5 (Datei prüfen, Apple Kalender, Google Kalender, erneuter Import, „Meine Woche“ ohne `VALARM`). Ergebnis für Google Kalender (Risiko R6) in `specs/002-ics-deadline-reminders/research.md` unter R6 eintragen. Falls Google die Erinnerungen nicht übernimmt: SC-002 in `spec.md` anpassen.
+- [ ] T013 Manueller Test nach `quickstart.md` Schritte 3–5 (Datei prüfen, Apple Kalender, Google Kalender, Outlook, erneuter Import, „Meine Woche“ ohne `VALARM`). Ergebnis für Google Kalender (Risiko R6) in `specs/002-ics-deadline-reminders/research.md` unter R6 eintragen. Falls Google die Erinnerungen nicht übernimmt: SC-002 in `spec.md` anpassen.
 - [ ] T014 [P] `ROADMAP.md` nachführen: C6 auf ✅ mit Link auf `specs/002-ics-deadline-reminders/spec.md`. Einen neuen Schritt **C6b** „Erinnerungszeiten einstellbar (Standard Vortag 18:00, Abgabetag 08:00)“ als ⬜ eintragen. Eintrag im Changelog.
 
 ---
