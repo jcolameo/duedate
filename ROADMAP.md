@@ -253,7 +253,7 @@ Nicht im MVP: Habit-Tracker (F3), Wiedervorlage (C3), Wiederkehrendes (C4), Foku
 | C3 | ⬜ | `feat:` Wiedervorlage („wieder zeigen am“) |
 | C4 | ⬜ | `feat:` Wiederkehrende Aufgaben (Training) |
 | C5 | ⬜ | `feat:` Wochenrückblick |
-| C6 | 🔄 | `feat:` Erinnerungen via Kalender (Deadline-Export: Vortag 18:00, Abgabetag 08:00). Spezifikation: [specs/002-ics-deadline-reminders](specs/002-ics-deadline-reminders/spec.md) |
+| C6 | ✅ | `feat:` Erinnerungen via Kalender (Deadline-Export: Vortag 18:00, Abgabetag 08:00). Spezifikation: [specs/002-ics-deadline-reminders](specs/002-ics-deadline-reminders/spec.md) |
 | C6b | ⬜ | `feat:` Erinnerungszeiten einstellbar (Standard Vortag 18:00, Abgabetag 08:00) |
 
 **C1 — Checkliste in der Beschreibung** ✅: Schritte stehen direkt im Markdown-Text als `- [ ] Schritt` / `- [x] erledigt` (ein Text = eine Wahrheit, kein separates Feld; das alte `steps`-Array im Modell bleibt ungenutzt). Werkzeugleiste „Checkliste“, Enter setzt die Liste fort, leerer Punkt beendet sie; Kästchen sind in der formatierten Ansicht direkt anklickbar (Fokus bleibt auf dem Kästchen). Fortschritt „2/4“ mit Balken im Editor und als Badge in Deadlines/Überblick. Überblick: Karte „Nächste Aktion“ zeigt den **nächsten offenen Schritt** zum direkten Abhaken. Letzter Schritt → Angebot „Aufgabe erledigen“ (Toast auf der Startseite, im modalen Panel inline, weil ein Toast dahinter unerreichbar wäre); es wird nie automatisch erledigt. BBNet-Aufgaben: Schritte stehen in „Eigene Notizen“ (BBNet-Beschreibung bleibt unberührt). Utils: `utils/checklist.js`.

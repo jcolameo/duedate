@@ -105,6 +105,6 @@ Die Tests werden **vor** dem Code geschrieben und müssen zuerst fehlschlagen.
 
 ## Phase 6: Convergence
 
-- [ ] T015 Remaining user tests in `specs/002-ics-deadline-reminders/user-tests.md` performed by the maintainer in Outlook (UT-1 step 5, UT-2 steps 1–2, UT-3 steps 1–2) and results entered as ✅/❌ per US1/AC3, US2/AC1, FR-005, Constitution workflow (missing)
-- [ ] T016 Align the expected result of UT-1 step 2 (Apple Calendar) in `specs/002-ics-deadline-reminders/user-tests.md` with the amended SC-002: expected "Apple keeps its own default reminder (documented limit)", so the step reflects the specification per SC-002 (contradicts)
-- [ ] T017 After T015 is all ✅: set C6 to ✅ in `ROADMAP.md` and update its changelog line ("manueller Kalendertest offen" → result: Outlook and Google ok, Apple documented) per Constitution IX (partial)
+- [X] T015 Remaining user tests in `specs/002-ics-deadline-reminders/user-tests.md` performed by the maintainer in Outlook (UT-1 step 5, UT-2 steps 1–2, UT-3 steps 1–2) and results entered as ✅/❌ per US1/AC3, US2/AC1, FR-005, Constitution workflow (missing)
+- [X] T016 Align the expected result of UT-1 step 2 (Apple Calendar) in `specs/002-ics-deadline-reminders/user-tests.md` with the amended SC-002: expected "Apple keeps its own default reminder (documented limit)", so the step reflects the specification per SC-002 (contradicts)
+- [X] T017 After T015 is all ✅: set C6 to ✅ in `ROADMAP.md` and update its changelog line ("manueller Kalendertest offen" → result: Outlook and Google ok, Apple documented) per Constitution IX (partial)

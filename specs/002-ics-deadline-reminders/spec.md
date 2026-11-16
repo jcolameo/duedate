@@ -88,9 +88,10 @@ zwei Erinnerungen.
 ### Measurable Outcomes
 
 - **SC-001**: 100 % der exportierten Deadline-Einträge haben nach dem Import genau zwei Erinnerungen.
-- **SC-002**: Die Erinnerungen erscheinen in Outlook und Google Kalender zur erwarteten Uhrzeit (am 2026-11-16 verifiziert).
-  Apple Kalender (iPhone, Import per Datei) übernimmt die Erinnerungen **nicht** und setzt seinen eigenen Standard
-  (getestet am 2026-11-16). Das liegt ausserhalb von DueDate und wird dokumentiert, nicht umgangen.
+- **SC-002**: Getestet am 2026-11-16 (Import der Datei): Google Kalender übernimmt beide Erinnerungen zur erwarteten
+  Uhrzeit. Outlook übernimmt nur die erste (Vortag 18:00), weil es eine Erinnerung pro Termin kennt. Apple Kalender
+  (iPhone) übernimmt keine und setzt seinen eigenen Standard. Die Grenzen liegen ausserhalb von DueDate und werden
+  dokumentiert, nicht umgangen.
 - **SC-003**: Ein zweiter Export und Import erzeugt 0 doppelte Einträge und 0 doppelte Erinnerungen.
 - **SC-004**: Der Export braucht für den Nutzer keinen zusätzlichen Schritt gegenüber heute.
 
@@ -111,6 +112,7 @@ zwei Erinnerungen.
 - Eine Uhrzeit der Abgabe aus der CSV (z. B. 23:59) wird weiterhin ignoriert. Erinnerungen relativ zu einer
   Abgabezeit wären ein eigenes Feature.
 - Ein Export einzelner Aufgaben (Roadmap: „Export pro Aufgabe“) ist nicht Teil dieses Features.
+- Bekannte Grenze: Outlook übernimmt nur die erste Erinnerung (Vortag 18:00).
 - Bekannte Grenze: Apple Kalender übernimmt importierte Erinnerungen nicht und nutzt seine Standard-Erinnerung für
   ganztägige Termine. Eine Umgehung über ein Kalender-Abo bräuchte einen Server (Constitution I).
 - Die Erinnerung ist eine normale Anzeige-Erinnerung des Kalenders (Benachrichtigung), keine E-Mail.

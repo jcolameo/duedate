@@ -7,7 +7,8 @@ No login, no backend, no tracking — all data stays in your browser.
 
 - **Deadlines** — import a school/task CSV by drag & drop, smart column detection with a review step,
   status per task (overdue, urgent, soon, ok) and `.ics` calendar export with two reminders per deadline
-  (18:00 the day before, 08:00 on the due date; Outlook and Google keep them, Apple Calendar uses its own default).
+  (18:00 the day before, 08:00 on the due date). Google Calendar keeps both, Outlook keeps the first (it allows one
+  reminder per event), Apple Calendar uses its own default.
 - **Home** — overview of overdue and urgent tasks and one task to focus on.
 - **Stundenplan** — effort and priority per task, recurring busy blocks, a deterministic weekly plan
   and `.ics` export of the planned sessions.
