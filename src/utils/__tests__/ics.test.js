@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildDeadlineEvent, buildSessionEvent, ensureUniqueUids, buildIcs } from '../ics.js'
+import { buildDeadlineEvent, buildSessionEvent, ensureUniqueUids, buildIcs, DEADLINE_REMINDER_TRIGGERS } from '../ics.js'
 
 const task = {
   _id: 't123',
@@ -68,6 +68,34 @@ describe('ics events', () => {
     expect(e.duration).toEqual({ minutes: 60 })
   })
 
+  it('adds two reminders to a deadline: 18:00 the day before and 08:00 on the due date', () => {
+    const e = buildDeadlineEvent(task, { withReminders: true })
+    expect(e.alarms).toHaveLength(2)
+    for (const alarm of e.alarms) {
+      expect(alarm.action).toBe('display')
+      expect(alarm.description).toBe(e.title)
+    }
+    expect(e.alarms.map(a => a.trigger)).toEqual([
+      { hours: 6, before: true },
+      { hours: 8, before: false },
+    ])
+  })
+
+  it('a second export keeps the UID and exactly two independent reminders', () => {
+    const first = buildDeadlineEvent(task, { withReminders: true })
+    const second = buildDeadlineEvent(task, { withReminders: true })
+    expect(second.uid).toBe('deadline-t123@duedate.app')
+    expect(second.uid).toBe(first.uid)
+    expect(second.alarms).toHaveLength(2)
+    first.alarms[0].trigger.hours = 99
+    expect(second.alarms[0].trigger.hours).toBe(6)
+    expect(DEADLINE_REMINDER_TRIGGERS[0].hours).toBe(6)
+  })
+
+  it('adds no reminders by default, so other exports stay unchanged', () => {
+    expect(buildDeadlineEvent(task)).not.toHaveProperty('alarms')
+  })
+
   it('makes repeated UIDs within one file unique', () => {
     const uids = ensureUniqueUids([{ uid: 'a@x' }, { uid: 'a@x' }, { uid: 'b@x' }]).map(e => e.uid)
     expect(uids).toEqual(['a@x', 'a-2@x', 'b@x'])
@@ -80,6 +108,13 @@ describe('buildIcs', () => {
     expect(text).toContain('UID:deadline-t123@duedate.app')
     expect(text).toContain('UID:session-t123@duedate.app')
     expect(text).toContain('BEGIN:VCALENDAR')
+  })
+
+  it('writes both reminders into the deadline event', async () => {
+    const text = await buildIcs([buildDeadlineEvent(task, { withReminders: true })])
+    expect(text.match(/BEGIN:VALARM/g)).toHaveLength(2)
+    expect(text).toContain('TRIGGER:-PT6H')
+    expect(text).toContain('TRIGGER:PT8H')
   })
 
   it('produces the same UIDs on a second export', async () => {

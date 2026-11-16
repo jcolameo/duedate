@@ -8,12 +8,28 @@
 
 const UID_DOMAIN = 'duedate.app'
 
+/**
+ * Reminders for deadline events (C6). A deadline is an all-day event, so the
+ * triggers count from 00:00 local time on the due date: 6 h before = 18:00 the
+ * day before, 8 h after = 08:00 on the due date. Relative triggers follow the
+ * calendar's local time, also across daylight saving changes.
+ * C6b will turn these into settings with these values as defaults.
+ */
+export const DEADLINE_REMINDER_TRIGGERS = Object.freeze([
+  Object.freeze({ hours: 6, before: true }),
+  Object.freeze({ hours: 8, before: false }),
+])
+
 function dateParts(d) {
   return [d.getFullYear(), d.getMonth() + 1, d.getDate()]
 }
 
-/** All-day event on the deadline date. */
-export function buildDeadlineEvent(task, { untitled = '', withDescription = true } = {}) {
+/**
+ * All-day event on the deadline date.
+ * withReminders: adds the two DEADLINE_REMINDER_TRIGGERS as display alarms
+ * (only the Deadlines export uses it; the combined export stays without).
+ */
+export function buildDeadlineEvent(task, { untitled = '', withDescription = true, withReminders = false } = {}) {
   const category = task._category || ''
   const title = task._title || untitled
   const grade = task._isGraded ? ' ⭐' : ''
@@ -28,6 +44,14 @@ export function buildDeadlineEvent(task, { untitled = '', withDescription = true
   }
   if (withDescription && task._description) {
     event.description = String(task._description).slice(0, 500)
+  }
+  if (withReminders) {
+    // Own trigger objects per event, so no export can change the shared constant
+    event.alarms = DEADLINE_REMINDER_TRIGGERS.map(trigger => ({
+      action: 'display',
+      description: event.title,
+      trigger: { ...trigger },
+    }))
   }
   return event
 }

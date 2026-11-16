@@ -24,7 +24,7 @@ Die Tests werden **vor** dem Code geschrieben und müssen zuerst fehlschlagen.
 
 **Purpose**: Ausgangslage sichern
 
-- [ ] T001 `npm test` und `npm run build` auf dem Branch `feat/c6-ics-erinnerungen` ausführen. Beide müssen grün sein, bevor etwas geändert wird (Referenz: 505 Tests).
+- [X] T001 `npm test` und `npm run build` auf dem Branch `feat/c6-ics-erinnerungen` ausführen. Beide müssen grün sein, bevor etwas geändert wird (Referenz: 505 Tests).
 
 ---
 
@@ -32,7 +32,7 @@ Die Tests werden **vor** dem Code geschrieben und müssen zuerst fehlschlagen.
 
 **Purpose**: Gemeinsame Konstanten, die beide Stories brauchen
 
-- [ ] T002 In `src/utils/ics.js` die exportierte Konstante `DEADLINE_REMINDER_TRIGGERS` anlegen: `[{ hours: 6, before: true }, { hours: 8, before: false }]`. Kommentar: Die Trigger zählen ab Abgabetag 00:00 lokal, also „Vortag 18:00“ und „Abgabetag 08:00“ (research.md R2). C6b macht daraus später Einstellungen.
+- [X] T002 In `src/utils/ics.js` die exportierte Konstante `DEADLINE_REMINDER_TRIGGERS` anlegen: `[{ hours: 6, before: true }, { hours: 8, before: false }]`. Kommentar: Die Trigger zählen ab Abgabetag 00:00 lokal, also „Vortag 18:00“ und „Abgabetag 08:00“ (research.md R2). C6b macht daraus später Einstellungen.
 
 **Checkpoint**: Konstante vorhanden, Tests weiterhin grün.
 
@@ -46,16 +46,16 @@ Die Tests werden **vor** dem Code geschrieben und müssen zuerst fehlschlagen.
 
 ### Tests for User Story 1 (zuerst schreiben, müssen fehlschlagen)
 
-- [ ] T003 [US1] Test in `src/utils/__tests__/ics.test.js`: `buildDeadlineEvent(task, { withReminders: true })` liefert `alarms` mit genau 2 Einträgen. Beide haben `action: 'display'` und `description` gleich `event.title`. Die Trigger sind in dieser Reihenfolge `{ hours: 6, before: true }` und `{ hours: 8, before: false }`.
-- [ ] T004 [US1] Test in `src/utils/__tests__/ics.test.js`: `buildDeadlineEvent(task)` ohne Option hat **kein** Feld `alarms` (kombinierter Export und andere Aufrufer bleiben unverändert, FR-005).
-- [ ] T005 [US1] Test in `src/utils/__tests__/ics.test.js`: `await buildIcs([buildDeadlineEvent(task, { withReminders: true })])` enthält genau 2× `BEGIN:VALARM`, einmal `TRIGGER:-PT6H` und einmal `TRIGGER:PT8H` (contracts/deadline-event-ics.md).
-- [ ] T006 [US1] `npm test` ausführen und bestätigen, dass T003–T005 **fehlschlagen**. Die anderen Tests bleiben grün.
+- [X] T003 [US1] Test in `src/utils/__tests__/ics.test.js`: `buildDeadlineEvent(task, { withReminders: true })` liefert `alarms` mit genau 2 Einträgen. Beide haben `action: 'display'` und `description` gleich `event.title`. Die Trigger sind in dieser Reihenfolge `{ hours: 6, before: true }` und `{ hours: 8, before: false }`.
+- [X] T004 [US1] Test in `src/utils/__tests__/ics.test.js`: `buildDeadlineEvent(task)` ohne Option hat **kein** Feld `alarms` (kombinierter Export und andere Aufrufer bleiben unverändert, FR-005).
+- [X] T005 [US1] Test in `src/utils/__tests__/ics.test.js`: `await buildIcs([buildDeadlineEvent(task, { withReminders: true })])` enthält genau 2× `BEGIN:VALARM`, einmal `TRIGGER:-PT6H` und einmal `TRIGGER:PT8H` (contracts/deadline-event-ics.md).
+- [X] T006 [US1] `npm test` ausführen und bestätigen, dass T003–T005 **fehlschlagen**. Die anderen Tests bleiben grün.
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] In `src/utils/ics.js` die Funktion `buildDeadlineEvent` um die Option `withReminders = false` erweitern. Wenn `true`: `event.alarms = DEADLINE_REMINDER_TRIGGERS.map(trigger => ({ action: 'display', description: event.title, trigger: { ...trigger } }))`. Den JSDoc-Kommentar der Funktion nachführen.
-- [ ] T008 [US1] In `src/composables/useICSExport.js` beim Aufruf `buildDeadlineEvent(task, { untitled: t('common.untitled'), withReminders: true })` übergeben. `src/composables/useCombinedExport.js` **nicht** ändern.
-- [ ] T009 [US1] `npm test` ausführen: T003–T005 grün, alle übrigen Tests grün.
+- [X] T007 [US1] In `src/utils/ics.js` die Funktion `buildDeadlineEvent` um die Option `withReminders = false` erweitern. Wenn `true`: `event.alarms = DEADLINE_REMINDER_TRIGGERS.map(trigger => ({ action: 'display', description: event.title, trigger: { ...trigger } }))`. Den JSDoc-Kommentar der Funktion nachführen.
+- [X] T008 [US1] In `src/composables/useICSExport.js` beim Aufruf `buildDeadlineEvent(task, { untitled: t('common.untitled'), withReminders: true })` übergeben. `src/composables/useCombinedExport.js` **nicht** ändern.
+- [X] T009 [US1] `npm test` ausführen: T003–T005 grün, alle übrigen Tests grün.
 
 **Checkpoint**: US1 ist fertig und für sich lieferbar (MVP).
 
@@ -67,8 +67,8 @@ Die Tests werden **vor** dem Code geschrieben und müssen zuerst fehlschlagen.
 
 **Independent Test**: `npm test` (neuer Fall grün). Danach quickstart.md Schritt 4: Die Datei zweimal importieren → kein Duplikat.
 
-- [ ] T010 [US2] Test in `src/utils/__tests__/ics.test.js`: `buildDeadlineEvent` zweimal mit derselben Aufgabe und `withReminders: true` aufrufen. Ergebnis: gleiche `uid` (`deadline-t123@duedate.app`), jeweils genau 2 `alarms`, und die Alarm-Objekte der beiden Aufrufe sind voneinander unabhängig. Ändert man den Trigger eines Aufrufs, bleibt der andere Aufruf und `DEADLINE_REMINDER_TRIGGERS` unverändert.
-- [ ] T011 [US2] `npm test` ausführen. Sollte T010 fehlschlagen, `buildDeadlineEvent` in `src/utils/ics.js` so korrigieren, dass jede Erinnerung ein eigenes Trigger-Objekt bekommt.
+- [X] T010 [US2] Test in `src/utils/__tests__/ics.test.js`: `buildDeadlineEvent` zweimal mit derselben Aufgabe und `withReminders: true` aufrufen. Ergebnis: gleiche `uid` (`deadline-t123@duedate.app`), jeweils genau 2 `alarms`, und die Alarm-Objekte der beiden Aufrufe sind voneinander unabhängig. Ändert man den Trigger eines Aufrufs, bleibt der andere Aufruf und `DEADLINE_REMINDER_TRIGGERS` unverändert.
+- [X] T011 [US2] `npm test` ausführen. Sollte T010 fehlschlagen, `buildDeadlineEvent` in `src/utils/ics.js` so korrigieren, dass jede Erinnerung ein eigenes Trigger-Objekt bekommt.
 
 **Checkpoint**: US1 und US2 grün.
 
@@ -76,9 +76,9 @@ Die Tests werden **vor** dem Code geschrieben und müssen zuerst fehlschlagen.
 
 ## Phase 5: Polish & Abschluss
 
-- [ ] T012 `npm run build` ausführen: ohne Fehler.
+- [X] T012 `npm run build` ausführen: ohne Fehler.
 - [ ] T013 Manueller Test nach `quickstart.md` Schritte 3–5 (Datei prüfen, Apple Kalender, Google Kalender, Outlook, erneuter Import, „Meine Woche“ ohne `VALARM`). Ergebnis für Google Kalender (Risiko R6) in `specs/002-ics-deadline-reminders/research.md` unter R6 eintragen. Falls Google die Erinnerungen nicht übernimmt: SC-002 in `spec.md` anpassen.
-- [ ] T014 [P] `ROADMAP.md` nachführen: C6 auf ✅ mit Link auf `specs/002-ics-deadline-reminders/spec.md`. Einen neuen Schritt **C6b** „Erinnerungszeiten einstellbar (Standard Vortag 18:00, Abgabetag 08:00)“ als ⬜ eintragen. Eintrag im Changelog.
+- [X] T014 [P] `ROADMAP.md` nachführen: C6 auf ✅ mit Link auf `specs/002-ics-deadline-reminders/spec.md`. Einen neuen Schritt **C6b** „Erinnerungszeiten einstellbar (Standard Vortag 18:00, Abgabetag 08:00)“ als ⬜ eintragen. Eintrag im Changelog.
 
 ---
 

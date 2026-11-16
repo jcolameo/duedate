@@ -21,7 +21,7 @@ export function useICSExport(enrichedTasks) {
       return
     }
 
-    const events = validTasks.map(task => buildDeadlineEvent(task, { untitled: t('common.untitled') }))
+    const events = validTasks.map(task => buildDeadlineEvent(task, { untitled: t('common.untitled'), withReminders: true }))
     try {
       downloadIcs(await buildIcs(events), 'deadlines.ics')
       exportMessage.value = t('export.deadlinesExported', { count: events.length })
