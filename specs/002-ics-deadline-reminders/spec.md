@@ -88,8 +88,8 @@ zwei Erinnerungen.
 ### Measurable Outcomes
 
 - **SC-001**: 100 % der exportierten Deadline-Einträge haben nach dem Import genau zwei Erinnerungen.
-- **SC-002**: Die Erinnerungen erscheinen in mindestens zwei verbreiteten Kalendern (Google und Apple) zur
-  erwarteten Uhrzeit, auf Handy und Desktop.
+- **SC-002**: Die Erinnerungen erscheinen in Outlook und Google Kalender zur erwarteten Uhrzeit (am 2026-11-16 verifiziert).
+  Apple Kalender ist noch nicht verifiziert und wird nachgetestet, sobald ein Gerät verfügbar ist.
 - **SC-003**: Ein zweiter Export und Import erzeugt 0 doppelte Einträge und 0 doppelte Erinnerungen.
 - **SC-004**: Der Export braucht für den Nutzer keinen zusätzlichen Schritt gegenüber heute.
 

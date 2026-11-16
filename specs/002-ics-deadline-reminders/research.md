@@ -50,7 +50,7 @@
 
 - **Finding**: Google Kalender übernimmt Erinnerungen (`VALARM`) aus importierten .ics-Dateien möglicherweise nicht
   und setzt stattdessen die Standard-Benachrichtigungen des Kalenders. Apple Kalender und Outlook übernehmen `VALARM`.
-  **Nicht verifiziert.** Wird im manuellen Test (quickstart.md, Schritt 4) geprüft.
+  **Ergebnis 2026-11-16:** Outlook ✅ und Google Kalender ✅ übernehmen die Erinnerungen. Apple Kalender: noch nicht getestet.
 - **Folge, falls bestätigt**: SC-002 („Google und Apple“) ist für Google aus DueDate heraus nicht erfüllbar. Dann wird
   die Spezifikation angepasst (Google nur mit Hinweis auf dessen Standard-Benachrichtigungen). Ein eigenes
   Kalender-Abo per URL bräuchte einen Server und verstösst gegen Constitution I.
