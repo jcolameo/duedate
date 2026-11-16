@@ -6,7 +6,9 @@ No login, no backend, no tracking — all data stays in your browser.
 ## Features (current)
 
 - **Deadlines** — import a school/task CSV by drag & drop, smart column detection with a review step,
-  status per task (overdue, urgent, soon, ok) and `.ics` calendar export.
+  status per task (overdue, urgent, soon, ok) and `.ics` calendar export with two reminders per deadline
+  (18:00 the day before, 08:00 on the due date). Google Calendar keeps both, Outlook keeps the first (it allows one
+  reminder per event), Apple Calendar uses its own default.
 - **Home** — overview of overdue and urgent tasks and one task to focus on.
 - **Stundenplan** — effort and priority per task, recurring busy blocks, a deterministic weekly plan
   and `.ics` export of the planned sessions.
@@ -50,6 +52,12 @@ needed; the app proposes a mapping and you confirm or correct it once (it is rem
 
 Vue 3 (Composition API) · Vite · Tailwind CSS 4 · vue-router (hash history) ·
 [PapaParse](https://www.papaparse.com/) · [ics](https://github.com/adamgibbons/ics) · Storybook
+
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): architecture, data model, planned features and the spec-driven workflow (German)
+- [docs/BACKUP_FORMAT.md](docs/BACKUP_FORMAT.md): backup file format
+- [ROADMAP.md](ROADMAP.md), [DESIGN.md](DESIGN.md)
 
 ## Privacy
 

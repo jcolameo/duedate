@@ -15,11 +15,32 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | Basis | Bestehendes Vue-Repo. AI-Studio-Version (React) wird **nicht** übernommen, nur einzelne Ideen werden neu gebaut. |
 | Daten | `localStorage`, versioniertes Schema mit Migration. Bestehende Daten dürfen nie verloren gehen. |
 
-## 🎯 MVP-Ziel
+## 🎯 MVP-Ziel (Stand: Definition des Nutzers)
 
-> **Nach Schritt B7 nutze ich DueDate täglich am Desktop:** eigene Aufgaben in unter 5 Sekunden erfassen,
-> abhaken, nach Bereich (Studium / Freelance / Privat) sehen, eine klare „Heute“-Ansicht mit max. 3 Aufgaben,
-> BBNet-Import ohne Bugs, Backup als JSON.
+> **Der MVP ist erreicht, wenn diese Features perfekt funktionieren** (alle Zustände gestaltet, Tastatur und axe sauber, Tests grün, Deutsch und Englisch komplett, kein bekannter Fehler):
+
+| # | MVP-Feature | Stand | Fehlt bis „perfekt“ |
+|---|---|---|---|
+| 1 | Schnellerfassung und Überblick („Heute“, 3 Aufgaben) | läuft | Überblick als Quickview überarbeiten (siehe „Später“) |
+| 2 | Deadlines und CSV-Import | läuft | **B14** (Auswahl, Altes ausblenden) |
+| 3 | Planer und Kalender | läuft (B8–B13) | Politur und Alltagstest |
+| 4 | Kleinkram (Quicktasks) | geplant | **K3** |
+| 5 | Daten und Backup (Export/Import, Hell/Dunkel) | läuft | Hinweise für neue Nutzer |
+| + | Kanban mit Projekten | geplant | **K1, K2** (K4–K6 danach) |
+
+Nicht im MVP: Habit-Tracker (F3), Wiedervorlage (C3), Wiederkehrendes (C4), Fokus-Timer (C2), Wochenrückblick (C5), Freelance (Phase D), Jobs (Phase F), Life Planner.
+
+**Nach dem MVP**
+1. **Veröffentlichung als Open Source** mit eigener Webseite (Demo auf Basis der Pages-Version). Vorher: Lizenz wählen, README, Beitragsregeln, Changelog, Prüfung, dass im öffentlichen Repo nichts Persönliches steckt (`CLAUDE.md` bleibt privat und ausgeschlossen, `PROJECT_CONTEXT.md` und README generisch), Namensprüfung („DueDate“ ist sehr allgemein).
+2. Später Desktop- und Mobile-Download (Phase E und danach).
+3. Die ausgegrauten Funktionen (Freelance, Jobs, Life Planner und weitere) werden zuerst **privat** vom Nutzer genutzt und weiterentwickelt. Ziel: später als **Abo** anbieten.
+
+**Weichenstellung vor der Veröffentlichung (noch zu entscheiden):**
+- **Wo liegt der Code der Bezahl-Module?** Ein öffentliches Repo unter einer freien Lizenz kann jeder kopieren, auch diese Module. Entweder privates Repo oder eine saubere Modulschnittstelle im offenen Kern („Module ein/aus“, siehe „Später“).
+- **Was wird bezahlt?** Üblich und passend zum geplanten eigenen Backend: das Lokale bleibt gratis, kostenpflichtig wird, was Betrieb kostet (Sync zwischen Geräten, Konto, Cloud-Backups).
+- **Lizenz:** MIT (einfach) oder AGPL (schützt davor, dass jemand den Code als eigenen Dienst verkauft).
+
+**Arbeitsweise:** laufende Auslieferung in kleinen Schritten; jeder Merge auf `main` wird getestet, gebaut und auf GitHub Pages veröffentlicht (siehe Deployment). Die MVP-Liste ist das Ziel, nicht ein Stichtag.
 
 ## Status-Legende
 ⬜ offen · 🔄 in Arbeit · ✅ erledigt
@@ -100,6 +121,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | B11 | ✅ | `feat:` Arbeitstage / arbeitsfreie Wochentage (B8b, Teil 1) |
 | B12 | ✅ | `feat:` Arbeitszeiten verschieben und fixieren (Drag & Drop, Panel-Alternative, Rückgängig) |
 | B13 | ✅ | `feat:` Planungsmodus + „Neu planen“ (B8b, Teil 2) |
+| B14 | ⬜ | `feat:` CSV-Import mit Auswahl (Zeilen abwählen, Altes ausblenden, Auswahl merken) |
 
 **B1 — Aufgaben-Store + Migration** ⚠️ wichtigster technischer Schritt
 - Ziel: Aufgaben sind eigene Objekte statt CSV-Zeilen. Grundlage für alles Weitere.
@@ -207,7 +229,17 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 - Offen: Touch-Drag später mit Phase E.
 
 
-### ✅ MVP erreicht nach B7 (B8–B10 direkt danach)
+**B14 — CSV-Import mit Auswahl** (Nutzerwunsch: Dozenten vergessen alte Projekte in der Liste zu entfernen, DueDate importiert sie trotzdem)
+- Ziel: Beim Import einer CSV (Deadlines-Seite und Abkürzung in „Neue Aufgabe“ / Datei auf das Fenster ziehen) kann man vor dem Übernehmen auswählen, was rein soll: **alle** oder nur einzelne Zeilen.
+- Vorschau-Schritt mit Liste und Häkchen pro Zeile (Titel, Datum, Kategorie), „Alle / Keine“ und Suche. Schon vorhandene Aufgaben sind als „bereits drin“ markiert und zählen nicht.
+- **Vorauswahl gegen Altlasten:** Zeilen mit sehr altem Datum (z. B. Abgabe vor mehr als 30 Tagen, einstellbar) sind standardmässig abgewählt, mit Hinweis „12 alte Einträge nicht ausgewählt“ und einem Knopf „Alte trotzdem übernehmen“.
+- **Auswahl merken:** Abgewählte Zeilen werden als „ignoriert“ gespeichert (pro `sourceKey`, Schema-Migration), damit sie beim nächsten Import derselben Datei nicht wiederkommen. Das löst auch das bekannte Problem aus dem Aufräumen (BBNet-Aufgaben kämen sonst als offen zurück). In den Einstellungen gibt es „Ignorierte Einträge“ zum Zurückholen (Rückgängig inklusive).
+- Die Abkürzung aus „Neue Aufgabe“ zeigt die Vorschau nur, wenn es etwas zu entscheiden gibt (alte oder viele neue Zeilen); sonst bleibt es ein Klick mit Toast und Rückgängig wie heute.
+- Dateien (Vorschlag): `composables/useFileImport.js`, `useTasks.applyCsvImport` / `mergeImport` (ignorierte Keys überspringen), neu `components/ImportPreview.vue`, Backup-Format um die Ignorierliste erweitern.
+- Akzeptanz: CSV mit 3 alten und 5 aktuellen Zeilen → Vorschau, alte abgewählt; Import → nur 5 Aufgaben; erneuter Import derselben Datei → keine alten, kein Duplikat; Ignorierte lassen sich zurückholen.
+- Test: Unit für Vorauswahl nach Alter, Merge mit Ignorierliste, Migration, Backup-Round-Trip; Browser-Test Vorschau, Tastatur, axe.
+
+### Hinweis: Der frühere „MVP nach B7“ (Erfassen, Heute, Backup) ist erreicht, gilt aber nicht mehr als MVP. Siehe „MVP-Ziel“ oben.
 
 ---
 
@@ -221,7 +253,8 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 | C3 | ⬜ | `feat:` Wiedervorlage („wieder zeigen am“) |
 | C4 | ⬜ | `feat:` Wiederkehrende Aufgaben (Training) |
 | C5 | ⬜ | `feat:` Wochenrückblick |
-| C6 | ⬜ | `feat:` Erinnerungen via Kalender |
+| C6 | ✅ | `feat:` Erinnerungen via Kalender (Deadline-Export: Vortag 18:00, Abgabetag 08:00). Spezifikation: [specs/002-ics-deadline-reminders](specs/002-ics-deadline-reminders/spec.md) |
+| C6b | ⬜ | `feat:` Erinnerungszeiten einstellbar (Standard Vortag 18:00, Abgabetag 08:00) |
 
 **C1 — Checkliste in der Beschreibung** ✅: Schritte stehen direkt im Markdown-Text als `- [ ] Schritt` / `- [x] erledigt` (ein Text = eine Wahrheit, kein separates Feld; das alte `steps`-Array im Modell bleibt ungenutzt). Werkzeugleiste „Checkliste“, Enter setzt die Liste fort, leerer Punkt beendet sie; Kästchen sind in der formatierten Ansicht direkt anklickbar (Fokus bleibt auf dem Kästchen). Fortschritt „2/4“ mit Balken im Editor und als Badge in Deadlines/Überblick. Überblick: Karte „Nächste Aktion“ zeigt den **nächsten offenen Schritt** zum direkten Abhaken. Letzter Schritt → Angebot „Aufgabe erledigen“ (Toast auf der Startseite, im modalen Panel inline, weil ein Toast dahinter unerreichbar wäre); es wird nie automatisch erledigt. BBNet-Aufgaben: Schritte stehen in „Eigene Notizen“ (BBNet-Beschreibung bleibt unberührt). Utils: `utils/checklist.js`.
   - Tagesfortschritt (Nutzerwunsch): Balken mit Prozentzahl statt „1/3“, oben rechts in der Karte „Nächste Aktion“ (bei „Heute geschafft“ an derselben Stelle im Feld); zählt in **Schritten** (jeder Checklistenschritt + 1 für „Aufgabe erledigen“, Aufgabe ohne Liste = 1 Schritt), Balken wächst per Transition, Zahl zählt hoch, bei 100 % grün. Beim Erledigen von der Karte aus: kurze Rückmeldung „Diese Aufgabe wurde erledigt“ über der Karte (`DoneOverlay`, ~1,3 s; entfällt bei „Bewegung reduzieren“), der nächste Schritt blendet weich ein. Hat der Tag Aufgaben, bleibt die Tagesansicht mit 100 % stehen statt des allgemeinen „Alles erledigt“.
@@ -232,7 +265,7 @@ Nach jedem Schritt: `npm run build` + `npm test`, dann diese Datei aktualisieren
 
 **C3 — Wiedervorlage**: Feld „wieder zeigen am“ → Aufgabe verschwindet bis zum Datum, erscheint dann oben. Für Follow-ups (Bewerbungen, Offerten). Dateien: `useTasks.js`, `TaskDetail.vue`, Listen-Filter. Akzeptanz: Schnellwahl „morgen / in 3 Tagen / nächste Woche“. Test: Unit mit fixem Datum.
 
-**C4 — Wiederkehrende Aufgaben**: Regel „wöchentlich an Mo/Mi/Fr“ oder „monatlich am X.“; beim Abhaken entsteht die nächste Instanz. Deckt Training und Routinen ab, ohne eigenes Habit-Modul. Dateien: `useTasks.js`, neu `utils/recurrence.js`. Akzeptanz: Abhaken → nächster Termin korrekt (inkl. Monatsende, Jahreswechsel). Test: Unit-Tests für Wiederholungsregeln.
+**C4 — Wiederkehrende Aufgaben**: Regel „wöchentlich an Mo/Mi/Fr“ oder „monatlich am X.“; beim Abhaken entsteht die nächste Instanz. Deckt Routinen mit festen Tagen ab; Gewohnheiten mit Wochenzielen („3× pro Woche“) und Serien kommen als Habit-Tracker in F3. Dateien: `useTasks.js`, neu `utils/recurrence.js`. Akzeptanz: Abhaken → nächster Termin korrekt (inkl. Monatsende, Jahreswechsel). Test: Unit-Tests für Wiederholungsregeln.
 
 **C5 — Wochenrückblick**: Geführter 5-Min.-Dialog (Sonntag/Montag angeboten): erledigt diese Woche, liegengeblieben (verschieben / löschen / zerlegen), Top 3 nächste Woche. Unterstützende Sprache, keine Vorwürfe. Dateien: neu `views/ReviewView.vue`. Akzeptanz: Durchlauf in < 5 Min. möglich. Test: manuell mit Testdaten.
 
@@ -321,6 +354,9 @@ Entstanden im Gespräch mit dem Nutzer; der Figma-Prototyp (Seite 2) zeigt Struk
 |---|---|---|
 | F1 | ⬜ | `feat:` Bewerbungs-Tracker |
 | F2 | ⬜ | `feat:` Monatsexport der Bewerbungen (CSV) |
+| F3 | ⬜ | `feat:` Habit-Tracker (Gewohnheiten, Wochenziele, Serien) |
+
+**F3 — Habit-Tracker** (Nutzerwunsch): Gewohnheiten wie Training (3× Kraft, 2× Boxen pro Woche) abhaken und über die Zeit sehen. Anders als wiederkehrende Aufgaben (C4, feste Tage, eine Instanz pro Termin) zählt eine Gewohnheit **Wochenziele** („3× pro Woche“, ohne festen Tag): ein Tipp pro Durchführung, Fortschritt der Woche („2 von 3“), Wochen- und Monatsübersicht, ruhige Serien-Anzeige ohne Vorwürfe (verpasste Wochen werden neutral gezeigt, keine rote Warnung). Eigene Daten (`duedate.habits.v1`, Schema-Migration, Backup-Format), Karte „Heute“ auf dem Überblick für Gewohnheiten, die diese Woche noch offen sind. Offen zu klären: mit C4 zusammenlegen oder getrennt bauen; ob eine Gewohnheit im Kalender erscheint (Vorschlag: nein, nur als Wochenfortschritt). Reihenfolge noch offen, nach Phase K bzw. C4.
 
 **F1**: Firma, Stelle, Link, Datum, Status (geplant → beworben → Gespräch → Zusage/Absage), automatische Wiedervorlage zum Nachfassen. Daten bleiben lokal. **F2**: Export aller Bewerbungen eines Monats als CSV für Nachweise.
 
