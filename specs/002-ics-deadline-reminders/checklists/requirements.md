@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,4 +31,4 @@
 
 ## Notes
 
-- Offen: FR-002 (Uhrzeiten der Erinnerungen bei ganztägigen Deadlines). Wird vor `/speckit-plan` geklärt.
+- FR-002 geklärt am 2026-11-16: Vortag 18:00, Abgabetag 08:00. Einstellbare Zeiten → C6b.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-16
 
-**Status**: Draft
+**Status**: Approved
 
 **Roadmap**: C6 (`ROADMAP.md`, Phase C)
 
