@@ -109,8 +109,12 @@ Begründung: Die Kernfunktionen müssen für alle Nutzer ohne Konto, Kosten und 
 - Die Spezifikation beschreibt Nutzen, Verhalten und Akzeptanzkriterien ohne Technik. Technik gehört in den Plan.
 - Spezifikationen bleiben als Historie unter `specs/` im Repo. Neue Anforderungen bekommen eine neue Spezifikation.
 - Pro Feature arbeitet ein Agent auf einem Branch. Zwei Agenten arbeiten nie an denselben Dateien.
+- Jedes Feature hat User-Tests für die manuelle Abnahme: `specs/<feature>/user-tests.md` nach der Vorlage
+  `.specify/templates/user-test-template.md`. Jeder Test geht auf ein Akzeptanzszenario zurück, und jeder Schritt
+  ist eine einzelne Aktion mit erwartetem Ergebnis. `tasks.md` enthält in der Abschlussphase eine Aufgabe, die
+  diese Datei erstellt, und eine, in der der Maintainer sie durchführt.
 - Merge-Bedingungen: Tests und Build grün, Bedienung per Tastatur und axe geprüft, Spezifikation erfüllt
-  (`converge` meldet „Converged“), Roadmap nachgeführt.
+  (`converge` meldet „Converged“), User-Tests durchgeführt und alle ✅, Roadmap nachgeführt.
 
 ## Governance
 
@@ -123,4 +127,4 @@ Begründung: Die Kernfunktionen müssen für alle Nutzer ohne Konto, Kosten und 
   PATCH = Präzisierung.
 - Laufende Hinweise zur Entwicklung: `docs/ARCHITECTURE.md`, `DESIGN.md`, `ROADMAP.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-16 | **Last Amended**: 2026-11-16
+**Version**: 1.1.0 | **Ratified**: 2026-11-16 | **Last Amended**: 2026-11-16
