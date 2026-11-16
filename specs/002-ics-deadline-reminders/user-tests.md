@@ -18,15 +18,15 @@
 | 1 | Deadlines → „Kalender exportieren“ | Datei `deadlines.ics` wird heruntergeladen | ✅ | |
 | 2 | Datei in **Apple Kalender** importieren, Eintrag „Test C6“ öffnen | 2 Erinnerungen: Vortag 18:00, Abgabetag 08:00 | ❌ | 2026-11-16, iPhone (Import per Datei): Eintrag ok, aber nur „Hinweis: Standard (1 Tag vorher, 9:00)“ = Apple-Standard, nicht unsere Erinnerungen. iCloud Web: kein Import gefunden. |
 | 3 | Datei in **Google Kalender** importieren (Einstellungen → Importieren), Eintrag öffnen | 2 Erinnerungen wie oben (Risiko R6: Google übernimmt sie evtl. nicht) | ✅ | 2026-11-16 |
-| 4 | Datei in **Outlook** importieren, Eintrag öffnen | 2 Erinnerungen wie oben | ✅ | 2026-11-16 |
-| 5 | In einem Kalender den Titel der Erinnerung ansehen | enthält „Test C6“ (und das Fach, falls gesetzt) | | |
+| 4 | Datei in **Outlook** importieren, Eintrag öffnen | 2 Erinnerungen wie oben | ❌ | 2026-11-16: Outlook kennt nur 1 Erinnerung pro Termin; angezeigt „1 Tag vorher“ (weder 18:00 Vortag noch 08:00) |
+| 5 | In einem Kalender den Titel der Erinnerung ansehen | enthält „Test C6“ (und das Fach, falls gesetzt) | ✅ | Outlook, 2026-11-16 |
 
 ## UT-2: Erneuter Export verdoppelt nichts (Spec: US2, Szenario 1)
 
 | # | Schritt | Erwartet | ✅/❌ | Notiz |
 |---|---|---|---|---|
-| 1 | Nochmals „Kalender exportieren“ | neue `deadlines.ics` | | |
-| 2 | In denselben Test-Kalender importieren | „Test C6“ gibt es **einmal**, mit **2** Erinnerungen | | |
+| 1 | Nochmals „Kalender exportieren“ | neue `deadlines.ics` | ✅ | |
+| 2 | In denselben Test-Kalender importieren | „Test C6“ gibt es **einmal**, mit **2** Erinnerungen | ✅ | Outlook: einmal vorhanden (kein Duplikat); Erinnerungen siehe UT-1 Schritt 4 |
 
 ## UT-3: „Meine Woche“ bleibt ohne Erinnerungen (Spec: FR-005)
 
