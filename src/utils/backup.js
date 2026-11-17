@@ -12,6 +12,7 @@
  */
 import { createTask, upgradeToV3, upgradeToV4, upgradeToV5, SCHEMA_VERSION } from './taskModel.js'
 import { normalizeBlocks } from './availability.js'
+import { TAG_COLORS } from './tags.js'
 
 export const BACKUP_FORMAT = 'duedate-backup'
 export const BACKUP_VERSION = 1
@@ -37,6 +38,47 @@ const WIPE_KEYS = [
 ]
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
+
+/**
+ * Types a stored task field may have (SEC-002). A backup is a file from outside,
+ * so a field with the wrong type must be refused here instead of crashing later
+ * in `enrichTask` (a numeric `due` used to throw there). Fields not listed are
+ * left to the defaults of `createTask`.
+ */
+const TASK_FIELD_TYPES = {
+  area: 'string',
+  status: 'string',
+  due: 'string',
+  dueRaw: 'string',
+  start: 'string',
+  category: 'string',
+  description: 'string',
+  files: 'string',
+  notes: 'string',
+  source: 'string',
+  sourceKey: 'string',
+  createdAt: 'string',
+  updatedAt: 'string',
+  completedAt: 'string',
+  priority: 'string',
+  graded: 'boolean',
+  estimateMin: 'number',
+  steps: 'array',
+  tags: 'array',
+  pinned: 'array',
+}
+
+/** True when the field is present but has another type than the one allowed. */
+function hasWrongType(task, field, type) {
+  const value = task[field]
+  if (value === undefined || value === null) return false
+  return type === 'array' ? !Array.isArray(value) : typeof value !== type
+}
+
+/** True when any known field of the task carries the wrong type. */
+function hasInvalidFields(task) {
+  return Object.entries(TASK_FIELD_TYPES).some(([field, type]) => hasWrongType(task, field, type))
+}
 
 function readJSON(storage, key) {
   try {
@@ -110,7 +152,7 @@ export function parseBackup(text) {
 
   const { tasks, tags, availability } = json.data
   if (!Array.isArray(tasks)) return { error: { code: 'invalid_data', params: {} } }
-  const badTasks = tasks.filter(t => !isObject(t) || typeof t.id !== 'string' || !t.id || typeof t.title !== 'string').length
+  const badTasks = tasks.filter(t => !isObject(t) || typeof t.id !== 'string' || !t.id || typeof t.title !== 'string' || hasInvalidFields(t)).length
   if (badTasks) return { error: { code: 'invalid_tasks', params: { count: badTasks } } }
   if (new Set(tasks.map(t => t.id)).size !== tasks.length) return { error: { code: 'duplicate_ids', params: {} } }
   if (tags !== undefined && (!Array.isArray(tags) || tags.some(t => !isObject(t) || typeof t.id !== 'string' || typeof t.name !== 'string'))) {
@@ -134,7 +176,12 @@ function put(storage, key, value) {
  */
 export function applyBackup(backup, storage) {
   const data = backup.data
-  const tags = (data.tags || []).map(t => ({ id: t.id, name: t.name, color: t.color || 'gray' }))
+  const tags = (data.tags || []).map(t => ({
+    id: t.id,
+    name: t.name,
+    // SEC-003: a color from outside must not reach the class lookup unchecked
+    color: TAG_COLORS.includes(t.color) ? t.color : 'gray',
+  }))
   const tagIds = new Set(tags.map(t => t.id))
 
   let tasks = data.tasks
