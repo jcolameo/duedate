@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # Runtime and build dependencies. Grouped so a week produces one PR, not ten.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+    labels:
+      - dependencies
+
+  # The deploy workflow pins action versions; keep them current too.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+    labels:
+      - dependencies
