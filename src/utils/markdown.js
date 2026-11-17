@@ -25,6 +25,41 @@ function safeUrl(url) {
 
 const LINK_ATTRS = 'target="_blank" rel="noopener noreferrer"'
 
+/**
+ * Rewrites every "[text](url)" with the result of `make(text, url)`.
+ *
+ * Hand-written instead of a regex: the regex form backtracked quadratically on
+ * long input (SEC-001). This walks the string once, and gives up as soon as the
+ * rest of the string cannot contain a link any more, so the work stays linear.
+ */
+function replaceLinks(s, make) {
+  let out = ''
+  let i = 0
+  while (i < s.length) {
+    const open = s.indexOf('[', i)
+    if (open === -1) break
+    const close = s.indexOf(']', open + 1)
+    if (close === -1) break // no "]" left, so no link can follow
+    // "[]" and "()" are not links: both parts need at least one character
+    if (close === open + 1 || s[close + 1] !== '(') {
+      out += s.slice(i, close + 1)
+      i = close + 1
+      continue
+    }
+    let end = close + 2
+    while (end < s.length && s[end] !== ')' && !/\s/.test(s[end])) end++
+    if (end >= s.length) break // no ")" left, so no link can follow
+    if (s[end] !== ')' || end === close + 2) {
+      out += s.slice(i, close + 1)
+      i = close + 1
+      continue
+    }
+    out += s.slice(i, open) + make(s.slice(open + 1, close), s.slice(close + 2, end))
+    i = end + 1
+  }
+  return out + s.slice(i)
+}
+
 /** Inline formatting on one already escaped line. */
 function inline(escaped) {
   // Protect code spans from further formatting
@@ -34,9 +69,9 @@ function inline(escaped) {
     return `\u0000${codes.length - 1}\u0000`
   })
   // [text](url) — the URL is already escaped, which keeps quotes harmless
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, text, url) => {
+  s = replaceLinks(s, (text, url) => {
     const href = safeUrl(url.replace(/&amp;/g, '&'))
-    return href ? `<a href="${escapeHtml(href)}" ${LINK_ATTRS}>${text}</a>` : match
+    return href ? `<a href="${escapeHtml(href)}" ${LINK_ATTRS}>${text}</a>` : `[${text}](${url})`
   })
   // Bare URLs (not inside an href or link text we just created)
   s = s.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_, pre, url) =>
@@ -121,8 +156,7 @@ export function markdownSummary(text, max = 120) {
     .map(l => l.replace(HEADING, '$2').replace(BULLET, '$1').replace(NUMBERED, '$1').replace(/^\[[ xX]\]\s*/, '').trim())
     .find(Boolean)
   if (!line) return ''
-  const plain = line
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+  const plain = replaceLinks(line, (text) => text)
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/[*_`]/g, '')
   return plain.length > max ? `${plain.slice(0, max - 1).trimEnd()}…` : plain
