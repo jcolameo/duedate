@@ -1,17 +1,45 @@
 <script setup>
 /**
- * Page title block (DESIGN.md §5): mono eyebrow, bold display title with an
- * optional accent-colored trailing character ("?", "."), short description
- * and an actions slot for the one primary action of the screen.
+ * PageHeader: the big title block at the top of every screen, with an
+ * optional small line above it, a short description and room for buttons.
+ *
+ * Used by: src/views/HomeView.vue:186, src/views/DeadlinesView.vue:77,
+ * src/views/CalendarView.vue:124, src/views/StundenplanView.vue:111,
+ * src/views/SettingsView.vue:27, src/views/DesignView.vue:64.
+ *
+ * Props: `title`, `accent`, `eyebrow`, `description`. Events: none.
+ * Slot `actions`: the one primary action of the screen, e.g. "New task".
+ *
+ * In the background: nothing. Pure display.
+ *
+ * Why it is built this way: all screens share one title style (DESIGN.md §5):
+ * mono eyebrow, bold display title with an optional accent-colored trailing
+ * character ("?", "."), short description.
+ *
+ * How to read this file: the props, then the template: left column (eyebrow,
+ * title, description), right column (actions slot).
+ */
+// `<script setup>`: the whole file is one component; everything declared here
+// is local to it, like the body of a React function component.
+
+/**
+ * Props, like `props` in React, but declared as a typed object instead of
+ * destructured parameters.
+ * - title: the page title, rendered as the page's only <h1>
+ * - accent: trailing character in accent color, e.g. "?" or "."
+ * - eyebrow: small mono line above the title, e.g. "MI 11.11. · KW 46"
+ * - description: one short sentence under the title
  */
 defineProps({
   title: { type: String, required: true },
-  /** Trailing character in accent color, e.g. "?" or "." */
   accent: { type: String, default: '' },
-  /** Small mono line above the title, e.g. "MI 11.11. · KW 46" */
   eyebrow: { type: String, default: '' },
   description: { type: String, default: '' },
 })
+
+// Template notes: `$slots.actions` is true when the parent filled the named
+// slot `<template #actions>`; only then the right column is drawn.
+// `<slot name="actions" />` is like a second, named `props.children`.
 </script>
 
 <template>

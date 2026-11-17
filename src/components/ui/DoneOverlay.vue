@@ -1,17 +1,43 @@
 <script setup>
+/**
+ * DoneOverlay: a short green "done" picture with a check mark that is laid
+ * over a task card for a moment after the task is completed.
+ *
+ * Used by: src/views/HomeView.vue:27 (import) and :322 (over the focus card).
+ *
+ * Props: `title` (shown while not null) and `subtitle`. Events: none.
+ *
+ * In the background: a fade in and out through <Transition>, plus a pop
+ * animation on the check mark. No timers here: the parent decides when
+ * `title` is set and when it goes back to null.
+ *
+ * Why it is built this way: purely visual. It cannot be focused and is
+ * hidden from assistive tech, because the toast already announces the same
+ * thing. The parent skips it under prefers-reduced-motion.
+ *
+ * How to read this file: the props, then the template, then the <style>
+ * with the animation names. The parent must place it inside an element with
+ * `relative`, because the overlay is `absolute inset-0`.
+ */
+// `<script setup>`: the whole file is one component; everything declared here
+// is local to it, like the body of a React function component.
 import { PhCheck } from '@phosphor-icons/vue'
 
 /**
- * Short, purely visual confirmation laid over a card ("Diese Aufgabe wurde
- * erledigt"). Not focusable and hidden from assistive tech (the toast
- * announces the same thing); the parent decides when it shows and skips it
- * under prefers-reduced-motion. Place inside a `relative` wrapper.
+ * Props, like `props` in React, but declared as a typed object instead of
+ * destructured parameters.
+ * - title: big text, e.g. "Diese Aufgabe wurde erledigt"; null = hidden
+ * - subtitle: optional second line, e.g. the task title (cut off when too long)
  */
 defineProps({
-  /** null = hidden */
   title: { type: String, default: null },
   subtitle: { type: String, default: '' },
 })
+
+// Template notes: `<Transition name="dd-done">` animates one element that
+// appears or disappears through `v-if`. Vue adds the classes
+// `dd-done-enter-from`, `dd-done-leave-to` and so on (see <style>).
+// `weight="bold"` on the check icon is the Phosphor icon weight.
 </script>
 
 <template>
@@ -30,6 +56,8 @@ defineProps({
 </template>
 
 <style scoped>
+/* `scoped`: these rules only reach elements of this component. */
+/* Fade in fast, fade out slower, so the result stays readable a little longer. */
 .dd-done-enter-active {
   transition: opacity 160ms var(--ease-out-soft);
 }
