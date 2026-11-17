@@ -1,9 +1,19 @@
 /**
- * Pure helpers around PapaParse so CSV handling is testable without a File.
+ * CSV parsing, kept separate from PapaParse so it can be tested without a File.
+ *
+ * PapaParse does the splitting. What comes back still needs a decision: which
+ * rows can be trusted, which columns exist, and whether the file is usable at
+ * all. That decision lives here, as a pure function.
  */
 
-// Shared PapaParse options: auto-detect delimiter (; , tab …), skip blank and
-// whitespace-only lines, trim header names.
+/**
+ * Options shared by every import.
+ *
+ * - `delimiter: ''` lets PapaParse detect `;`, `,` or tab. Swiss exports use `;`.
+ * - `skipEmptyLines: 'greedy'` also drops lines with only spaces, which Excel
+ *   likes to leave at the end of a sheet.
+ * - Header names are trimmed, because trailing spaces break the mapping.
+ */
 export const CSV_PARSE_OPTIONS = {
   header: true,
   delimiter: '',
@@ -11,20 +21,27 @@ export const CSV_PARSE_OPTIONS = {
   transformHeader: (h) => String(h).trim(),
 }
 
-// Error codes that make a row unreliable (values would land in wrong columns)
+/**
+ * Errors that make a whole row unreliable: the values would land in the wrong
+ * columns, so the row is dropped instead of imported half-wrong.
+ */
 const ROW_BREAKING = new Set(['TooManyFields', 'MissingQuotes', 'InvalidQuotes'])
 
 /**
- * Turns a PapaParse result into rows we can trust.
+ * Turns a PapaParse result into rows the importer can trust.
+ *
  * - Rows with too many fields or broken quotes are skipped and counted.
  * - Rows with too few fields are kept; missing cells become ''.
- * - The "could not detect delimiter" notice (single-column file) is ignored.
- * - Every row gets every header key, so Object.keys(rows[0]) === fields.
+ * - The "could not detect delimiter" notice is ignored: a single-column file is
+ *   legitimate and PapaParse reports it as an error.
+ * - Every row gets every header key, so `Object.keys(rows[0])` equals `fields`.
  *
+ * @param {object} results - raw result from PapaParse
  * @returns {{ rows: object[], fields: string[], skippedRows: number, fatalError: string|null }}
- *   fatalError is a code: 'noHeader' | 'noRows'
+ *   `fatalError` is a code: 'noHeader' | 'noRows', or null when the file is usable
  */
 export function normalizeParseResult(results) {
+  // `__parsed_extra` is PapaParse's bucket for surplus cells, not a real column.
   const fields = (results?.meta?.fields || []).filter((f) => f !== '' && f !== '__parsed_extra')
   if (fields.length === 0) {
     return { rows: [], fields: [], skippedRows: 0, fatalError: 'noHeader' }

@@ -1,14 +1,22 @@
 /**
- * JSON backup (B7): everything the user owns in one file.
+ * The JSON backup (B7): everything the user owns, in one file.
  *
- * File: { format: 'duedate-backup', version, schema, exportedAt, app, data }
- * - version: version of this file format (importers refuse newer ones)
- * - schema:  version of the stored data shape (older ones are upgraded on import)
- * - data:    tasks, tags, availability, today, columnMapping, csv, settings
+ * File shape:
+ *   { format: 'duedate-backup', version, schema, exportedAt, app, data }
  *
- * All functions take a Storage-like object (getItem/setItem/removeItem), so
- * they are tested without a browser. UI preferences that are only about
- * looks (filters) are not part of a backup.
+ * - `version` is the version of this file format. An importer refuses a newer
+ *   one, because it cannot know what the extra fields mean.
+ * - `schema` is the version of the stored data shape. An older one is upgraded
+ *   during the import, see `upgradeToV3` and friends in `taskModel.js`.
+ * - `data` holds tasks, tags, availability, today, columnMapping, csv and the
+ *   settings.
+ *
+ * Every function takes a Storage-like object (`getItem`/`setItem`/`removeItem`)
+ * instead of touching `localStorage` directly, which is what makes the whole
+ * import testable without a browser.
+ *
+ * State that only affects looks (area and tag filters) is deliberately not part
+ * of a backup: restoring a file should not change what the user is looking at.
  */
 import { createTask, upgradeToV3, upgradeToV4, upgradeToV5, SCHEMA_VERSION } from './taskModel.js'
 import { normalizeBlocks } from './availability.js'
@@ -17,6 +25,7 @@ import { TAG_COLORS } from './tags.js'
 export const BACKUP_FORMAT = 'duedate-backup'
 export const BACKUP_VERSION = 1
 
+/** The storage keys a backup reads and writes. */
 const KEYS = {
   tasks: 'duedate.taskStore.v1',
   tags: 'duedate.tags.v1',
@@ -28,9 +37,15 @@ const KEYS = {
   locale: 'duedate.locale.v1',
   planner: 'duedate.plannerSettings.v1',
 }
+
 const SCHEMA_KEY = 'duedate.schemaVersion'
 
-// Removed by "delete all data": data plus looks-only state, not theme/language
+/**
+ * Removed by "delete all data": the data plus the looks-only state.
+ *
+ * Theme and language stay, because wiping tasks should not reset the app to
+ * dark mode and German for an English user.
+ */
 const WIPE_KEYS = [
   KEYS.tasks, KEYS.tags, KEYS.availability, KEYS.today, KEYS.columnMapping, KEYS.csv, SCHEMA_KEY,
   'duedate.taskPlanning.v1', 'duedate.areaFilter.v1', 'duedate.tagFilter.v1', 'duedate.lastBackup.v1',
@@ -40,10 +55,13 @@ const WIPE_KEYS = [
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 
 /**
- * Types a stored task field may have (SEC-002). A backup is a file from outside,
- * so a field with the wrong type must be refused here instead of crashing later
- * in `enrichTask` (a numeric `due` used to throw there). Fields not listed are
- * left to the defaults of `createTask`.
+ * The types a stored task field may have (SEC-002).
+ *
+ * A backup is a file from outside, so a field with the wrong type has to be
+ * refused here instead of crashing later in `enrichTask`. A numeric `due` used
+ * to pass the import and throw there, which took down the whole task list.
+ *
+ * Fields that are not listed are left to the defaults of `createTask`.
  */
 const TASK_FIELD_TYPES = {
   area: 'string',
@@ -68,7 +86,12 @@ const TASK_FIELD_TYPES = {
   pinned: 'array',
 }
 
-/** True when the field is present but has another type than the one allowed. */
+/**
+ * True when the field is present but has another type than the one allowed.
+ *
+ * A missing or null field is fine: `createTask` fills it in. Only a value that
+ * is there and wrong is a problem.
+ */
 function hasWrongType(task, field, type) {
   const value = task[field]
   if (value === undefined || value === null) return false
@@ -80,6 +103,12 @@ function hasInvalidFields(task) {
   return Object.entries(TASK_FIELD_TYPES).some(([field, type]) => hasWrongType(task, field, type))
 }
 
+/**
+ * Reads and parses one key, or null.
+ *
+ * Broken JSON returns null instead of throwing: a half-written value from an
+ * older version must not stop the export.
+ */
 function readJSON(storage, key) {
   try {
     const raw = storage.getItem(key)
@@ -89,7 +118,13 @@ function readJSON(storage, key) {
   }
 }
 
-/** Reads all user data from storage into the backup structure. */
+/**
+ * Collects all user data from storage into the backup structure.
+ *
+ * @param {Storage} storage - localStorage, or a test double
+ * @param {Date} now - passed in so the export timestamp is testable
+ * @returns {object} the backup object, ready to be stringified
+ */
 export function createBackup(storage, now = new Date()) {
   const tasks = readJSON(storage, KEYS.tasks)
   const tags = readJSON(storage, KEYS.tags)
@@ -97,6 +132,8 @@ export function createBackup(storage, now = new Date()) {
   const today = readJSON(storage, KEYS.today)
   const mapping = readJSON(storage, KEYS.columnMapping)
   const csv = readJSON(storage, KEYS.csv)
+  const planner = readJSON(storage, KEYS.planner)
+
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
@@ -113,13 +150,20 @@ export function createBackup(storage, now = new Date()) {
       settings: {
         theme: storage.getItem(KEYS.theme) || null,
         locale: storage.getItem(KEYS.locale) || null,
-        planner: isObject(readJSON(storage, KEYS.planner)) ? readJSON(storage, KEYS.planner) : null,
+        planner: isObject(planner) ? planner : null,
       },
     },
   }
 }
 
-/** Counts for the preview ("42 Aufgaben, 5 Tags …"). */
+/**
+ * Counts for the preview the user sees before confirming an import
+ * ("42 Aufgaben, 5 Tags, 120 CSV-Zeilen").
+ *
+ * @param {object} data - the `data` part of a backup
+ * @returns {{ tasks: number, open: number, done: number, tags: number,
+ *   blocks: number, csvRows: number }}
+ */
 export function summarize(data) {
   const tasks = Array.isArray(data?.tasks) ? data.tasks : []
   return {
@@ -133,9 +177,16 @@ export function summarize(data) {
 }
 
 /**
- * Text of a backup file -> { backup, summary } or { error: { code, params } }.
- * Codes: not_json, wrong_format, too_new, invalid_data, invalid_tasks,
- * duplicate_ids, invalid_tags, invalid_availability.
+ * Turns the text of a backup file into a usable backup, or into an error code.
+ *
+ * Every check runs before anything is written, so a rejected file leaves the
+ * stored data untouched.
+ *
+ * Error codes: `not_json`, `wrong_format`, `too_new`, `invalid_data`,
+ * `invalid_tasks`, `duplicate_ids`, `invalid_tags`, `invalid_availability`.
+ *
+ * @param {string} text - file content
+ * @returns {{ backup: object, summary: object }|{ error: { code: string, params: object } }}
  */
 export function parseBackup(text) {
   let json
@@ -144,35 +195,64 @@ export function parseBackup(text) {
   } catch {
     return { error: { code: 'not_json', params: {} } }
   }
-  if (!isObject(json) || json.format !== BACKUP_FORMAT) return { error: { code: 'wrong_format', params: {} } }
+
+  if (!isObject(json) || json.format !== BACKUP_FORMAT) {
+    return { error: { code: 'wrong_format', params: {} } }
+  }
   if (typeof json.version !== 'number' || json.version > BACKUP_VERSION) {
     return { error: { code: 'too_new', params: { version: json.version ?? '?' } } }
   }
-  if (!isObject(json.data)) return { error: { code: 'invalid_data', params: {} } }
+  if (!isObject(json.data)) {
+    return { error: { code: 'invalid_data', params: {} } }
+  }
 
   const { tasks, tags, availability } = json.data
-  if (!Array.isArray(tasks)) return { error: { code: 'invalid_data', params: {} } }
-  const badTasks = tasks.filter(t => !isObject(t) || typeof t.id !== 'string' || !t.id || typeof t.title !== 'string' || hasInvalidFields(t)).length
-  if (badTasks) return { error: { code: 'invalid_tasks', params: { count: badTasks } } }
-  if (new Set(tasks.map(t => t.id)).size !== tasks.length) return { error: { code: 'duplicate_ids', params: {} } }
+  if (!Array.isArray(tasks)) {
+    return { error: { code: 'invalid_data', params: {} } }
+  }
+
+  const badTasks = tasks.filter(t =>
+    !isObject(t) || typeof t.id !== 'string' || !t.id || typeof t.title !== 'string' || hasInvalidFields(t)).length
+  if (badTasks) {
+    return { error: { code: 'invalid_tasks', params: { count: badTasks } } }
+  }
+
+  // Duplicate IDs would make two tasks share a plan and an ICS UID.
+  if (new Set(tasks.map(t => t.id)).size !== tasks.length) {
+    return { error: { code: 'duplicate_ids', params: {} } }
+  }
+
   if (tags !== undefined && (!Array.isArray(tags) || tags.some(t => !isObject(t) || typeof t.id !== 'string' || typeof t.name !== 'string'))) {
     return { error: { code: 'invalid_tags', params: {} } }
   }
   if (availability !== undefined && (!Array.isArray(availability) || availability.some(b => !isObject(b)))) {
     return { error: { code: 'invalid_availability', params: {} } }
   }
+
   return { backup: json, summary: summarize(json.data) }
 }
 
+/**
+ * Writes one value, or removes the key when there is nothing to write.
+ *
+ * Strings are stored as they are, everything else as JSON. `null` and
+ * `undefined` mean "this key should not exist", which keeps a restore from
+ * leaving stale data behind.
+ */
 function put(storage, key, value) {
   if (value === null || value === undefined) storage.removeItem(key)
   else storage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
 }
 
 /**
- * Writes all pairs or none (SEC-004). localStorage has no transaction, so the
- * previous values are kept and put back when a write fails - a full quota is the
- * usual reason. Restoring frees space again, so the rollback itself can run.
+ * Writes all pairs or none (SEC-004).
+ *
+ * `localStorage` has no transaction. Without this, a quota error on the last key
+ * left the new tasks in place and the old CSV rows behind: a half-imported state
+ * the user can neither see nor undo.
+ *
+ * The previous values are kept and put back when a write fails. Restoring frees
+ * space again, so the rollback itself can run even with a full quota.
  */
 function writeAll(storage, pairs) {
   const previous = pairs.map(([key]) => [key, storage.getItem(key)])
@@ -185,16 +265,26 @@ function writeAll(storage, pairs) {
 }
 
 /**
- * Replaces all user data in storage with the backup's. Older data shapes are
- * upgraded, missing task fields get defaults and tag IDs that point to no tag
- * are dropped. The app reads its stores at start, so reload afterwards.
+ * Replaces all user data in storage with the backup's.
+ *
+ * Three things happen on the way in:
+ * - older data shapes are upgraded (`upgradeToV3` to `upgradeToV5`),
+ * - missing task fields get their defaults from `createTask`,
+ * - tag IDs that point to no tag are dropped, so no task references a ghost.
+ *
+ * The stores read their data once at start, so the caller reloads the page
+ * afterwards.
+ *
+ * @param {object} backup - result of `parseBackup`
+ * @param {Storage} storage
  */
 export function applyBackup(backup, storage) {
   const data = backup.data
+
   const tags = (data.tags || []).map(t => ({
     id: t.id,
     name: t.name,
-    // SEC-003: a color from outside must not reach the class lookup unchecked
+    // SEC-003: a color from outside must not reach the class lookup unchecked.
     color: TAG_COLORS.includes(t.color) ? t.color : 'gray',
   }))
   const tagIds = new Set(tags.map(t => t.id))
@@ -203,7 +293,8 @@ export function applyBackup(backup, storage) {
   if ((backup.schema ?? 2) < 3) tasks = upgradeToV3(tasks)
   if ((backup.schema ?? 2) < 4) tasks = upgradeToV4(tasks)
   if ((backup.schema ?? 2) < 5) tasks = upgradeToV5(tasks)
-  tasks = tasks.map(task => {
+
+  tasks = tasks.map((task) => {
     const full = createTask(task)
     return { ...full, tags: (Array.isArray(full.tags) ? full.tags : []).filter(id => tagIds.has(id)) }
   })
@@ -220,16 +311,29 @@ export function applyBackup(backup, storage) {
   if (data.settings?.theme) writes.push([KEYS.theme, data.settings.theme])
   if (data.settings?.locale) writes.push([KEYS.locale, data.settings.locale])
   if (isObject(data.settings?.planner)) writes.push([KEYS.planner, data.settings.planner])
+
   writeAll(storage, writes)
 }
 
-/** Removes all user data (theme and language stay). */
+/**
+ * Removes all user data. Theme and language stay, see `WIPE_KEYS`.
+ *
+ * @param {Storage} storage
+ */
 export function clearAllData(storage) {
   for (const key of WIPE_KEYS) storage.removeItem(key)
 }
 
-/** duedate-backup-2026-11-12.json (local date) */
+/**
+ * File name for the download: "duedate-backup-2026-11-12.json".
+ *
+ * The local date is used, not the UTC one, so a backup made late in the evening
+ * carries the day the user thinks it is.
+ *
+ * @param {Date} now
+ * @returns {string}
+ */
 export function backupFilename(now = new Date()) {
-  const p = (n) => String(n).padStart(2, '0')
-  return `duedate-backup-${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}.json`
+  const pad = (n) => String(n).padStart(2, '0')
+  return `duedate-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`
 }

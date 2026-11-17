@@ -1,17 +1,29 @@
 /**
- * "How far are we?" for one task (calendar and task panel): progress from the
- * checklist steps, the time that belongs to finished steps, the sessions the
- * plan has for it, and when it was created, changed and finished.
+ * "How far are we?" for a single task, used by the calendar and the task panel.
+ *
+ * Three sources feed the answer: the checklist steps, the estimate (how much
+ * time the finished steps already cover) and the sessions the plan has for the
+ * task. Plus the three timestamps of the task.
+ *
+ * Pure functions: the current time is a parameter, never read here.
  */
 import { checklistProgress, checklistTextOf } from './checklist.js'
 import { remainingMinutes } from './estimate.js'
 
 /**
- * { percent, steps: {done,total}|null, estimateMin, remainingMin, doneMin, isDone }
+ * Progress of one task.
+ *
  * - done task: 100 %
  * - with steps: share of checked steps
- * - without steps: 0 % (nothing measurable yet)
- * doneMin = estimate minus remaining (time covered by finished steps), null without an estimate.
+ * - without steps: 0 %, because there is nothing measurable yet
+ *
+ * `doneMin` is the estimate minus what is left, so it is the time the finished
+ * steps already cover. It stays null without an estimate.
+ *
+ * @param {object} task
+ * @returns {{ percent: number, steps: {done: number, total: number}|null,
+ *   estimateMin: number|null, remainingMin: number|null, doneMin: number|null,
+ *   isDone: boolean }}
  */
 export function taskProgress(task) {
   const isDone = task.status === 'done'
@@ -31,8 +43,16 @@ export function taskProgress(task) {
 }
 
 /**
- * Sessions of one task from the plan, in order, split into what is still
- * ahead (today or later) and the summary: { sessions, upcoming, minutes, first, last }.
+ * The sessions the plan has for one task.
+ *
+ * `upcoming` holds the sessions from today on, which is what the panel shows as
+ * "next up". The rest is the summary over all sessions.
+ *
+ * @param {object} plan - result of generatePlan()
+ * @param {string} taskId
+ * @param {Date} today - passed in so the split is testable
+ * @returns {{ sessions: object[], upcoming: object[], minutes: number,
+ *   first: Date|null, last: Date|null }}
  */
 export function plannedSessions(plan, taskId, today = new Date()) {
   const start = new Date(today)
@@ -47,11 +67,19 @@ export function plannedSessions(plan, taskId, today = new Date()) {
   }
 }
 
-/** createdAt / updatedAt / completedAt as Dates; anything unusable is null. */
+/**
+ * The three timestamps of a task as Dates.
+ *
+ * Anything unreadable becomes null instead of an Invalid Date, so the UI can
+ * simply check for null. `completed` is only filled for a done task.
+ *
+ * @param {object} task
+ * @returns {{ created: Date|null, updated: Date|null, completed: Date|null }}
+ */
 export function taskTimeline(task) {
   const read = (value) => {
-    const d = value ? new Date(value) : null
-    return d && !Number.isNaN(d.getTime()) ? d : null
+    const date = value ? new Date(value) : null
+    return date && !Number.isNaN(date.getTime()) ? date : null
   }
   return {
     created: read(task.createdAt),

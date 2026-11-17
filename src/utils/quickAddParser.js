@@ -1,18 +1,22 @@
 /**
- * Quick capture syntax (B4): "Portfolio abgeben fr #studium !"
+ * The quick capture syntax (B4): "Portfolio abgeben fr #studium !"
  *
- * - Date: heute, morgen, übermorgen (today/tomorrow), weekday names
- *   ("freitag", or "fr" as the last word / after "bis"/"am"), "24.4.", "24.4",
- *   "24.4.27", "24.04.2027", "2027-04-24", "24. April", "24 apr 2027". A weekday means the next one;
- *   on that weekday itself it means one week ahead ("heute" is for today).
- *   "bis"/"am"/"until"/"on" right before a date is dropped as well.
- *   Dates without a year that are already past mean next year.
- * - Area: #studium/#study, #freelance/#fl, #privat/#personal, any prefix (#s, #f, #p).
- * - Priority: a standalone "!" (or "!!", "!!!") = high.
+ * One line goes in, a task comes out. Everything the parser does not recognise
+ * stays in the title, so a wrong guess never loses the user's words.
+ *
+ * Recognised:
+ * - Date: heute, morgen, übermorgen, weekday names ("freitag", or "fr" as the
+ *   last word or after "bis"/"am"), "24.4.", "24.4", "24.4.27", "24.04.2027",
+ *   "2027-04-24", "24. April", "24 apr 2027". A weekday means the next one; on
+ *   that weekday itself it means one week ahead, because "heute" is for today.
+ *   A preposition right before the date ("bis", "am", "until", "on") is dropped
+ *   too. A date without a year that is already past means next year.
+ * - Area: #studium/#study, #freelance/#fl, #privat/#personal, and any prefix
+ *   (#s, #f, #p).
+ * - Priority: a standalone "!" (or "!!", "!!!") means high.
  * - Tags (B5c): any other #word becomes a user tag ("#fotografie").
- * Everything else is the title.
  *
- * Returns { title, due: 'YYYY-MM-DD'|null, area: string|null, priority: 'high'|null, tags: string[] }.
+ * Pure functions: the current time is a parameter, never read here.
  */
 import { toISODate } from './taskModel.js'
 
@@ -27,14 +31,17 @@ const WEEKDAYS_LONG = {
   sonntag: 0, montag: 1, dienstag: 2, mittwoch: 3, donnerstag: 4, freitag: 5, samstag: 6,
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
 }
-// Short forms collide with real words ("so", "do", "mi"), so they only count
-// as the last word or after a date preposition
+
+// Short forms collide with real words ("so", "do", "mi"), so they only count as
+// the last word or right after a date preposition.
 const WEEKDAYS_SHORT = {
   so: 0, mo: 1, di: 2, mi: 3, do: 4, fr: 5, sa: 6,
   sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
 }
+
 const RELATIVE = { heute: 0, today: 0, morgen: 1, tomorrow: 1, übermorgen: 2, uebermorgen: 2 }
 const PREPOSITIONS = new Set(['bis', 'am', 'until', 'on', 'by'])
+
 const MONTHS = {
   januar: 0, jan: 0, februar: 1, feb: 1, märz: 2, maerz: 2, mär: 2, mrz: 2, april: 3, apr: 3,
   mai: 4, juni: 5, jun: 5, juli: 6, jul: 6, august: 7, aug: 7, september: 8, sept: 8, sep: 8,
@@ -42,7 +49,12 @@ const MONTHS = {
   january: 0, february: 1, march: 2, mar: 2, may: 4, june: 5, july: 6, october: 9, oct: 9, december: 11, dec: 11,
 }
 
-/** Day + month without year: this year, or next year if already past. */
+/**
+ * Day and month without a year: this year, or next year when already past.
+ *
+ * 29 February is the reason for the fallback: in a non-leap year the date does
+ * not exist, so the next valid one is used.
+ */
 function upcomingDate(today, month, day) {
   const thisYear = validDate(today.getFullYear(), month, day)
   if (!thisYear) return validDate(today.getFullYear() + 1, month, day)
@@ -55,11 +67,18 @@ function addDays(date, n) {
   return d
 }
 
+/** Builds a date and rejects impossible ones (31 February would roll over). */
 function validDate(y, m, d) {
   const date = new Date(y, m, d)
   return date.getFullYear() === y && date.getMonth() === m && date.getDate() === d ? date : null
 }
 
+/**
+ * Maps a #word to an area code, or null.
+ *
+ * Prefix matching is deliberate: "#stu" and "#s" both mean study, so the user
+ * does not have to type the whole word during quick capture.
+ */
 function areaFor(tag) {
   const t = tag.toLowerCase()
   if (!t) return null
@@ -69,56 +88,86 @@ function areaFor(tag) {
   return null
 }
 
-/** One word -> Date or null. `allowShort` enables "fr", "mo" … */
+/**
+ * One word to a Date, or null.
+ *
+ * @param {string} word
+ * @param {Date} today - midnight today
+ * @param {boolean} allowShort - enables "fr", "mo" and the other short weekdays
+ * @returns {Date|null}
+ */
 function dateFor(word, today, allowShort) {
   const w = word.toLowerCase().replace(/[.,]$/, '')
+
   if (w in RELATIVE) return addDays(today, RELATIVE[w])
-  const weekday = w in WEEKDAYS_LONG ? WEEKDAYS_LONG[w] : allowShort && w in WEEKDAYS_SHORT ? WEEKDAYS_SHORT[w] : null
+
+  const weekday = w in WEEKDAYS_LONG
+    ? WEEKDAYS_LONG[w]
+    : allowShort && w in WEEKDAYS_SHORT ? WEEKDAYS_SHORT[w] : null
   if (weekday !== null) {
+    // `|| 7` turns "today is that weekday" into "one week ahead".
     const diff = (weekday - today.getDay() + 7) % 7 || 7
     return addDays(today, diff)
   }
-  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(word)
-  if (m) return validDate(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-  // "15.12.", "15.12", "15.12.26", "15.12.2026" (also with "/")
-  m = /^(\d{1,2})[./](\d{1,2})(?:[./](\d{2}|\d{4})?)?$/.exec(word)
-  if (m) {
-    const day = Number(m[1])
-    const month = Number(m[2]) - 1
-    if (m[3]) {
-      const y = Number(m[3])
-      return validDate(y < 100 ? 2000 + y : y, month, day)
+
+  let match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(word)
+  if (match) return validDate(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+
+  // "15.12.", "15.12", "15.12.26", "15.12.2026", also with "/" as separator.
+  match = /^(\d{1,2})[./](\d{1,2})(?:[./](\d{2}|\d{4})?)?$/.exec(word)
+  if (match) {
+    const day = Number(match[1])
+    const month = Number(match[2]) - 1
+    if (match[3]) {
+      const year = Number(match[3])
+      return validDate(year < 100 ? 2000 + year : year, month, day)
     }
     return upcomingDate(today, month, day)
   }
+
   return null
 }
 
+/**
+ * Parses one quick-capture line.
+ *
+ * @param {string} input - the typed line
+ * @param {Date} now - passed in so the result is testable
+ * @returns {{ title: string, due: string|null, area: string|null,
+ *   priority: 'high'|null, tags: string[] }} `due` is 'YYYY-MM-DD'
+ */
 export function parseQuickAdd(input, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const words = String(input || '').trim().split(/\s+/).filter(Boolean)
   const result = { title: '', due: null, area: null, priority: null, tags: [] }
+
+  // `keep[i]` says whether word i stays in the title. Everything the parser
+  // consumes is switched off here instead of being cut out of the string.
   const keep = new Array(words.length).fill(true)
 
-  // Index of the last word that is not a #tag or "!" (for short weekdays)
+  // Index of the last word that is neither a #tag nor "!", used to decide
+  // whether a short weekday is in final position.
   let lastPlain = -1
   words.forEach((w, i) => { if (!w.startsWith('#') && !/^!+$/.test(w)) lastPlain = i })
 
   let consumedUntil = -1
+
   words.forEach((word, i) => {
     if (/^!{1,3}$/.test(word)) {
       result.priority = 'high'
       keep[i] = false
       return
     }
+
     if (word.startsWith('#')) {
       const name = word.slice(1)
       const area = areaFor(name)
       if (area) {
-        // Only the first area counts; a second one stays visible in the title
+        // Only the first area counts; a second one stays visible in the title.
         if (!result.area) { result.area = area; keep[i] = false }
         return
       }
+      // Anything else that looks like a word becomes a tag.
       if (/^[\p{L}\p{N}][\p{L}\p{N}_-]*$/u.test(name)) {
         const lower = name.toLowerCase()
         if (!result.tags.some(t => t.toLowerCase() === lower)) result.tags.push(name)
@@ -126,8 +175,10 @@ export function parseQuickAdd(input, now = new Date()) {
       }
       return
     }
+
     if (result.due) return
-    // "15. Dezember" / "15 dez" / "15. Dez. 2027": day + month name (+ year)
+
+    // "15. Dezember" / "15 dez" / "15. Dez. 2027": day plus month name, plus year.
     const dayMatch = /^(\d{1,2})\.?$/.exec(word)
     const monthWord = (words[i + 1] || '').toLowerCase().replace(/\.$/, '')
     if (dayMatch && monthWord in MONTHS) {
@@ -146,7 +197,9 @@ export function parseQuickAdd(input, now = new Date()) {
         return
       }
     }
+
     if (i <= consumedUntil) return
+
     const prev = i > 0 && keep[i - 1] ? words[i - 1].toLowerCase() : ''
     const afterPreposition = PREPOSITIONS.has(prev)
     const date = dateFor(word, today, i === lastPlain || afterPreposition)
