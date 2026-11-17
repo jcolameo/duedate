@@ -170,6 +170,21 @@ function put(storage, key, value) {
 }
 
 /**
+ * Writes all pairs or none (SEC-004). localStorage has no transaction, so the
+ * previous values are kept and put back when a write fails - a full quota is the
+ * usual reason. Restoring frees space again, so the rollback itself can run.
+ */
+function writeAll(storage, pairs) {
+  const previous = pairs.map(([key]) => [key, storage.getItem(key)])
+  try {
+    for (const [key, value] of pairs) put(storage, key, value)
+  } catch (error) {
+    for (const [key, value] of previous) put(storage, key, value)
+    throw error
+  }
+}
+
+/**
  * Replaces all user data in storage with the backup's. Older data shapes are
  * upgraded, missing task fields get defaults and tag IDs that point to no tag
  * are dropped. The app reads its stores at start, so reload afterwards.
@@ -193,16 +208,19 @@ export function applyBackup(backup, storage) {
     return { ...full, tags: (Array.isArray(full.tags) ? full.tags : []).filter(id => tagIds.has(id)) }
   })
 
-  put(storage, KEYS.tasks, { tasks })
-  put(storage, SCHEMA_KEY, String(SCHEMA_VERSION))
-  put(storage, KEYS.tags, tags.length ? { tags } : null)
-  put(storage, KEYS.availability, data.availability?.length ? normalizeBlocks(data.availability) : null)
-  put(storage, KEYS.today, data.today)
-  put(storage, KEYS.columnMapping, data.columnMapping)
-  put(storage, KEYS.csv, data.csv)
-  if (data.settings?.theme) put(storage, KEYS.theme, data.settings.theme)
-  if (data.settings?.locale) put(storage, KEYS.locale, data.settings.locale)
-  if (isObject(data.settings?.planner)) put(storage, KEYS.planner, data.settings.planner)
+  const writes = [
+    [KEYS.tasks, { tasks }],
+    [SCHEMA_KEY, String(SCHEMA_VERSION)],
+    [KEYS.tags, tags.length ? { tags } : null],
+    [KEYS.availability, data.availability?.length ? normalizeBlocks(data.availability) : null],
+    [KEYS.today, data.today],
+    [KEYS.columnMapping, data.columnMapping],
+    [KEYS.csv, data.csv],
+  ]
+  if (data.settings?.theme) writes.push([KEYS.theme, data.settings.theme])
+  if (data.settings?.locale) writes.push([KEYS.locale, data.settings.locale])
+  if (isObject(data.settings?.planner)) writes.push([KEYS.planner, data.settings.planner])
+  writeAll(storage, writes)
 }
 
 /** Removes all user data (theme and language stay). */
