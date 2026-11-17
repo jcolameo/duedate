@@ -48,7 +48,7 @@ Weil es kein Backend und keine Konten gibt, sind klassische serverseitige Angrif
 relevanten Flächen sind:
 
 - **Markdown-Rendering** (`src/utils/markdown.js`) — Ausgabe geht in `v-html`.
-- **CSV- und Backup-Import** (`src/utils/backup.js`, `src/utils/csv.js`) — Dateien von aussen.
+- **CSV- und Backup-Import** (`src/utils/backup.js`, `src/utils/csvParse.js`) — Dateien von aussen.
 - **ICS-Export** (`src/utils/ics.js`) — Text aus Aufgaben landet in einer Datei.
 - **Abhängigkeiten** — siehe `npm audit`, Dependabot ist aktiv.
 
