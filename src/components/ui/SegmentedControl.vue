@@ -1,20 +1,53 @@
 <script setup>
 /**
- * Small set of mutually exclusive options (theme, language, priority, effort).
- * Implemented as a labelled group of toggle buttons with aria-pressed, which
- * works with Tab + Enter/Space and is announced correctly by screen readers.
+ * SegmentedControl: a row of joined buttons where exactly one is active,
+ * e.g. theme (light/dark), language, priority, effort or calendar view.
+ *
+ * Used by: src/views/SettingsView.vue:8, src/views/CalendarView.vue:24,
+ * src/views/StundenplanView.vue:24, src/components/TaskDetail.vue:17,
+ * src/components/QuickAdd.vue:21, src/components/AreaFilter.vue:7,
+ * src/components/DataSettings.vue:9, and EffortInput.vue in this folder.
+ *
+ * Props: `label`, `options`, `size`, `mono`, plus `v-model` with the value of
+ * the active option. Events: `update:modelValue` (through `v-model`).
+ *
+ * In the background: nothing beyond `v-model`. No state of its own.
+ *
+ * Why it is built this way: a labelled group of toggle buttons with
+ * aria-pressed works with Tab + Enter/Space and is announced correctly by
+ * screen readers, without the arrow-key logic a radio group would need.
+ *
+ * How to read this file: props and `model`, then the template: one button per
+ * option, active when `model === opt.value`.
+ */
+// `<script setup>`: the whole file is one component; everything declared here
+// is local to it, like the body of a React function component.
+
+/**
+ * Props, like `props` in React, but declared as a typed object instead of
+ * destructured parameters.
+ * - label: accessible name of the group (not shown on screen)
+ * - options: the buttons, as `[{ value, label, icon? }]`; values must be
+ *   unique because they are also the loop keys
+ * - size: 'md' (default) or 'sm'
+ * - mono: use the mono font for option labels (e.g. durations like "2h")
  */
 defineProps({
-  /** Accessible name of the group */
   label: { type: String, required: true },
-  /** [{ value, label, icon? }] */
   options: { type: Array, required: true },
   size: { type: String, default: 'md', validator: v => ['sm', 'md'].includes(v) },
-  /** Use the mono font for option labels (e.g. durations like "2h") */
   mono: { type: Boolean, default: false },
 })
 
+// `v-model`: two-way binding. The parent passes a value and a listener, the
+// child emits the new value. A value that matches no option (EffortInput
+// passes -1 for that) simply leaves every button inactive.
 const model = defineModel({ type: [String, Number, null], default: null })
+
+// Template notes: `v-for="opt in options" :key="opt.value"` is a loop like
+// `options.map(...)` in React. `@click="model = opt.value"` assigns the
+// model, which emits `update:modelValue`; in the template `model` needs no
+// `.value`. Clicking the active button emits the same value again.
 </script>
 
 <template>
